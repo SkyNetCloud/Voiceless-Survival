@@ -6,4 +6,4 @@
 - Added dynamic adjustments to detection range and mob speed based on player whispering:
     - Whispering reduces detection range and speed using configurable `whisper_range_multiplier` and `whisper_speed_multiplier`.
     - Sneaking further reduces detection range when whispering or speaking normally. *(This will be improved with the stealth system update.)*
-- Back-Ported the mod to Minecraft 1.18.2 - Fabric
+- Ported the mod to Minecraft 1.21.1 - Fabric

@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import static net.minecraft.registry.Registries.ENTITY_TYPE;
+import static net.minecraft.util.registry.Registry.ENTITY_TYPE;
 
 @Mixin(MobEntity.class)
 public class FollowVoiceGoalInjector {

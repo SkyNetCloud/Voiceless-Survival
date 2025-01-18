@@ -53,3 +53,18 @@ subprojects {
         options.encoding = "UTF-8"
     }
 }
+
+tasks.register('publicNewer-OlderPort') {
+    group = "publishing"
+    description = "Runs the publicModdedSite task for specific subprojects"
+
+    // List of subprojects to include
+    def targetSubprojects = ["fabric_1.18.2", "fabric_1.19.2", "fabric_1.21.1"]
+
+    // Add dependencies for the specific subprojects
+    dependsOn subprojects.findAll { subproject ->
+        targetSubprojects.contains(subproject.name)
+    }.collect { subproject ->
+        ":${subproject.path}:publicModdedSite"
+    }
+}
