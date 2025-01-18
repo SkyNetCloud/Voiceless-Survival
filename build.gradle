@@ -8,12 +8,6 @@ subprojects {
     // Apply the Java plugin
     apply plugin: 'java'
 
-    // Configure source and Javadoc jars
-    java {
-        withSourcesJar()
-        withJavadocJar()
-    }
-
     // Configure repositories
     repositories {
         maven {
