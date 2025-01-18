@@ -7,22 +7,53 @@ plugins {
 subprojects {
 
     if (project.name == "modules") {
-        // Skip configuring the parent `modules` project
         tasks.configureEach {
             enabled = false
         }
-        return // Exit early to prevent further configuration
+        return
     }
 
-    // Apply the Java plugin
+    // Apply the Java plugin to each sub-project
     apply plugin: 'java'
+
+    // Java toolchain configuration
+    java {
+        toolchain {
+            // Set Java 17 for versions <= 1.20.1 for both main and test tasks
+            if (name == 'fabric_1.18.2' || name == 'fabric_1.19.2' || name == 'fabric_1.20.1') {
+                languageVersion = JavaLanguageVersion.of(17)
+            }
+            // Set Java 21 for versions >= 1.21+
+            else if (name.startsWith('fabric_1.') && name >= 'fabric_1.21') {
+                languageVersion = JavaLanguageVersion.of(21)
+            }
+        }
+    }
+
+
+    // Ensuring the correct Java version for the compileJava and compileTestJava tasks
+    tasks.withType(JavaCompile).configureEach {
+        if (project.name == 'fabric_1.18.2' || project.name == 'fabric_1.19.2' || project.name == 'fabric_1.20.1') {
+            it.options.release = 17
+        } else if (project.name.startsWith('fabric_1.') && project.name >= 'fabric_1.21') {
+            it.options.release = 21
+        }
+    }
+
 
     // Configure repositories
     repositories {
-        maven { url = 'https://maven.maxhenkel.de/repository/public' }
-        maven { url = 'https://maven.impactdev.net/repository/development/' }
+        mavenCentral()
         maven {
-            name = "Fuzs Mod Resources"
+            name = "Maxhenkel Repo"
+            url = 'https://maven.maxhenkel.de/repository/public'
+        }
+        maven {
+            name = "ImpactDev Repo"
+            url = 'https://maven.impactdev.net/repository/development/'
+        }
+        maven {
+            name = "Fuzs Mod Repo"
             url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/"
         }
         maven {
@@ -32,33 +63,20 @@ subprojects {
                 includeGroup "maven.modrinth"
             }
         }
-        mavenCentral()
+
         maven {
             name = 'Sponge / Mixin'
             url = 'https://repo.spongepowered.org/repository/maven-public/'
         }
     }
-
-    def mcVersion = project.hasProperty('minecraft_version') ? project.minecraft_version : "1.18.2"
-    def targetJavaVersion = mcVersion.startsWith("1.21") ? 21 : 17
-
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-        }
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = "UTF-8"
-    }
 }
 
+// Define the task to run the publicModdedSite task for specific subprojects
 tasks.register('publicNewer-OlderPort') {
     group = "publishing"
     description = "Runs the publicModdedSite task for specific subprojects"
 
-    // List of subprojects to include
-    def targetSubprojects = ["fabric_1.18.2", "fabric_1.19.2", "fabric_1.21.1"]
+    def targetSubprojects = ["fabric_1.18.2", "fabric_1.19.2", "fabric_1.20.1", "fabric_1.21.1", "fabric_1.21.4"]
 
     // Add dependencies for the specific subprojects
     dependsOn subprojects.findAll { subproject ->

@@ -1,6 +1,6 @@
 ### Changelog
 
-#### Version 0.1.0 Fabric
+#### Version 0.1.1 Fabric
 
 - Updated to version 0.1.0 to reflect significant new features and improvements.
 - Added dynamic adjustments to detection range and mob speed based on player whispering:

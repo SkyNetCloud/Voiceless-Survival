@@ -59,14 +59,24 @@ processResources {
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    it.options.release = 17
+tasks.named('runClient', JavaExec) {
+    javaLauncher.set(
+            javaToolchains.launcherFor {
+                languageVersion.set(
+                        (name == 'fabric_1.18.2' || name == 'fabric_1.19.2' || name == 'fabric_1.20.1') ?
+                                JavaLanguageVersion.of(17) :
+                                JavaLanguageVersion.of(21)
+                )
+            }
+    )
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17) // or 21 based on your Fabric version
+    }
 }
+
 
 
 jar {
@@ -78,7 +88,7 @@ jar {
 tasks.register('publishCurseForge', TaskPublishCurseForge) {
     apiToken = System.getenv("CURSEFORGE_TOKEN")
 
-def mainFile = upload('1173633', file("build/libs/${mod_name} ${minecraft_version}-${mod_version}.jar"))
+    def mainFile = upload('1173633', file("build/libs/${mod_name} ${minecraft_version}-${mod_version}.jar"))
     mainFile.displayName = "${mod_name} ${minecraft_version}-${mod_version} (Fabric)"
     mainFile.releaseType = 'beta'
     mainFile.changelog = changelogText
@@ -93,11 +103,11 @@ def mainFile = upload('1173633', file("build/libs/${mod_name} ${minecraft_versio
 modrinth {
     token = System.getenv("MODRINTH_TOKEN")// Remember to have the MODRINTH_TOKEN environment variable set or else this will fail - just make sure it stays private!
     projectId = "voiceless-survival" // This can be the project ID or the slug. Either will work!
-    versionName = "${mod_name} ${mod_version} Fabric"
-    versionNumber = "${mod_version}" // You don't need to set this manually. Will fail if Modrinth has this version already
+    versionNumber = "Fabric-${minecraft_version}-${mod_version}" // You don't need to set this manually. Will fail if Modrinth has this version already
     versionType = "beta" // This is the default -- can also be `beta` or `alpha`
-    uploadFile = file("build/libs/${mod_name}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
-    gameVersions = ["${minecraft_version}"] as Iterable<? extends String> // Must be an array, even with only one version
+    uploadFile = file("build/libs/${mod_name} ${minecraft_version}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
+    gameVersions = ["${minecraft_version}"] as Iterable<? extends String>
+    // Must be an array, even with only one version
     loaders = ["fabric"] // Must also be an array - no need to specify this if you're using Loom or ForgeGradle
     changelog = changelogText
 
@@ -107,10 +117,7 @@ modrinth {
         required.project 'simple-voice-chat'
         required.project 'forge-config-api-port'
     }
-    //syncBodyFrom = rootProject.file("README.md").text
 }
-
-//tasks.modrinth.dependsOn(tasks.modrinthSyncBody)
 
 // This task is for uploading to the site above this code
 tasks.register('publicModdedSite') {
