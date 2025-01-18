@@ -5,15 +5,20 @@ plugins {
 }
 
 subprojects {
+
+    if (project.name == "modules") {
+        // Skip configuring the parent `modules` project
+        tasks.configureEach {
+            enabled = false
+        }
+        return // Exit early to prevent further configuration
+    }
+
     // Apply the Java plugin
     apply plugin: 'java'
 
     // Configure repositories
     repositories {
-        maven {
-            name = "Fuzs Mod Resources"
-            url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/"
-        }
         maven { url = 'https://maven.maxhenkel.de/repository/public' }
         maven { url = 'https://maven.impactdev.net/repository/development/' }
         maven {
