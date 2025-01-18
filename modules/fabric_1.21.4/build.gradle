@@ -1,119 +1,120 @@
+import net.darkhax.curseforgegradle.TaskPublishCurseForge
+
 plugins {
-	id 'idea'
-	id 'fabric-loom'
-	id 'maven-publish'
+    id 'fabric-loom'
+    id 'maven-publish'
+    id "com.modrinth.minotaur"
+    id 'net.darkhax.curseforgegradle'
 }
 
 version = project.mod_version
 group = project.mod_group_id
 
 base {
-	archivesName = project.mod_name
+    archivesName = project.mod_name
 }
+
+def changelogText = project.file('changelog.md').text
+
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+
 }
 
-loom {
-    splitEnvironmentSourceSets()
-
-	mods {
-		"ezvcsurvival" {
-			sourceSet sourceSets.main
-			sourceSet sourceSets.client
-		}
-	}
-    runs {
-		// This adds a new gradle task that runs the datagen API: "gradlew runDatagen"
-		datagen {
-			inherit server
-			name "Data Generation"
-			vmArg "-Dfabric-api.datagen"
-			vmArg "-Dfabric-api.datagen.output-dir=${file("src/main/generated")}"
-			vmArg "-Dfabric-api.datagen.modid=ezvcsurvival"
- 
-			runDir "build/datagen"
-		}
-	}
-}
-
-// Add the generated resources to the main source set
-sourceSets {
-	main {
-		resources {
-			srcDirs += [
-					'src/main/generated'
-			]
-		}
-	}
-}
 dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    // Core Minecraft dependencies
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	
-	// Uncomment the following line to enable the deprecated Fabric API modules. 
-	// These are included in the Fabric API production distribution and allow you to update your mod to the latest modules at a later more convenient time.
+    // Fabric Loader and API
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	// modImplementation "net.fabricmc.fabric-api:fabric-api-deprecated:${project.fabric_version}"
+    // Voice Chat API dependencies
+    modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
+    implementation "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}"
+
+    // Configuration handling
+    compileOnly "com.electronwill.night-config:toml:3.6.0"
+
+    // Forge Config API Port
+    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${project.forgeconfigapiport}"
 }
+
 
 processResources {
-	inputs.property "version", project.version
+    inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "loader_version", project.loader_version
+    inputs.property "voicechat_api_version", project.voicechat_api_version
+    filteringCharset "UTF-8"
 
-	// Add any files/file patterns whose properties should be changed by retrieving them from gradle.properties
-	filesMatching("fabric.mod.json") {
-		expand "version": project.version
-		// use this line instead to retrieve all values from gradle.properties
-		// expand project.properties
-	}
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version,
+                "minecraft_version": project.minecraft_version,
+                "loader_version": project.loader_version,
+                "voicechat_api_version": project.voicechat_api_version
+    }
 }
 
-def targetJavaVersion = 21
 tasks.withType(JavaCompile).configureEach {
-	it.options.encoding = "UTF-8"
-	if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-		it.options.release.set(targetJavaVersion)
-	}
+    it.options.release = 21
 }
 
 java {
-	def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-	if (JavaVersion.current() < javaVersion) {
-		toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-	}
+    withSourcesJar()
 
-	withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 jar {
-	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName.get()}"}
-	}
+    from("LICENSE") {
+        rename { "${it}_${project.mod_group_id}" }
+    }
 }
 
-// configure the maven publication
-publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			from components.java
-		}
-	}
+tasks.register('publishCurseForge', TaskPublishCurseForge) {
+    apiToken = System.getenv("CURSEFORGE_TOKEN")
 
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
+    def mainFile = upload('1173633', file("build/libs/${mod_name}-${mod_version}.jar"))
+
+    mainFile.displayName = "${mod_name} (Fabric)"
+    mainFile.releaseType = 'beta'
+    mainFile.changelog = changelogText
+    mainFile.changelogType = "markdown"
+
+    mainFile.addRequirement("fabric-api")
+    mainFile.addRequirement("simple-voice-chat")
+    mainFile.addRequirement("forge-config-api-port-fabric")
+}
+
+
+modrinth {
+    token = System.getenv("MODRINTH_TOKEN")// Remember to have the MODRINTH_TOKEN environment variable set or else this will fail - just make sure it stays private!
+    projectId = "voiceless-survival" // This can be the project ID or the slug. Either will work!
+    versionNumber = "${mod_version}" // You don't need to set this manually. Will fail if Modrinth has this version already
+    versionType = "beta" // This is the default -- can also be `beta` or `alpha`
+    uploadFile = file("build/libs/${mod_name}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
+    gameVersions = ["${minecraft_version}"] as Iterable<? extends String>
+    // Must be an array, even with only one version
+    loaders = ["fabric"] // Must also be an array - no need to specify this if you're using Loom or ForgeGradle
+    changelog = changelogText
+
+
+    dependencies { // A special DSL for creating dependencies
+        required.project "fabric-api"
+        required.project 'simple-voice-chat'
+        required.project 'forge-config-api-port'
+    }
+    //syncBodyFrom = rootProject.file("README.md").text
+}
+
+//tasks.modrinth.dependsOn(tasks.modrinthSyncBody)
+
+// This task is for uploading to the site above this code
+tasks.register('publicModdedSite') {
+    dependsOn 'build'
+    dependsOn 'publishCurseForge'
+    dependsOn 'modrinth'
 }
