@@ -22,14 +22,7 @@ def changelogText = project.file('changelog.md').text
 
 
 repositories {
-    maven { url = 'https://maven.maxhenkel.de/repository/public' }
-    maven {
-        url ="https://maven.impactdev.net/repository/development/"
-    }
-    maven {
-        name = "Fuzs Mod Resources"
-        url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/"
-    }
+    // In Root Project Build.gradle
 }
 
 dependencies {

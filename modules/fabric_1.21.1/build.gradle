@@ -20,7 +20,7 @@ def changelogText = project.file('changelog.md').text
 
 
 repositories {
-
+    // In Root Project Build.gradle
 }
 
 dependencies {
