@@ -24,12 +24,11 @@ public class FollowVoiceGoal extends Goal {
         this.speedModifier = speedModifier;
         this.voiceDetectionRange = detectionRange;
         this.threshold = threshold;
-        this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.TARGET));
+        this.setControls(EnumSet.of(Control.MOVE, Control.TARGET));
     }
 
     @Override
     public boolean canStart() {
-        // Detecta el último sonido o un jugador cercano
         targetPlayer = getNearestPlayerInRange();
         targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange);
         return targetPlayer != null || targetSoundPosition != null;

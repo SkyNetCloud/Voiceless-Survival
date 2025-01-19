@@ -1,7 +1,6 @@
 package com.armilp.ezvcsurvival.mixin;
 
 
-import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.FollowVoiceGoal;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import net.minecraft.entity.mob.MobEntity;
