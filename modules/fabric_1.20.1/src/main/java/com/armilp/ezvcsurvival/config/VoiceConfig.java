@@ -1,6 +1,5 @@
 package com.armilp.ezvcsurvival.config;
 
-import com.llamalad7.mixinextras.sugar.impl.SingleIterationList;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.HashMap;

@@ -8,6 +8,7 @@ import de.maxhenkel.voicechat.api.VoicechatPlugin;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.opus.OpusDecoder;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
@@ -21,8 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Plugin implements VoicechatPlugin {
 
-    private static final boolean DEBUG = false;
-
+    private static final boolean DEBUG = true;
     private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -48,10 +48,9 @@ public class Plugin implements VoicechatPlugin {
     public void registerEvents(EventRegistration registration) {
         registration.registerEvent(MicrophonePacketEvent.class, this::onMicrophonePacket);
         if (DEBUG) {
-            System.out.println("[DEBUG] Register Event For MicrophonePacketEvent");
+            System.out.println("[DEBUG] Registro del evento MicrophonePacketEvent");
         }
     }
-
 
     public static double calculateAudioLevel(short[] samples) {
         double rms = 0D;
@@ -87,7 +86,6 @@ public class Plugin implements VoicechatPlugin {
                 .orElse(1.0);
     }
 
-
     public void onMicrophonePacket(MicrophonePacketEvent event) {
         if (decoder == null || decoder.isClosed()) {
             decoder = voicechatApi.createDecoder();
@@ -108,7 +106,7 @@ public class Plugin implements VoicechatPlugin {
         VoicechatConnection sender = event.getSenderConnection();
         if (sender != null) {
             UUID playerUUID = sender.getPlayer().getUuid();
-            Position voicechatPosition = sender.getPlayer().getPosition();
+            de.maxhenkel.voicechat.api.Position voicechatPosition = sender.getPlayer().getPosition();
             BlockPos playerPosition = new BlockPos(
                     (int) Math.floor(voicechatPosition.getX()),
                     (int) Math.floor(voicechatPosition.getY()),
@@ -134,22 +132,22 @@ public class Plugin implements VoicechatPlugin {
                     speed *= whisperSpeedMultiplier;
 
                     Object minecraftPlayer = sender.getPlayer().getPlayer();
-                    if (minecraftPlayer instanceof ServerPlayerEntity player) {
+                    if (minecraftPlayer instanceof PlayerEntity player) {
                         if (player.isSneaking()) {
                             detectionRange *= sneakingRangeMultiplier;
                         }
 
-                        if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
+                        if (player.world.isRaining() || player.world.isThundering()) {
                             detectionRange *= thunderRangeMultiplier;
                         }
                     }
                 } else {
                     Object minecraftPlayer = sender.getPlayer().getPlayer();
-                    if (minecraftPlayer instanceof ServerPlayerEntity player) {
+                    if (minecraftPlayer instanceof PlayerEntity player) {
                         if (player.isSneaking()) {
                             detectionRange *= sneakingRangeMultiplier;
                         }
-                        if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
+                        if (player.world.isRaining() || player.world.isThundering()) {
                             detectionRange *= thunderRangeMultiplier;
                         }
                     }
@@ -161,7 +159,7 @@ public class Plugin implements VoicechatPlugin {
                         (int) Math.floor(sender.getPlayer().getPosition().getZ())
                 );
 
-                double distance = Math.sqrt(playerPosition.compareTo(senderPosition));
+                double distance = Math.sqrt(playerPosition.getSquaredDistance(senderPosition));
                 double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
 
                 if (DEBUG) {
@@ -175,18 +173,17 @@ public class Plugin implements VoicechatPlugin {
                     continue;
                 }
 
-                if (playerPosition.compareTo(senderPosition) <= detectionRange * detectionRange) {
+                if (playerPosition.getSquaredDistance(senderPosition) <= detectionRange * detectionRange) {
                     playerSoundLocations.put(playerUUID, new SoundData(playerPosition, detectionRange, speed));
 
                     if (DEBUG) {
                         System.out.println("[DEBUG] " + mobId + " detects sound at range " + detectionRange + " with speed " + speed + " from position " + playerPosition);
                     }
                 }
-
-                scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
             }
         }
     }
+
 
     private List<String> getConfiguredMobIds() {
         Map<String, Map<String, Double>> mobConfigs = VoiceConfig.getMobVoiceConfigs();
@@ -216,7 +213,6 @@ public class Plugin implements VoicechatPlugin {
         }
         return 1.0;
     }
-
 
     private static class SoundData {
         private final BlockPos position;

@@ -72,11 +72,11 @@ subprojects {
 }
 
 // Define the task to run the publicModdedSite task for specific subprojects
-tasks.register('publicNewer-OlderPort') {
+tasks.register('publicMod') {
     group = "publishing"
     description = "Runs the publicModdedSite task for specific subprojects"
 
-    def targetSubprojects = ["fabric_1.18.2", "fabric_1.19.2", "fabric_1.20.1", "fabric_1.21.1", "fabric_1.21.4"]
+    def targetSubprojects = ["fabric_1.18.2", "fabric_1.19.2", "fabric_1.20.1", "fabric_1.21.1"]
 
     // Add dependencies for the specific subprojects
     dependsOn subprojects.findAll { subproject ->

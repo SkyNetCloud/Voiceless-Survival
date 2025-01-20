@@ -9,15 +9,17 @@ import java.util.EnumSet;
 
 public class FollowVoiceGoal extends Goal {
 
+
     private final MobEntity mob;
     private final double speedModifier;
     private final int voiceDetectionRange;
-    private PlayerEntity targetPlayer;
     private final double threshold;
+    private final long attackCooldown = 2000;
+
+    private PlayerEntity targetPlayer;
     private BlockPos targetSoundPosition;
     private long timePlayerInRange;
     private long lastAttackTime = 0;
-    private final long attackCooldown = 2000;
 
     public FollowVoiceGoal(MobEntity mob, double speedModifier, int detectionRange, double threshold) {
         this.mob = mob;
@@ -45,8 +47,20 @@ public class FollowVoiceGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        return targetPlayer != null || (targetSoundPosition != null && !mob.getNavigation().isIdle());
+        // Check if the player is still valid and not in creative mode
+        if (targetPlayer != null) {
+            if (targetPlayer.isCreative()) {
+                targetPlayer = null;  // Reset target player if they are in creative mode
+                mob.getNavigation().stop();  // Stop the mob from moving towards the player
+                return false;  // Stop following the player
+            }
+            return true;  // Continue pursuing the player if not in creative mode
+        }
+
+        // Continue pursuing the sound if targetSoundPosition is not null and mob is still moving
+        return targetSoundPosition != null && !mob.getNavigation().isIdle();
     }
+
 
     @Override
     public void tick() {
@@ -55,82 +69,87 @@ public class FollowVoiceGoal extends Goal {
         } else if (targetSoundPosition != null) {
             handleSoundInteraction();
         }
-    }
 
-    @Override
-    public void stop() {
-        targetSoundPosition = null;
-        targetPlayer = null;
-        mob.getNavigation().stop();
+        // If the target sound position is null (i.e., sound has stopped), stop the navigation.
+        if (targetSoundPosition == null) {
+            mob.getNavigation().stop();  // Stop the mob from moving
+            targetPlayer = null;  // Reset target player
+        }
     }
 
     private void handlePlayerInteraction() {
+        if (targetPlayer == null) return;
+
         double distanceToPlayer = mob.distanceTo(targetPlayer);
 
-        if (targetPlayer.isCreative()) {
-            targetPlayer = null;
-            mob.getNavigation().stop();
+        // Stop tracking if the player is creative or out of range
+        if (targetPlayer.isCreative() || distanceToPlayer > 2.0) {
+            targetPlayer = null;  // Stop following the player
+            mob.getNavigation().stop();  // Ensure the mob stops moving
             return;
         }
 
-        // If the player goes out of range, restart tracking
-        if (distanceToPlayer > 2.0) {
-            targetPlayer = null;
-            mob.getNavigation().stop();
-            return;
-        }
-
-        // If the mob is close to the player (e.g. attack range = 1.5 blocks), attack
+        // Attack if within range
         if (distanceToPlayer <= 1.0) {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastAttackTime >= attackCooldown) {
-                mob.getNavigation().stop();
-                mob.swingHand(mob.preferredHand); // Animación del ataque
-                mob.tryAttack(targetPlayer);   // Realiza el ataque
+                mob.getNavigation().stop();  // Stop moving to attack
+                mob.swingHand(mob.preferredHand);
+                mob.tryAttack(targetPlayer);
                 lastAttackTime = currentTime;
             }
             return;
         }
 
-
+        // Move towards the player
         mob.getNavigation().startMovingTo(targetPlayer, speedModifier);
         targetSoundPosition = null;
     }
 
     private void handleSoundInteraction() {
+        if (targetSoundPosition == null) return;
+
         double distanceToTarget = mob.getBlockPos().getSquaredDistance(targetSoundPosition);
 
-        if (distanceToTarget <= 2.0 * 2.0) {
+        // If reached the sound position, update or stop
+        if (distanceToTarget <= 4.0) {
             targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange);
             if (targetSoundPosition != null) {
                 moveToSoundPosition();
             } else {
-                mob.getNavigation().stop();
+                mob.getNavigation().stop();  // Stop moving if no new sound location
             }
             return;
         }
 
-        if (distanceToTarget > (double) (voiceDetectionRange * voiceDetectionRange) / 2) {
+        // If sound is out of range, fetch the latest position
+        if (distanceToTarget > (voiceDetectionRange * voiceDetectionRange) / 2.0) {
             BlockPos newSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange);
             if (newSoundPosition == null) {
                 targetSoundPosition = null;
-                mob.getNavigation().stop();
-                return;
+                mob.getNavigation().stop();  // Stop moving if no new sound
             } else {
                 targetSoundPosition = newSoundPosition;
                 moveToSoundPosition();
             }
         }
 
+        // Adjust speed based on sound intensity
         double soundSpeed = Plugin.getLastSoundSpeed(mob.getBlockPos(), voiceDetectionRange);
         mob.getNavigation().setSpeed(soundSpeed);
     }
 
-    private PlayerEntity getNearestPlayerInRange() {
-        return mob.getWorld().getClosestPlayer(mob, 5);
+    @Override
+    public void stop() {
+        targetSoundPosition = null;
+        targetPlayer = null;
+        mob.getNavigation().stop();  // Stop the mob from moving
     }
 
 
+    private PlayerEntity getNearestPlayerInRange() {
+        return mob.getWorld().getClosestPlayer(mob, 5);
+    }
 
     private void moveToSoundPosition() {
         if (targetSoundPosition != null) {
