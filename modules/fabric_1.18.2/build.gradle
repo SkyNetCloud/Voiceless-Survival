@@ -90,7 +90,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
 modrinth {
     token = System.getenv("MODRINTH_TOKEN")// Remember to have the MODRINTH_TOKEN environment variable set or else this will fail - just make sure it stays private!
     projectId = "voiceless-survival" // This can be the project ID or the slug. Either will work!
-    versionNumber = "Fabric-${minecraft_version}-${mod_version}" // You don't need to set this manually. Will fail if Modrinth has this version already
+    versionNumber = "${mod_name} ${minecraft_version}-${mod_version} (Fabric)" // You don't need to set this manually. Will fail if Modrinth has this version already
     versionType = "beta" // This is the default -- can also be `beta` or `alpha`
     uploadFile = file("build/libs/${mod_name} ${minecraft_version}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
     gameVersions = ["${minecraft_version}"] as Iterable<? extends String>
