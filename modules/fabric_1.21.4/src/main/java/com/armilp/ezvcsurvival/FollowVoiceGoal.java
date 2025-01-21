@@ -3,7 +3,6 @@ package com.armilp.ezvcsurvival;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.EnumSet;
@@ -14,7 +13,6 @@ public class FollowVoiceGoal extends Goal {
     private final double speedModifier;
     private final int voiceDetectionRange;
     private PlayerEntity targetPlayer;
-    private ServerWorld world;
     private final double threshold;
     private BlockPos targetSoundPosition;
     private long timePlayerInRange;
@@ -31,6 +29,7 @@ public class FollowVoiceGoal extends Goal {
 
     @Override
     public boolean canStart() {
+        // Detect the last sound or a nearby player
         targetPlayer = getNearestPlayerInRange();
         targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange);
         return targetPlayer != null || targetSoundPosition != null;
@@ -47,12 +46,13 @@ public class FollowVoiceGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        return targetPlayer != null || (targetSoundPosition != null && !mob.getNavigation().isIdle());
+        return targetPlayer != null || (targetSoundPosition != null && !mob.getNavigation().isFollowingPath());
     }
 
     @Override
     public void tick() {
         if (targetPlayer != null) {
+            targetSoundPosition = null;
             handlePlayerInteraction();
         } else if (targetSoundPosition != null) {
             handleSoundInteraction();
@@ -66,34 +66,36 @@ public class FollowVoiceGoal extends Goal {
         mob.getNavigation().stop();
     }
 
+
     private void handlePlayerInteraction() {
         double distanceToPlayer = mob.distanceTo(targetPlayer);
 
-        if (targetPlayer.isCreative()) {
+        if (targetPlayer.isCreative()){
             targetPlayer = null;
             mob.getNavigation().stop();
             return;
         }
 
-        // If the player goes out of range, restart tracking
-        if (distanceToPlayer > 2.0) {
+        // If the player is out of detection range, reset the target
+        if (distanceToPlayer > voiceDetectionRange) {
             targetPlayer = null;
             mob.getNavigation().stop();
             return;
         }
 
-        // If the mob is close to the player (e.g. attack range = 1.5 blocks), attack
+        // If the mob is close to the player, attack
         if (distanceToPlayer <= 1.0) {
-            long currentTime = System.currentTimeMillis();
+            long currentTime = System.currentTimeMillis(); // Current time in milliseconds
+
+            // Check if the mob can attack again
             if (currentTime - lastAttackTime >= attackCooldown) {
                 mob.getNavigation().stop();
-                mob.swingHand(mob.preferredHand); // Animación del ataque
-                mob.tryAttack(world,targetPlayer);   // Realiza el ataque
-                lastAttackTime = currentTime;
+                mob.swingHand(mob.preferredHand); // Attack animation
+                mob.tryAttack(targetPlayer);   // Deal damage to the player
+                lastAttackTime = currentTime;     // Update the time of the last attack
             }
             return;
         }
-
 
         mob.getNavigation().startMovingTo(targetPlayer, speedModifier);
         targetSoundPosition = null;
@@ -102,7 +104,8 @@ public class FollowVoiceGoal extends Goal {
     private void handleSoundInteraction() {
         double distanceToTarget = mob.getBlockPos().getSquaredDistance(targetSoundPosition);
 
-        if (distanceToTarget <= 2.0 * 2.0) {
+        // If the mob is close enough to the sound source, follow it
+        if (distanceToTarget <= 1.5 * 1.5) {
             targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange);
             if (targetSoundPosition != null) {
                 moveToSoundPosition();
@@ -112,6 +115,7 @@ public class FollowVoiceGoal extends Goal {
             return;
         }
 
+        // If the mob is far from the sound, check for new sound positions
         if (distanceToTarget > (double) (voiceDetectionRange * voiceDetectionRange) / 2) {
             BlockPos newSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange);
             if (newSoundPosition == null) {
@@ -124,6 +128,7 @@ public class FollowVoiceGoal extends Goal {
             }
         }
 
+        // Set the mob's movement speed based on the sound's intensity or speed
         double soundSpeed = Plugin.getLastSoundSpeed(mob.getBlockPos(), voiceDetectionRange);
         mob.getNavigation().setSpeed(soundSpeed);
     }
@@ -131,8 +136,6 @@ public class FollowVoiceGoal extends Goal {
     private PlayerEntity getNearestPlayerInRange() {
         return mob.getWorld().getClosestPlayer(mob, 5);
     }
-
-
 
     private void moveToSoundPosition() {
         if (targetSoundPosition != null) {

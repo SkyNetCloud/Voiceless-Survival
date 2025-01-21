@@ -70,6 +70,12 @@ public class FollowVoiceGoal extends Goal {
     private void handlePlayerInteraction() {
         double distanceToPlayer = mob.distanceTo(targetPlayer);
 
+        if (targetPlayer.isCreative()){
+            targetPlayer = null;
+            mob.getNavigation().stop();
+            return;
+        }
+
         // If the player is out of detection range, reset the target
         if (distanceToPlayer > voiceDetectionRange) {
             targetPlayer = null;
@@ -128,7 +134,7 @@ public class FollowVoiceGoal extends Goal {
     }
 
     private PlayerEntity getNearestPlayerInRange() {
-        return mob.world.getClosestPlayer(mob, 5);
+        return mob.getWorld().getClosestPlayer(mob, 5);
     }
 
     private void moveToSoundPosition() {
