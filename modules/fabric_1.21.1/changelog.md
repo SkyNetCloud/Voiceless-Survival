@@ -1,8 +1,7 @@
 ### Changelog
 
-### Version 0.2.0
+### Version 0.2.1
 
-- Sneaking reduces detection range (configurable via `sneaking_range_multiplier`).
-- Rain and thunderstorms reduce detection range (configurable via `thunder_range_multiplier`).
-- Sound intensity now accounts for distance using a logarithmic formula.
-- Ported the mod to Minecraft 1.21.1 - Fabric
+- Now mobs ignore you in creative mode.
+- Improved Voicechat API Compatibility (2.5.0)
+- Improved FollowVoiceGoal no longer being a mixin file

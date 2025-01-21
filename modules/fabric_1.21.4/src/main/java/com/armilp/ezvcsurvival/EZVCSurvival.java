@@ -3,9 +3,9 @@ package com.armilp.ezvcsurvival;
 
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.mojang.logging.LogUtils;
-import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeConfigRegistry;
 import net.fabricmc.api.ModInitializer;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfig;
 import org.slf4j.Logger;
 
 public class EZVCSurvival implements ModInitializer {

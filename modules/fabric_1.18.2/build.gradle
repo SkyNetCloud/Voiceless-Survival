@@ -17,7 +17,7 @@ base {
 
 
 def changelogText = project.file('changelog.md').text
-
+def site_debugMode = false
 
 
 repositories {

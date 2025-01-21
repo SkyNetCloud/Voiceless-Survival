@@ -4,8 +4,9 @@ plugins {
     id 'net.darkhax.curseforgegradle' version '1.1.+' apply false
 }
 
-subprojects {
 
+subprojects {
+    
     if (project.name == "modules") {
         tasks.configureEach {
             enabled = false

@@ -3,6 +3,7 @@ package com.armilp.ezvcsurvival;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.EnumSet;
@@ -13,6 +14,7 @@ public class FollowVoiceGoal extends Goal {
     private final double speedModifier;
     private final int voiceDetectionRange;
     private PlayerEntity targetPlayer;
+    private ServerWorld serverWorld;
     private final double threshold;
     private BlockPos targetSoundPosition;
     private long timePlayerInRange;
@@ -91,7 +93,7 @@ public class FollowVoiceGoal extends Goal {
             if (currentTime - lastAttackTime >= attackCooldown) {
                 mob.getNavigation().stop();
                 mob.swingHand(mob.preferredHand); // Attack animation
-                mob.tryAttack(targetPlayer);   // Deal damage to the player
+                mob.tryAttack(serverWorld,targetPlayer);   // Deal damage to the player
                 lastAttackTime = currentTime;     // Update the time of the last attack
             }
             return;
