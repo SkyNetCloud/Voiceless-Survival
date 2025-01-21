@@ -17,5 +17,6 @@ public class EZVCSurvival implements ModInitializer {
     @Override
     public void onInitialize() {
         ModLoadingContext.registerConfig(MOD_ID, ModConfig.Type.COMMON, VoiceConfig.CONFIG);
+        FollowVoiceGoalInjector.init();
     }
 }

@@ -8,7 +8,7 @@ import de.maxhenkel.voicechat.api.VoicechatPlugin;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.opus.OpusDecoder;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,23 +16,23 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class Plugin implements VoicechatPlugin {
 
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private static VoicechatApi voicechatApi;
+    @Nullable
+    private OpusDecoder decoder;
 
     @Override
     public String getPluginId() {
         return "ezvcsurvival";
     }
-
-    @Nullable
-    private OpusDecoder decoder;
 
     @Override
     public void initialize(VoicechatApi api) {
@@ -68,6 +68,8 @@ public class Plugin implements VoicechatPlugin {
         }
     }
 
+
+
     public static BlockPos getLastSoundLocation(BlockPos zombiePosition, double range) {
         return playerSoundLocations.values().stream()
                 .filter(data -> zombiePosition.compareTo(data.getPosition()) <= data.getRange() * data.getRange())
@@ -102,6 +104,18 @@ public class Plugin implements VoicechatPlugin {
         double audioLevel = calculateAudioLevel(decoded);
 
         VoicechatConnection sender = event.getSenderConnection();
+
+        if (sender == null || sender.getPlayer() == null) {
+            return; // Ensure the player exists
+        }
+
+        // Check if the player is in creative mode
+        if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player) {
+            if (player.isCreative()) {
+                return; // Cancel processing if the player is in creative mode
+            }
+        }
+
         if (sender != null) {
             UUID playerUUID = sender.getPlayer().getUuid();
             Position voicechatPosition = sender.getPlayer().getPosition();
@@ -130,22 +144,22 @@ public class Plugin implements VoicechatPlugin {
                     speed *= whisperSpeedMultiplier;
 
                     Object minecraftPlayer = sender.getPlayer().getPlayer();
-                    if (minecraftPlayer instanceof PlayerEntity player) {
+                    if (minecraftPlayer instanceof ServerPlayerEntity player) {
                         if (player.isSneaking()) {
                             detectionRange *= sneakingRangeMultiplier;
                         }
 
-                        if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
+                        if (player.world.isRaining() || player.world.isThundering()) {
                             detectionRange *= thunderRangeMultiplier;
                         }
                     }
                 } else {
                     Object minecraftPlayer = sender.getPlayer().getPlayer();
-                    if (minecraftPlayer instanceof PlayerEntity player) {
+                    if (minecraftPlayer instanceof ServerPlayerEntity player) {
                         if (player.isSneaking()) {
                             detectionRange *= sneakingRangeMultiplier;
                         }
-                        if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
+                        if (player.world.isRaining() || player.world.isThundering()) {
                             detectionRange *= thunderRangeMultiplier;
                         }
                     }
@@ -179,6 +193,7 @@ public class Plugin implements VoicechatPlugin {
                     }
                 }
             }
+            scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
         }
     }
 
