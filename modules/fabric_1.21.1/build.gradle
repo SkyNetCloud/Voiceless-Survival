@@ -17,7 +17,7 @@ base {
 
 
 def changelogText = project.file('changelog.md').text
-
+def site_debugMode = false
 
 repositories {
     // In Root Project Build.gradle
@@ -74,8 +74,8 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     mainFile.displayName = "${mod_name} ${minecraft_version}-${mod_version} (Fabric)"
     mainFile.releaseType = 'beta'
     mainFile.changelog = changelogText
+    debugMode = site_debugMode
     mainFile.changelogType = "markdown"
-
     mainFile.addEnvironment("Server","Client")
 
     mainFile.addRequirement("fabric-api")
@@ -91,10 +91,10 @@ modrinth {
     versionType = "beta" // This is the default -- can also be `beta` or `alpha`
     uploadFile = file("build/libs/${mod_name} ${minecraft_version}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
     gameVersions = ["${minecraft_version}"] as Iterable<? extends String>
-
     // Must be an array, even with only one version
     loaders = ["fabric"] // Must also be an array - no need to specify this if you're using Loom or ForgeGradle
     changelog = changelogText
+    debugMode = site_debugMode
 
 
     dependencies { // A special DSL for creating dependencies
