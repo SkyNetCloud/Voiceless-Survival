@@ -146,7 +146,7 @@ public class Plugin implements VoicechatPlugin {
                         detectionRange *= sneakingRangeMultiplier;
                     }
 
-                    if (player.world.isRaining() || player.world.isThundering()) {
+                    if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
                 }
@@ -155,7 +155,7 @@ public class Plugin implements VoicechatPlugin {
                     if (player.isSneaking()) {
                         detectionRange *= sneakingRangeMultiplier;
                     }
-                    if (player.world.isRaining() || player.world.isThundering()) {
+                    if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
                 }
@@ -204,7 +204,7 @@ public class Plugin implements VoicechatPlugin {
                         detectionRange *= sneakingRangeMultiplier;
                     }
 
-                    if (player.world.isRaining() || player.world.isThundering()) {
+                    if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
                 }
@@ -213,7 +213,7 @@ public class Plugin implements VoicechatPlugin {
                     if (player.isSneaking()) {
                         detectionRange *= sneakingRangeMultiplier;
                     }
-                    if (player.world.isRaining() || player.world.isThundering()) {
+                    if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
                 }

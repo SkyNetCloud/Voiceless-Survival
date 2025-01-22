@@ -98,12 +98,12 @@ public class RunawayVoiceGoal extends Goal {
         double distanceToTarget = mob.getBlockPos().getSquaredDistance(targetSoundPosition);
 
         // If the mob is close enough to the sound source, run away from it
-        if (distanceToTarget >= 1.5 * 1.5) {
+        if (distanceToTarget <= 1.5 * 1.5) {
             targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange);
             if (targetSoundPosition != null) {
                 moveAwayFromSound();
             } else {
-                mob.getNavigation().stop();
+                mob.getNavigation().isFollowingPath();
             }
             return;
         }
@@ -131,6 +131,6 @@ public class RunawayVoiceGoal extends Goal {
     }
 
     private void moveAwayFromSound() {
-        mob.getNavigation().startMovingTo(mob.getX() + 0.5, mob.getY(), mob.getZ() + 0.5, speedModifier);
+        mob.getNavigation().startMovingTo(mob.getX() + 0.5, mob.getY(), mob.getZ() + 0.5, speedModifier + 5);
     }
 }

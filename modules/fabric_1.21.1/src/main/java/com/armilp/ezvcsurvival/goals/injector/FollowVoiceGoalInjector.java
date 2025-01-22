@@ -11,7 +11,8 @@ import net.minecraft.util.Identifier;
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import static net.minecraft.util.registry.Registry.ENTITY_TYPE;
+import static net.minecraft.registry.Registries.ENTITY_TYPE;
+
 
 public class FollowVoiceGoalInjector {
     public static void init() {

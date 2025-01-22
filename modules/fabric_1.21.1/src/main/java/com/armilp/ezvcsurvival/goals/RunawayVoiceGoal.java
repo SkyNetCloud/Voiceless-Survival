@@ -124,7 +124,7 @@ public class RunawayVoiceGoal extends Goal {
     }
 
     private PlayerEntity getNearestPlayerInRange() {
-        return mob.world.getClosestPlayer(mob, 5);
+        return mob.getWorld().getClosestPlayer(mob, 5);
     }
 
     private void moveAwayFromSound() {

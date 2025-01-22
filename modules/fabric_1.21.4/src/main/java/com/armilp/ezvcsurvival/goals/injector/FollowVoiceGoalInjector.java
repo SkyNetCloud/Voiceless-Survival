@@ -1,6 +1,7 @@
-package com.armilp.ezvcsurvival;
+package com.armilp.ezvcsurvival.goals.injector;
 
 import com.armilp.ezvcsurvival.config.VoiceConfig;
+import com.armilp.ezvcsurvival.goals.FollowVoiceGoal;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.minecraft.entity.ai.goal.GoalSelector;
 import net.minecraft.entity.mob.MobEntity;
@@ -11,6 +12,7 @@ import java.lang.reflect.Field;
 import java.util.Map;
 
 import static net.minecraft.registry.Registries.ENTITY_TYPE;
+
 
 public class FollowVoiceGoalInjector {
     public static void init() {
