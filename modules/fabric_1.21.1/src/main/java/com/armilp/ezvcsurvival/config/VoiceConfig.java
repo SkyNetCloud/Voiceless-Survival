@@ -12,6 +12,8 @@ public class VoiceConfig {
 
 
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> MOB_VOICE_CONFIGS;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ANIMAL_VOICE_CONFIGS;
+
 
     public static final ForgeConfigSpec.DoubleValue WHISPER_RANGE_MULTIPLIER;
     public static final ForgeConfigSpec.DoubleValue WHISPER_SPEED_MULTIPLIER;
@@ -20,6 +22,22 @@ public class VoiceConfig {
 
     static {
         BUILDER.push("FollowVoice Config");
+
+        ANIMAL_VOICE_CONFIGS = BUILDER.comment(
+                "List of mob configurations for RunawayVoiceGoal.",
+                "Format: 'animal_id=speed=<value>,range=<value>,threshold=<value>'",
+                "Example: 'minecraft:cow=speed=1.0,range=15,threshold=-25.0'",
+                "The 'threshold' value determines how easily the mob can hear you.",
+                "If it's lower (e.g., -10), it will struggle more to hear you, but if set to -120, the mob will hear you with minimal effort."
+                ).defineList(
+                        "animal_configs",
+                        List.of(
+                            "minecraft:cow=speed=1.0,range=15,threshold=-15.0",
+                            "minecraft:pig=speed=1.2,range=5,threshold=-25.0"
+                        ),
+                        obj -> obj instanceof String && ((String)obj).contains("=")
+                );
+
 
         MOB_VOICE_CONFIGS = BUILDER.comment(
                 "List of mob configurations for FollowVoice.",
@@ -70,6 +88,31 @@ public class VoiceConfig {
     public static Map<String, Map<String, Double>> getMobVoiceConfigs() {
         Map<String, Map<String, Double>> parsedConfigs = new HashMap<>();
         for (String config : MOB_VOICE_CONFIGS.get()) {
+            String[] parts = config.split("=", 2);
+            if (parts.length == 2) {
+                String mobId = parts[0];
+                String[] attributes = parts[1].split(",");
+
+                Map<String, Double> mobConfig = new HashMap<>();
+                for (String attribute : attributes) {
+                    String[] keyValue = attribute.split("=");
+                    if (keyValue.length == 2) {
+                        try {
+                            mobConfig.put(keyValue[0].trim(), Double.parseDouble(keyValue[1].trim()));
+                        } catch (NumberFormatException e) {
+                            System.err.println("[VoiceConfig] Invalid number format in: " + attribute);
+                        }
+                    }
+                }
+                parsedConfigs.put(mobId, mobConfig);
+            }
+        }
+        return parsedConfigs;
+    }
+
+    public static Map<String, Map<String, Double>> getAnimalVoiceConfigs() {
+        Map<String, Map<String, Double>> parsedConfigs = new HashMap<>();
+        for (String config : ANIMAL_VOICE_CONFIGS.get()) {
             String[] parts = config.split("=", 2);
             if (parts.length == 2) {
                 String mobId = parts[0];

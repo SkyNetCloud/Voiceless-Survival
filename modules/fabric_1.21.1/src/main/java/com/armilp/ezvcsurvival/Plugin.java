@@ -130,11 +130,70 @@ public class Plugin implements VoicechatPlugin {
         double sneakingRangeMultiplier = VoiceConfig.SNEAKING_RANGE_MULTIPLIER.get();
 
         List<String> mobIds = getConfiguredMobIds();
+        List<String> animalIds = getConfiguredAnimalIds();
+
+        for (String animalId : animalIds) {
+            double threshold = getActivationThreshold(animalId, true);
+            double detectionRange = getDetectionRange(animalId, true);
+            double speed = getSpeed(animalId, true);
+
+            if (isWhispering) {
+                detectionRange *= whisperRangeMultiplier;
+                speed *= whisperSpeedMultiplier;
+
+                if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player) {
+                    if (player.isSneaking()) {
+                        detectionRange *= sneakingRangeMultiplier;
+                    }
+
+                    if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
+                        detectionRange *= thunderRangeMultiplier;
+                    }
+                }
+            } else {
+                if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player) {
+                    if (player.isSneaking()) {
+                        detectionRange *= sneakingRangeMultiplier;
+                    }
+                    if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
+                        detectionRange *= thunderRangeMultiplier;
+                    }
+                }
+            }
+
+            BlockPos senderPosition = new BlockPos(
+                    (int) Math.floor(sender.getPlayer().getPosition().getX()),
+                    (int) Math.floor(sender.getPlayer().getPosition().getY()),
+                    (int) Math.floor(sender.getPlayer().getPosition().getZ())
+            );
+
+            double distance = Math.sqrt(playerPosition.getSquaredDistance(senderPosition));
+            double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
+
+            if (DEBUG) {
+                System.out.println("[DEBUG] Perceived Intensity for " + animalId + ": " + perceivedIntensity + " dB at distance " + distance);
+            }
+
+            if (perceivedIntensity < threshold) {
+                if (DEBUG) {
+                    System.out.println("[DEBUG] Intensity too low for " + animalId + ": " + perceivedIntensity + " dB");
+                }
+                continue;
+            }
+
+            if (playerPosition.getSquaredDistance(senderPosition) <= detectionRange * detectionRange) {
+                playerSoundLocations.put(playerUUID, new SoundData(playerPosition, detectionRange, speed));
+
+                if (DEBUG) {
+                    System.out.println("[DEBUG] " + animalId + " detects sound at range " + detectionRange + " with speed " + speed + " from position " + playerPosition);
+                }
+            }
+        }
 
         for (String mobId : mobIds) {
-            double threshold = getActivationThreshold(mobId);
-            double detectionRange = getDetectionRange(mobId);
-            double speed = getSpeed(mobId);
+            double threshold = getActivationThreshold(mobId, false);
+            double detectionRange = getDetectionRange(mobId, false);
+            double speed = getSpeed(mobId, false);
 
             if (isWhispering) {
                 detectionRange *= whisperRangeMultiplier;
@@ -200,24 +259,35 @@ public class Plugin implements VoicechatPlugin {
         return new ArrayList<>(mobConfigs.keySet());
     }
 
-    private double getActivationThreshold(String mobId) {
-        Map<String, Double> mobConfig = VoiceConfig.getMobVoiceConfigs().get(mobId);
+    private List<String> getConfiguredAnimalIds() {
+        Map<String, Map<String, Double>> mobConfigs = VoiceConfig.getAnimalVoiceConfigs();
+        return new ArrayList<>(mobConfigs.keySet());
+    }
+
+
+
+    private double getActivationThreshold(String mobId,boolean isAnimal) {
+        Map<String, Double> mobConfig = isAnimal ? VoiceConfig.getMobVoiceConfigs().get(mobId):
+                VoiceConfig.getAnimalVoiceConfigs().get(mobId);
         if (mobConfig != null && mobConfig.containsKey("threshold")) {
             return mobConfig.get("threshold");
         }
         return -40.0;
     }
 
-    private double getDetectionRange(String mobId) {
-        Map<String, Double> mobConfig = VoiceConfig.getMobVoiceConfigs().get(mobId);
+    private double getDetectionRange(String mobId,boolean isAnimal) {
+        Map<String, Double> mobConfig = isAnimal ? VoiceConfig.getMobVoiceConfigs().get(mobId):
+                VoiceConfig.getAnimalVoiceConfigs().get(mobId);
         if (mobConfig != null && mobConfig.containsKey("range")) {
             return mobConfig.get("range");
         }
         return 16.0;
     }
 
-    private double getSpeed(String mobId) {
-        Map<String, Double> mobConfig = VoiceConfig.getMobVoiceConfigs().get(mobId);
+    private double getSpeed(String mobId,boolean isAnimal) {
+        Map<String, Double> mobConfig =isAnimal ? VoiceConfig.getMobVoiceConfigs().get(mobId):
+                VoiceConfig.getAnimalVoiceConfigs().get(mobId);
+
         if (mobConfig != null && mobConfig.containsKey("speed")) {
             return mobConfig.get("speed");
         }

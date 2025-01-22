@@ -2,6 +2,8 @@ package com.armilp.ezvcsurvival;
 
 
 import com.armilp.ezvcsurvival.config.VoiceConfig;
+import com.armilp.ezvcsurvival.goals.injector.FollowVoiceGoalInjector;
+import com.armilp.ezvcsurvival.goals.injector.RunAwayVoiceGoalInjector;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.api.ModInitializer;
 import net.minecraftforge.api.ModLoadingContext;
@@ -16,5 +18,8 @@ public class EZVCSurvival implements ModInitializer {
     public void onInitialize() {
         ModLoadingContext.registerConfig(MOD_ID, ModConfig.Type.COMMON, VoiceConfig.CONFIG);
         FollowVoiceGoalInjector.init();
+        RunAwayVoiceGoalInjector.init();
     }
+
+
 }

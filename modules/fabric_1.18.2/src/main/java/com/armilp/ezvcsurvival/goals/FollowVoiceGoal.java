@@ -1,5 +1,6 @@
-package com.armilp.ezvcsurvival;
+package com.armilp.ezvcsurvival.goals;
 
+import com.armilp.ezvcsurvival.Plugin;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -24,7 +25,7 @@ public class FollowVoiceGoal extends Goal {
         this.speedModifier = speedModifier;
         this.voiceDetectionRange = detectionRange;
         this.threshold = threshold;
-        this.setControls(EnumSet.of(Control.MOVE, Control.TARGET));
+        this.setControls(EnumSet.of(Goal.Control.MOVE, Goal.Control.TARGET));
     }
 
     @Override
