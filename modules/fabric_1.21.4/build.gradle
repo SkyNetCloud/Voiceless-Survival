@@ -21,6 +21,18 @@ repositories {
 
 }
 
+loom {
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client 1.21.4')
+            ideConfigGenerated(true)
+            runDir('runs/client')
+        }
+    }
+}
+
+
 dependencies {
     // Core Minecraft dependencies
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
@@ -56,10 +68,10 @@ processResources {
                 "voicechat_api_version": project.voicechat_api_version
     }
 }
+
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21) // or 21 based on your Fabric version
-    }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 jar {

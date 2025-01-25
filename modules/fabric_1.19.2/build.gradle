@@ -14,6 +14,18 @@ base {
     archivesName = "${mod_name} ${minecraft_version}"
 }
 
+loom {
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client 1.19.2')
+            ideConfigGenerated(true)
+            runDir('runs/client')
+        }
+    }
+}
+
+
 
 
 def changelogText = project.file('changelog.md').text

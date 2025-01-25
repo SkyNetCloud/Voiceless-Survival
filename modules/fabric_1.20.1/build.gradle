@@ -15,7 +15,14 @@ base {
 }
 
 loom {
-
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client 1.20.1')
+            ideConfigGenerated(true)
+            runDir('runs/client')
+        }
+    }
 }
 
 def changelogText = project.file('changelog.md').text

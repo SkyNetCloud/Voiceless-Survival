@@ -15,6 +15,18 @@ base {
 }
 
 
+loom {
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client 1.21.1')
+            ideConfigGenerated(true)
+            runDir('runs/client')
+        }
+    }
+}
+
+
 
 def changelogText = project.file('changelog.md').text
 def site_debugMode = false

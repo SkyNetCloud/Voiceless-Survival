@@ -5,6 +5,9 @@ plugins {
 }
 
 
+
+
+
 subprojects {
     
     if (project.name == "modules") {
@@ -13,6 +16,7 @@ subprojects {
         }
         return
     }
+
 
     // Apply the Java plugin to each sub-project
     apply plugin: 'java'
@@ -30,6 +34,7 @@ subprojects {
             }
         }
     }
+
 
 
     // Ensuring the correct Java version for the compileJava and compileTestJava tasks
