@@ -1,6 +1,7 @@
 package com.armilp.ezvcsurvival;
 
 import com.armilp.ezvcsurvival.config.VoiceConfig;
+import com.armilp.ezvcsurvival.data.SoundData;
 import de.maxhenkel.voicechat.api.Position;
 import de.maxhenkel.voicechat.api.VoicechatApi;
 import de.maxhenkel.voicechat.api.VoicechatConnection;
@@ -294,6 +295,4 @@ public class Plugin implements VoicechatPlugin {
         return 1.0;
     }
 
-    private record SoundData(BlockPos position, double range, double speed) {
-    }
 }

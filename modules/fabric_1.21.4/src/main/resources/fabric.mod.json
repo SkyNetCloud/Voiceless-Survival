@@ -17,9 +17,6 @@
       "com.armilp.ezvcsurvival.Plugin"
     ]
   },
-  "mixins": [
-    "ezvcsurvival.mixins.json"
-  ],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric": "*",

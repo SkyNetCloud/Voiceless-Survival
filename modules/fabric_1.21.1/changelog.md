@@ -1,7 +1,6 @@
 ### Changelog
 
-### Version 0.2.1
+#### Version 0.4.1
 
-- Now mobs ignore you in creative mode.
-- Improved Voicechat API Compatibility (2.5.0)
-- Improved FollowVoiceGoal no longer being a mixin file
+- Organized the project structure to improve maintainability.
+- Added "Flee" mechanic, enhancing gameplay dynamics.
