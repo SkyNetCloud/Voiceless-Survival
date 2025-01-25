@@ -23,20 +23,8 @@ public class VoiceConfig {
     static {
         BUILDER.push("FollowVoice Config");
 
-        ANIMAL_VOICE_CONFIGS = BUILDER.comment(
-                "List of mob configurations for RunawayVoiceGoal.",
-                "Format: 'animal_id=speed=<value>,range=<value>,threshold=<value>'",
-                "Example: 'minecraft:cow=speed=1.0,range=15,threshold=-25.0'",
-                "The 'threshold' value determines how easily the mob can hear you.",
-                "If it's lower (e.g., -10), it will struggle more to hear you, but if set to -120, the mob will hear you with minimal effort."
-                ).defineList(
-                        "animal_configs",
-                        List.of(
-                            "minecraft:cow=speed=1.0,range=15,threshold=-15.0",
-                            "minecraft:pig=speed=1.2,range=5,threshold=-25.0"
-                        ),
-                        obj -> obj instanceof String && ((String)obj).contains("=")
-                );
+
+
 
 
         MOB_VOICE_CONFIGS = BUILDER.comment(
@@ -52,6 +40,19 @@ public class VoiceConfig {
                         "minecraft:skeleton=speed=1.2,range=15,threshold=-35.0"
                 ),
                 obj -> obj instanceof String && ((String) obj).contains("=")
+        );
+
+        ANIMAL_VOICE_CONFIGS = BUILDER.comment(
+                "List of mob configurations for RunawayVoiceGoal.",
+                "Format: 'animal_id=speed=<value>,range=<value>,threshold=<value>'",
+                "Example: 'minecraft:cow=speed=1.0,range=15,threshold=-25.0'"
+        ).defineList(
+                "animal_configs",
+                List.of(
+                        "minecraft:cow=speed=1.5,range=15,threshold=-45.0",
+                        "minecraft:pig=speed=1.2,range=5,threshold=-45.0"
+                ),
+                obj -> obj instanceof String && ((String)obj).contains("=")
         );
 
         BUILDER.pop();
