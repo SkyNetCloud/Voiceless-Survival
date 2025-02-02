@@ -9,6 +9,7 @@ bin
 # idea
 out
 *.ipr
+*libs
 *.iws
 *.iml
 .idea
@@ -23,3 +24,4 @@ run
 
 # Files from Forge MDK
 forge*changelog.txt
+/modules/fabric_1.20.1/libs/

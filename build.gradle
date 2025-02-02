@@ -69,7 +69,7 @@ subprojects {
                 includeGroup "maven.modrinth"
             }
         }
-
+        maven { url = "https://mvn.devos.one/releases/" }
         maven {
             name = 'Sponge / Mixin'
             url = 'https://repo.spongepowered.org/repository/maven-public/'

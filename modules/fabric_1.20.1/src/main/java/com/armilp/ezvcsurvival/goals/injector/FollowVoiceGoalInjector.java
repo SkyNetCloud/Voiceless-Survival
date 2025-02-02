@@ -41,7 +41,7 @@ public class FollowVoiceGoalInjector {
                     Field goalSelectorField = MobEntity.class.getDeclaredField("goalSelector");
                     goalSelectorField.setAccessible(true);
                     GoalSelector goalSelector = (GoalSelector) goalSelectorField.get(mob);
-                    goalSelector.add(1, new FollowVoiceGoal(mob, speed, (int) range,threshold));
+                    goalSelector.add(1, new FollowVoiceGoal(mob, speed, (int) range,threshold, 10000));
                 } catch (Exception ignored){
 
                 }

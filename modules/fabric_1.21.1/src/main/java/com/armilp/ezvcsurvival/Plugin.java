@@ -168,7 +168,7 @@ public class Plugin implements VoicechatPlugin {
                     (int) Math.floor(sender.getPlayer().getPosition().getZ())
             );
 
-            double distance = Math.sqrt(playerPosition.getSquaredDistance(senderPosition));
+            double distance = playerPosition.getSquaredDistance(senderPosition);
             double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
 
             if (DEBUG) {
@@ -182,7 +182,7 @@ public class Plugin implements VoicechatPlugin {
                 continue;
             }
 
-            if (playerPosition.getSquaredDistance(senderPosition) <= detectionRange * detectionRange) {
+            if (distance <= detectionRange * detectionRange) {
                 playerSoundLocations.put(playerUUID, new SoundData(playerPosition, detectionRange, speed));
 
                 if (DEBUG) {
@@ -226,7 +226,7 @@ public class Plugin implements VoicechatPlugin {
                     (int) Math.floor(sender.getPlayer().getPosition().getZ())
             );
 
-            double distance = Math.sqrt(playerPosition.getSquaredDistance(senderPosition));
+            double distance = playerPosition.getSquaredDistance(senderPosition);
             double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
 
             if (DEBUG) {
@@ -240,7 +240,7 @@ public class Plugin implements VoicechatPlugin {
                 continue;
             }
 
-            if (playerPosition.getSquaredDistance(senderPosition) <= detectionRange * detectionRange) {
+            if (distance <= detectionRange * detectionRange) {
                 playerSoundLocations.put(playerUUID, new SoundData(playerPosition, detectionRange, speed));
 
                 if (DEBUG) {

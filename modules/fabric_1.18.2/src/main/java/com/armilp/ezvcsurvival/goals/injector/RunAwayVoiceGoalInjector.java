@@ -2,13 +2,11 @@ package com.armilp.ezvcsurvival.goals.injector;
 
 import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
-import com.armilp.ezvcsurvival.goals.FollowVoiceGoal;
 import com.armilp.ezvcsurvival.goals.RunawayVoiceGoal;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.minecraft.entity.ai.goal.GoalSelector;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 

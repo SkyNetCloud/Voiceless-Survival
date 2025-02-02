@@ -2,7 +2,10 @@ package com.armilp.ezvcsurvival;
 
 
 import com.armilp.ezvcsurvival.config.VoiceConfig;
+import com.armilp.ezvcsurvival.event.GunFireListener;
+import com.armilp.ezvcsurvival.goals.ReactToSoundGoal;
 import com.armilp.ezvcsurvival.goals.injector.FollowVoiceGoalInjector;
+import com.armilp.ezvcsurvival.goals.injector.ReactToSoundGoalInjector;
 import com.armilp.ezvcsurvival.goals.injector.RunAwayVoiceGoalInjector;
 import com.mojang.logging.LogUtils;
 
@@ -20,6 +23,9 @@ public class EZVCSurvival implements ModInitializer {
         ForgeConfigRegistry.INSTANCE.register(MOD_ID, ModConfig.Type.COMMON, VoiceConfig.CONFIG);
         FollowVoiceGoalInjector.init();
         RunAwayVoiceGoalInjector.init();
+        ReactToSoundGoalInjector.init();
+        ReactToSoundGoal.init();
+        GunFireListener.init();
     }
 
 

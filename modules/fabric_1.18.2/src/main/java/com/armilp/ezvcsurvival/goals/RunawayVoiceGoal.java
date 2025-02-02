@@ -3,15 +3,11 @@ package com.armilp.ezvcsurvival.goals;
 import com.armilp.ezvcsurvival.Plugin;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.entity.passive.CowEntity;
-import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-
 
 import java.util.EnumSet;
 
@@ -100,7 +96,7 @@ public class RunawayVoiceGoal extends Goal {
         double randomOffsetZ = (mob.getRandom().nextDouble() - 0.5) * 5.0;
 
         Vec3d fleeTarget = mob.getPos().add(fleeDirection).add(randomOffsetX, 0, randomOffsetZ);
-        if (isDangerousBlock(new BlockPos(fleeTarget))) {
+        if (isDangerousBlock(new BlockPos((int) fleeTarget.x, (int) fleeTarget.y, (int) fleeTarget.z))) {
             fleeDirection = fleeDirection.add(mob.getRandom().nextDouble() * 5.0, 0, mob.getRandom().nextDouble() * 5.0);
             fleeTarget = mob.getPos().add(fleeDirection);
         }
