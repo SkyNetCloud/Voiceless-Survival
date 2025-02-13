@@ -51,6 +51,14 @@ subprojects {
     repositories {
         mavenCentral()
         maven {
+            // Add curse maven to repositories
+            name = "Curse Maven"
+            url = "https://www.cursemaven.com"
+            content {
+                includeGroup "curse.maven"
+            }
+        }
+        maven {
             name = "Maxhenkel Repo"
             url = 'https://maven.maxhenkel.de/repository/public'
         }

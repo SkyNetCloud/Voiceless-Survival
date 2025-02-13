@@ -44,6 +44,8 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
+    modImplementation 'curse.maven:timeless-and-classics-zero-1028108:5529117-sources-5529578'
+
     // Voice Chat API dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
     implementation "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}"
@@ -93,6 +95,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     mainFile.addRequirement("fabric-api")
     mainFile.addRequirement("simple-voice-chat")
     mainFile.addRequirement("forge-config-api-port-fabric")
+    //mainFile.addOptional("timeless-and-classics-zero")
 }
 
 
@@ -114,6 +117,7 @@ modrinth {
         required.project "fabric-api"
         required.project 'simple-voice-chat'
         required.project 'forge-config-api-port'
+        //optional.project 'timeless-and-classics-zero'
     }
 }
 

@@ -1,6 +1,7 @@
 package com.armilp.ezvcsurvival;
 
 
+import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.event.GunFireListener;
 import com.armilp.ezvcsurvival.goals.ReactToSoundGoal;
@@ -19,7 +20,8 @@ public class EZVCSurvival implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ModLoadingContext.registerConfig(MOD_ID, ModConfig.Type.COMMON, VoiceConfig.CONFIG);
+        ModLoadingContext.registerConfig(MOD_ID, ModConfig.Type.COMMON, VoiceConfig.CONFIG, "ezvcsurvival/voices.toml");
+        ModLoadingContext.registerConfig(MOD_ID, ModConfig.Type.COMMON, SoundConfig.SPEC, "ezvcsurvival/sounds.toml");
         FollowVoiceGoalInjector.init();
         RunAwayVoiceGoalInjector.init();
         ReactToSoundGoalInjector.init();

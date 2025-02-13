@@ -21,19 +21,11 @@ public class VoiceConfig {
     public static final ForgeConfigSpec.DoubleValue SNEAKING_RANGE_MULTIPLIER;
 
     static {
-        BUILDER.push("FollowVoice Config");
 
-
-
-
-
-        MOB_VOICE_CONFIGS = BUILDER.comment(
-                "List of mob configurations for FollowVoice.",
-                "Format: 'mob_id=speed=<value>,range=<value>,threshold=<value>'",
-                "Example: 'minecraft:zombie=speed=1.5,range=25,threshold=-10.0'",
-                "The 'threshold' value determines how easily the mob can hear you.",
-                "If it's lower (e.g., -10), it will struggle more to hear you, but if set to -120, the mob will hear you with minimal effort."
-        ).defineList(
+        BUILDER.comment("FollowVoice Config",
+                        "Defines how mobs react to player voices, including their movement speed, detection range, and reaction threshold.")
+                .push("mob_voice_configs");
+        MOB_VOICE_CONFIGS = BUILDER.defineList(
                 "mob_configs",
                 List.of(
                         "minecraft:zombie=speed=1.5,range=20,threshold=-40.0",
@@ -41,50 +33,42 @@ public class VoiceConfig {
                 ),
                 obj -> obj instanceof String && ((String) obj).contains("=")
         );
+        BUILDER.pop();
 
-        ANIMAL_VOICE_CONFIGS = BUILDER.comment(
-                "List of mob configurations for RunawayVoiceGoal.",
-                "Format: 'animal_id=speed=<value>,range=<value>,threshold=<value>'",
-                "Example: 'minecraft:cow=speed=1.0,range=15,threshold=-25.0'"
-        ).defineList(
+
+        BUILDER.comment("RunawayVoiceGoal Config",
+                        "Defines how animals react to player voices, including their fleeing speed, detection range, and reaction threshold.")
+                .push("animal_voice_configs");
+        ANIMAL_VOICE_CONFIGS = BUILDER.defineList(
                 "animal_configs",
                 List.of(
                         "minecraft:cow=speed=1.5,range=15,threshold=-45.0",
                         "minecraft:pig=speed=1.2,range=5,threshold=-45.0"
                 ),
-                obj -> obj instanceof String && ((String)obj).contains("=")
+                obj -> obj instanceof String && ((String) obj).contains("=")
         );
-
         BUILDER.pop();
 
-        BUILDER.push("Whisper Config");
 
-        WHISPER_RANGE_MULTIPLIER = BUILDER.comment(
-                "Multiplier for detection range when the player is whispering.",
-                "This multiplies the range you have configured for your mobs.",
-                "Example: range=20 x 0.5 = 10"
-        ).defineInRange("whisper_range_multiplier", 0.5, 0.0, 1.0);
-
-        WHISPER_SPEED_MULTIPLIER = BUILDER.comment(
-                "Multiplier for mob speed when the player is whispering.",
-                "This multiplies the speed you have configured for your mobs.",
-                "Example: speed=1.2 x 0.8 = 0.96"
-        ).defineInRange("whisper_speed_multiplier", 0.8, 0.0, 1.0);
-
-
+        BUILDER.comment("Whisper Config",
+                        "Multipliers that affect the detection range and movement speed when the player is whispering.")
+                .push("whisper_configs");
+        WHISPER_RANGE_MULTIPLIER = BUILDER.defineInRange("whisper_range_multiplier", 0.5, 0.0, 1.0);
+        WHISPER_SPEED_MULTIPLIER = BUILDER.defineInRange("whisper_speed_multiplier", 0.8, 0.0, 1.0);
         BUILDER.pop();
 
-        BUILDER.push("Misc Config");
 
-        THUNDER_RANGE_MULTIPLIER = BUILDER.comment(
-                "Multiplier for detection range when it is raining or during a thunderstorm (reduces the range)."
-        ).defineInRange("thunder_range_multiplier", 0.5, 0.0, 1.0);
-        SNEAKING_RANGE_MULTIPLIER = BUILDER.comment(
-                "Multiplier for detection range when the player is sneaking/crouching (reduces the range)."
-        ).defineInRange("sneaking_range_multiplier", 0.5, 0.0, 1.0);
+        BUILDER.comment("Misc Config",
+                        "Multipliers that affect the detection range of voices in specific situations.")
+                .push("misc_config");
+        THUNDER_RANGE_MULTIPLIER = BUILDER.defineInRange("thunder_range_multiplier", 0.5, 0.0, 1.0);
+        SNEAKING_RANGE_MULTIPLIER = BUILDER.defineInRange("sneaking_range_multiplier", 0.5, 0.0, 1.0);
+        BUILDER.pop();
 
         CONFIG = BUILDER.build();
     }
+
+
 
     public static Map<String, Map<String, Double>> getMobVoiceConfigs() {
         Map<String, Map<String, Double>> parsedConfigs = new HashMap<>();

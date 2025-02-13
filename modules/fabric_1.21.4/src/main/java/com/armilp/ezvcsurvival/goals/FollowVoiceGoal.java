@@ -4,7 +4,6 @@ import com.armilp.ezvcsurvival.Plugin;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.EnumSet;
@@ -15,19 +14,19 @@ public class FollowVoiceGoal extends Goal {
     private final double speedModifier;
     private final int voiceDetectionRange;
     private PlayerEntity targetPlayer;
-    private ServerWorld world;
     private final double threshold;
     private BlockPos targetSoundPosition;
     private long timePlayerInRange;
-    private long lastAttackTime = 0;
-    private final long attackCooldown = 2000;
+    private final long maxFollowTime;
 
-    public FollowVoiceGoal(MobEntity mob, double speedModifier, int detectionRange, double threshold) {
+    public FollowVoiceGoal(MobEntity mob, double speedModifier, int detectionRange, double threshold, long maxFollowTime) {
         this.mob = mob;
         this.speedModifier = speedModifier;
         this.voiceDetectionRange = detectionRange;
         this.threshold = threshold;
+        this.maxFollowTime = maxFollowTime;
         this.setControls(EnumSet.of(Control.MOVE, Control.TARGET));
+
     }
 
     @Override
@@ -71,37 +70,25 @@ public class FollowVoiceGoal extends Goal {
 
 
     private void handlePlayerInteraction() {
-        double distanceToPlayer = mob.distanceTo(targetPlayer);
-
-        if (targetPlayer.isCreative()){
+        if (targetPlayer.isCreative()) {
             targetPlayer = null;
             mob.getNavigation().stop();
             return;
         }
 
-        // If the player is out of detection range, reset the target
-        if (distanceToPlayer > voiceDetectionRange) {
+
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - timePlayerInRange > maxFollowTime) {
             targetPlayer = null;
             mob.getNavigation().stop();
             return;
         }
 
-        // If the mob is close to the player, attack
-        if (distanceToPlayer <= 1.0) {
-            long currentTime = System.currentTimeMillis(); // Current time in milliseconds
+        mob.getNavigation().setSpeed(speedModifier);
 
-            // Check if the mob can attack again
-            if (currentTime - lastAttackTime >= attackCooldown) {
-                mob.getNavigation().stop();
-                mob.swingHand(mob.preferredHand); // Attack animation
-                mob.tryAttack(world,targetPlayer);   // Deal damage to the player
-                lastAttackTime = currentTime;     // Update the time of the last attack
-            }
-            return;
+        if (mob.getTarget() == null) {
+            mob.setTarget(targetPlayer);
         }
-
-        mob.getNavigation().startMovingTo(targetPlayer, speedModifier);
-        targetSoundPosition = null;
     }
 
     private void handleSoundInteraction() {
@@ -149,5 +136,9 @@ public class FollowVoiceGoal extends Goal {
                     speedModifier
             );
         }
+    }
+    //this is never used this here to just shutup my ide
+    private double getThreshold() {
+        return threshold;
     }
 }

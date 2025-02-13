@@ -37,12 +37,11 @@ public class FollowVoiceGoalInjector {
             double range = config.getOrDefault("range", 16.0);
             double threshold = config.getOrDefault("threshold", -40.0);
             if (world.getPlayers(player -> player.interactionManager.getGameMode().isSurvivalLike()).isEmpty()) {
-
                 try{
                     Field goalSelectorField = MobEntity.class.getDeclaredField("goalSelector");
                     goalSelectorField.setAccessible(true);
                     GoalSelector goalSelector = (GoalSelector) goalSelectorField.get(mob);
-                    goalSelector.add(1, new FollowVoiceGoal(mob, speed, (int) range,threshold));
+                    goalSelector.add(1, new FollowVoiceGoal(mob, speed, (int) range,threshold, 10000));
                 } catch (Exception ignored){
 
                 }

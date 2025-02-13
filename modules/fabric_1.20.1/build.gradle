@@ -43,6 +43,7 @@ dependencies {
 
     //modImplementation fileTree(include: ['*.jar'], dir: 'libs')
 
+    modImplementation "curse.maven:timeless-and-classics-zero-1028108:5529117-sources-5529578"
 
     // Voice Chat API dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"

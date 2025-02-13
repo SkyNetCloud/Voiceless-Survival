@@ -1,6 +1,6 @@
 package com.armilp.ezvcsurvival.goals.injector;
 
-import com.armilp.ezvcsurvival.config.VoiceConfig;
+import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.goals.ReactToSoundGoal;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.minecraft.entity.ai.goal.GoalSelector;
@@ -31,18 +31,19 @@ public class ReactToSoundGoalInjector {
     }
 
     private static void addReactToSoundGoal(MobEntity mob, ServerWorld world) {
-        Map<String, Map<String, Object>> configs = VoiceConfig.getSoundReactionConfigs();
+
         Identifier mobId = ENTITY_TYPE.getId(mob.getType());
+        String modIdString = mobId.toString();
+        Map<String, Object> configs = SoundConfig.getMobSoundReaction(modIdString);
 
-        if (configs.containsKey(mobId.toString())) {
-            Map<String, Object> config = configs.get(mobId.toString());
+        if (configs != null) {
 
-            double speed = config.get("speed") instanceof Number ? ((Number) config.get("speed")).doubleValue() : 1.0;
-            double rangeDouble = config.get("range") instanceof Number ? ((Number) config.get("range")).doubleValue() : 16.0;
+            double speed = configs.get("speed") instanceof Number ? ((Number) configs.get("speed")).doubleValue() : 1.0;
+            double rangeDouble = configs.get("range") instanceof Number ? ((Number) configs.get("range")).doubleValue() : 16.0;
             int range = (int) rangeDouble;
 
             @SuppressWarnings("unchecked")
-            List<String> soundTypes = config.get("sound_types") instanceof List<?> ? (List<String>) config.get("sound_types") : List.of();
+            List<String> soundTypes = configs.get("sound_types") instanceof List<?> ? (List<String>) configs.get("sound_types") : List.of();
 
             if (!soundTypes.isEmpty()) {
                 // Only add the goal if there are survival players in the world

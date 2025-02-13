@@ -1,9 +1,9 @@
 package com.armilp.ezvcsurvival.event;
 
 import com.armilp.ezvcsurvival.data.TimedSoundData;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,22 +19,17 @@ public class SoundEventTracker {
         lastPlayedPositions.put(soundLocation, new TimedSoundData(position, now));
     }
 
-    public static Vec3d getLastPlayedPositionForAny(String soundLocations) {
+    public static Vec3d getLastPlayedPositionForAny(List<String> soundLocations) {
         long now = System.currentTimeMillis();
         cleanupExpired(now);
-
-        // Split the soundLocations string into an array or list of locations
-        String[] locations = soundLocations.split(",");
-
-        for (String loc : locations) {
-            TimedSoundData event = lastPlayedPositions.get(loc.trim());
+        for (String loc : soundLocations) {
+            TimedSoundData event = lastPlayedPositions.get(loc);
             if (event != null) {
                 return event.position();
             }
         }
         return null;
     }
-
 
     // Removes expired entries from the map.
     private static void cleanupExpired(long currentTime) {
