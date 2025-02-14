@@ -1,6 +1,7 @@
 package com.armilp.ezvcsurvival.event;
 
 import com.armilp.ezvcsurvival.data.GunshotData;
+import com.tacz.guns.api.item.GunTabType;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.loader.api.FabricLoader;
@@ -35,12 +36,13 @@ public class GunFireListener {
     }
 
     private static void onGunFire(ServerPlayerEntity player, Vec3d position) {
-        gunshotPositions.add(new GunshotData(position, System.currentTimeMillis()));
+        GunTabType gunType = GunTabType.PISTOL;
+        gunshotPositions.add(new GunshotData(position, System.currentTimeMillis(), gunType));
     }
 
-    public static Vec3d getLastGunshotPosition() {
+    public static GunshotData getLastGunshotData() {
         long currentTime = System.currentTimeMillis();
         gunshotPositions.removeIf(record -> currentTime - record.timestamp() > EXPIRATION_TIME_MS);
-        return gunshotPositions.isEmpty() ? null : gunshotPositions.get(gunshotPositions.size() - 1).position();
+        return gunshotPositions.isEmpty() ? null : gunshotPositions.get(gunshotPositions.size() - 1);
     }
 }

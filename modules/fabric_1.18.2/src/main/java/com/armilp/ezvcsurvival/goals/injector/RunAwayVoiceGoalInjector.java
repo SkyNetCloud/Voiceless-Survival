@@ -15,6 +15,7 @@ import java.util.Map;
 
 import static net.minecraft.util.registry.Registry.ENTITY_TYPE;
 
+
 public class RunAwayVoiceGoalInjector {
 
         public static void init() {

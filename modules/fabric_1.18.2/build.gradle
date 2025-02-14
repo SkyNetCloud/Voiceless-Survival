@@ -44,6 +44,7 @@ dependencies {
     // Fabric Loader and API
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "curse.maven:timeless-and-classics-zero-1028108:5529108-sources-5529188"
 
     // Voice Chat API dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"

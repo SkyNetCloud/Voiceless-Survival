@@ -3,12 +3,13 @@ package com.armilp.ezvcsurvival.event;
 
 import net.minecraft.client.sound.SoundInstance;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 public class SoundEventHandler {
 
     public static void onPlaySound(SoundEvent event) {
-        // Check that the sound is an instance of SimpleSoundInstance (which has a position)
+        // Check that the sound is an instance of SoundInstance (which has a position)
         if (!(event.getId() instanceof SoundInstance sound)) {
             return;
         }
@@ -20,7 +21,7 @@ public class SoundEventHandler {
         Vec3d position = new Vec3d(x, y, z);
 
         // Get the identifier of the sound
-        String  id = String.valueOf(sound.getId());
+        Identifier id = sound.getId();
         SoundEventTracker.registerSound(id, position);
     }
 }

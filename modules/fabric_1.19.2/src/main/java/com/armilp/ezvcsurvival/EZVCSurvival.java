@@ -22,6 +22,7 @@ public class EZVCSurvival implements ModInitializer {
     public void onInitialize() {
         ModLoadingContext.registerConfig(MOD_ID, ModConfig.Type.COMMON, VoiceConfig.CONFIG, "ezvcsurvival/voices.toml");
         ModLoadingContext.registerConfig(MOD_ID, ModConfig.Type.COMMON, SoundConfig.SPEC, "ezvcsurvival/sounds.toml");
+        SoundConfig.loadConfigs();
         FollowVoiceGoalInjector.init();
         RunAwayVoiceGoalInjector.init();
         ReactToSoundGoalInjector.init();

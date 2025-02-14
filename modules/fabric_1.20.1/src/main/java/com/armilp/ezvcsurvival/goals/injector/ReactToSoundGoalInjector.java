@@ -35,31 +35,28 @@ public class ReactToSoundGoalInjector {
 
     private static void addReactToSoundGoal(MobEntity mob, ServerWorld world) {
 
-        Identifier mobId = ENTITY_TYPE.getId(mob.getType());
-        String modIdString = mobId.toString();
-        Map<String, Object> configs = SoundConfig.getMobSoundReaction(modIdString);
+        Identifier mobIdRL = ENTITY_TYPE.getId(mob.getType());
+        String modId = mobIdRL.toString();
+        Map<String, Object> configs = SoundConfig.getMobSoundReaction(modId);
 
         if (configs != null) {
-
-            double speed = configs.get("speed") instanceof Number ? ((Number) configs.get("speed")).doubleValue() : 1.0;
-            double rangeDouble = configs.get("range") instanceof Number ? ((Number) configs.get("range")).doubleValue() : 16.0;
+            double speed = configs.get("speed") instanceof Number
+                    ? ((Number) configs.get("speed")).doubleValue()
+                    : 1.0;
+            double rangeDouble = configs.get("range") instanceof Number
+                    ? ((Number) configs.get("range")).doubleValue()
+                    : 16.0;
             int range = (int) rangeDouble;
+            List<?> groups = (List<?>) configs.get("groups");
+            if (groups != null && !groups.isEmpty()) {
+                var soundGroups = SoundConfig.getSoundGroupsForMob(modId);
+                try {
+                    Field goalSelectorField = MobEntity.class.getDeclaredField("goalSelector");
+                    goalSelectorField.setAccessible(true);
+                    GoalSelector goalSelector = (GoalSelector) goalSelectorField.get(mob);
+                    goalSelector.add(3, new ReactToSoundGoal(mob, speed, range, soundGroups));
+                } catch (Exception e) {
 
-            @SuppressWarnings("unchecked")
-            List<String> soundTypes = configs.get("sound_types") instanceof List<?> ? (List<String>) configs.get("sound_types") : List.of();
-
-            if (!soundTypes.isEmpty()) {
-                // Only add the goal if there are survival players in the world
-                boolean hasSurvivalPlayers = world.getPlayers().stream().anyMatch(player ->  player instanceof ServerPlayerEntity && player.interactionManager.getGameMode() == GameMode.SURVIVAL);
-                if (hasSurvivalPlayers) {
-                    try{
-                        Field goalSelectorField = MobEntity.class.getDeclaredField("goalSelector");
-                        goalSelectorField.setAccessible(true);
-                        GoalSelector goalSelector = (GoalSelector) goalSelectorField.get(mob);
-                        goalSelector.add(3, new ReactToSoundGoal(mob, speed, range, soundTypes));
-                    } catch (Exception e){
-
-                    }
                 }
             }
         }

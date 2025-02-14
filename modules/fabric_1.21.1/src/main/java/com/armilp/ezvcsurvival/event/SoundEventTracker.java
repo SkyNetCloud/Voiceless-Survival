@@ -8,37 +8,21 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SoundEventTracker {
-    // Time (in ms) during which the sound record is considered "active" (3 seconds)
     private static final long SOUND_EXPIRATION_MS = 3000;
+    private static final Map<Identifier, TimedSoundData> lastPlayedPositions = new ConcurrentHashMap<>();
 
-    // We use ConcurrentHashMap to allow concurrent modifications without exceptions
-        private static final Map<String, TimedSoundData> lastPlayedPositions = new ConcurrentHashMap<>();
-
-    public static void registerSound(String soundLocation, Vec3d position) {
+    public static void registerSound(Identifier soundLocation, Vec3d position) {
         long now = System.currentTimeMillis();
         lastPlayedPositions.put(soundLocation, new TimedSoundData(position, now));
     }
 
-    public static Vec3d getLastPlayedPositionForAny(String soundLocations) {
+
+    public static Vec3d getLastPlayedPositionForSound(Identifier soundLocation) {
         long now = System.currentTimeMillis();
-        cleanupExpired(now);
-
-        // Split the soundLocations string into an array or list of locations
-        String[] locations = soundLocations.split(",");
-
-        for (String loc : locations) {
-            TimedSoundData event = lastPlayedPositions.get(loc.trim());
-            if (event != null) {
-                return event.position();
-            }
+        TimedSoundData data = lastPlayedPositions.get(soundLocation);
+        if (data != null && (now - data.timestamp() <= SOUND_EXPIRATION_MS)) {
+            return data.position();
         }
         return null;
-    }
-
-
-    // Removes expired entries from the map.
-    private static void cleanupExpired(long currentTime) {
-        lastPlayedPositions.entrySet().removeIf(entry ->
-                currentTime - entry.getValue().timestamp() > SOUND_EXPIRATION_MS);
     }
 }
