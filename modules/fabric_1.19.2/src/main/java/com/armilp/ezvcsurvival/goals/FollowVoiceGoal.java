@@ -76,6 +76,7 @@ public class FollowVoiceGoal extends Goal {
             return;
         }
 
+
         long currentTime = System.currentTimeMillis();
         if (currentTime - timePlayerInRange > maxFollowTime) {
             targetPlayer = null;

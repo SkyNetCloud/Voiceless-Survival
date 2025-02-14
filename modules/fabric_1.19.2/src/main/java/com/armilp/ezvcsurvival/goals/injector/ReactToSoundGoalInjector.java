@@ -30,30 +30,35 @@ public class ReactToSoundGoalInjector {
 
     private static void addReactToSoundGoal(MobEntity mob, ServerWorld world) {
 
-        Identifier mobIdRL = ENTITY_TYPE.getId(mob.getType());
-        String modId = mobIdRL.toString();
-        Map<String, Object> configs = SoundConfig.getMobSoundReaction(modId);
+        Identifier modIdRL = ENTITY_TYPE.getId(mob.getType());
+        String modId = modIdRL.toString();
 
-        if (configs != null) {
-            double speed = configs.get("speed") instanceof Number
-                    ? ((Number) configs.get("speed")).doubleValue()
+
+
+        Map<String, Object> config = SoundConfig.getMobSoundReaction(modId);
+        if (config != null){
+            double speed = config.get("speed") instanceof Number
+                    ? ((Number) config.get("speed")).doubleValue()
                     : 1.0;
-            double rangeDouble = configs.get("range") instanceof Number
-                    ? ((Number) configs.get("range")).doubleValue()
+            double rangeDouble = config.get("range") instanceof Number
+                    ? ((Number) config.get("range")).doubleValue()
                     : 16.0;
             int range = (int) rangeDouble;
-            List<?> groups = (List<?>) configs.get("groups");
-            if (groups != null && !groups.isEmpty()) {
+            List<?> groups = (List<?>) config.get("groups");
+            if (groups != null && !groups.isEmpty()){
                 var soundGroups = SoundConfig.getSoundGroupsForMob(modId);
-                try {
-                    Field goalSelectorField = MobEntity.class.getDeclaredField("goalSelector");
-                    goalSelectorField.setAccessible(true);
-                    GoalSelector goalSelector = (GoalSelector) goalSelectorField.get(mob);
-                    goalSelector.add(3, new ReactToSoundGoal(mob, speed, range, soundGroups));
-                } catch (Exception ignore) {
+                if (!soundGroups.isEmpty()){
+                    try{
+                        Field goalSelectorField = MobEntity.class.getDeclaredField("goalSelector");
+                        goalSelectorField.setAccessible(true);
+                        GoalSelector goalSelector = (GoalSelector) goalSelectorField.get(mob);
+                        goalSelector.add(3, new ReactToSoundGoal(mob, speed, range, soundGroups));
+                    } catch (Exception ignore){
 
+                    }
                 }
             }
         }
+
     }
 }

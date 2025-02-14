@@ -3,7 +3,6 @@ package com.armilp.ezvcsurvival;
 
 import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
-import com.armilp.ezvcsurvival.event.GunFireListener;
 import com.armilp.ezvcsurvival.goals.ReactToSoundGoal;
 import com.armilp.ezvcsurvival.goals.injector.FollowVoiceGoalInjector;
 import com.armilp.ezvcsurvival.goals.injector.ReactToSoundGoalInjector;
@@ -27,7 +26,6 @@ public class EZVCSurvival implements ModInitializer {
         RunAwayVoiceGoalInjector.init();
         ReactToSoundGoalInjector.init();
         ReactToSoundGoal.init();
-        GunFireListener.init();
     }
 
 
