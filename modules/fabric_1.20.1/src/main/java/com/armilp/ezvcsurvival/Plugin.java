@@ -27,7 +27,6 @@ public class Plugin implements VoicechatPlugin {
     private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
 
     private static final Map<UUID, Long> lastVoiceEffectTime = new ConcurrentHashMap<>();
-    private static final long DEATH_ANGELS_EFFECT_COOLDOWN_MS = 3000;
 
     private static VoicechatApi voicechatApi;
 
@@ -133,18 +132,18 @@ public class Plugin implements VoicechatPlugin {
         }
 
         long currentTime = System.currentTimeMillis();
-        if (perceivedIntensity >= VoiceConfig.DEATH_ANGELS_THRESHOLD.get()) {
-            if (!lastVoiceEffectTime.containsKey(playerUUID) ||
-                    currentTime - lastVoiceEffectTime.get(playerUUID) > DEATH_ANGELS_EFFECT_COOLDOWN_MS) {
-                if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity serverPlayer) {
-                    SoundEffectCommand.applyEffect(serverPlayer);
-                    lastVoiceEffectTime.put(playerUUID, currentTime);
-                    if (DEBUG) {
-                        System.out.println("[DEBUG] Efecto aplicado al jugador " + playerUUID);
-                    }
-                }
-            }
-        }
+//        if (perceivedIntensity >= VoiceConfig.DEATH_ANGELS_THRESHOLD.get()) {
+//            if (!lastVoiceEffectTime.containsKey(playerUUID) ||
+//                    currentTime - lastVoiceEffectTime.get(playerUUID) > DEATH_ANGELS_EFFECT_COOLDOWN_MS) {
+//                if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity serverPlayer) {
+//                    SoundEffectCommand.applyEffect(serverPlayer);
+//                    lastVoiceEffectTime.put(playerUUID, currentTime);
+//                    if (DEBUG) {
+//                        System.out.println("[DEBUG] Efecto aplicado al jugador " + playerUUID);
+//                    }
+//                }
+//            }
+//        }
 
         boolean isWhispering = event.getPacket().isWhispering();
         double whisperRangeMultiplier = VoiceConfig.WHISPER_RANGE_MULTIPLIER.get();
