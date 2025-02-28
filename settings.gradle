@@ -17,10 +17,10 @@ pluginManagement {
 rootProject.name = 'Voiceless Survival'
 
 // === FABRIC ===
-include "modules:fabric_1.18.2"
-include "modules:fabric_1.19.2"
+//include "modules:fabric_1.18.2"
+//include "modules:fabric_1.19.2"
 include "modules:fabric_1.20.1"
-include "modules:fabric_1.21.1"
-include "modules:fabric_1.21.4"
+//include "modules:fabric_1.21.1"
+//include "modules:fabric_1.21.4"
 // ----------
 
