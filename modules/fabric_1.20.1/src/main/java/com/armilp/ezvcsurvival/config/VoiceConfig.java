@@ -19,8 +19,6 @@ public class VoiceConfig {
     public static final ForgeConfigSpec.DoubleValue THUNDER_RANGE_MULTIPLIER;
     public static final ForgeConfigSpec.DoubleValue SNEAKING_RANGE_MULTIPLIER;
 
-    // Nueva opción para el umbral del efecto "death_angels"
-
     static {
 
         BUILDER.comment("FollowVoice Config",
@@ -64,9 +62,6 @@ public class VoiceConfig {
                 .push("misc_config");
         THUNDER_RANGE_MULTIPLIER = BUILDER.defineInRange("thunder_range_multiplier", 0.5, 0.0, 1.0);
         SNEAKING_RANGE_MULTIPLIER = BUILDER.defineInRange("sneaking_range_multiplier", 0.5, 0.0, 1.0);
-        BUILDER.pop();
-
-
         BUILDER.pop();
 
         CONFIG = BUILDER.build();
