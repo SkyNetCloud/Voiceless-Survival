@@ -17,6 +17,9 @@ public class SoundEventTracker {
         lastPlayedPositions.put(soundLocation, new TimedSoundData(position, now));
     }
 
+    public static void setLastPlayedPosition(Identifier sound, double x, double y, double z) {
+        lastPlayedPositions.put(sound, new TimedSoundData(new Vec3d(x, y, z), System.currentTimeMillis()));
+    }
 
     public static Vec3d getLastPlayedPositionForSound(Identifier soundLocation) {
         long now = System.currentTimeMillis();

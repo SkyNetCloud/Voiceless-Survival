@@ -1,5 +1,6 @@
 package com.armilp.ezvcsurvival.goals;
 
+
 import com.armilp.ezvcsurvival.Plugin;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.goal.Goal;
@@ -74,10 +75,9 @@ public class RunawayVoiceGoal extends Goal {
 
     private void handleSoundThreat() {
         distanceCovered++;
-        if (distanceCovered > 10 && distanceCovered % 20 == 0) { // Pause every 10 blocks
+        if (distanceCovered > 10 && distanceCovered % 20 == 0) { // Pausa cada 10 bloques
             mob.getNavigation().stop();
-            Vec3d targetCenter = Vec3d.ofCenter(targetSoundPosition);
-            mob.getLookControl().lookAt(targetCenter.x, targetCenter.y, targetCenter.z);
+            mob.getLookControl().lookAt(Vec3d.ofCenter(targetSoundPosition).x, Vec3d.ofCenter(targetSoundPosition).y, Vec3d.ofCenter(targetSoundPosition).z, 30.0F, 30.0F); // Mirar hacia el sonido
         }
 
         if (targetSoundPosition == null || mob.getBlockPos().getSquaredDistance(targetSoundPosition) > threshold * threshold) {
@@ -111,12 +111,11 @@ public class RunawayVoiceGoal extends Goal {
     }
 
     private boolean isDangerousBlock(BlockPos pos) {
-        ServerWorld world = (ServerWorld) mob.getWorld();
-        BlockState blockState = world.getBlockState(pos);
+        ServerWorld level = (ServerWorld) mob.getWorld();
+        BlockState blockState = level.getBlockState(pos);
 
-        // Check if the block has fluid or is not solid
-        return !blockState.getFluidState().isEmpty() || !blockState.isSolidBlock(world, pos);
+        // Verifica si el bloque tiene un fluido o si no es completamente sólido
+        return !blockState.getFluidState().isEmpty() || !blockState.isSolid();
     }
 
 }
-

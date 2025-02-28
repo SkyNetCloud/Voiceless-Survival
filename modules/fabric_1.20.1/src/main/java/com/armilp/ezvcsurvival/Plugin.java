@@ -1,17 +1,17 @@
 package com.armilp.ezvcsurvival;
 
-import com.armilp.ezvcsurvival.config.VoiceConfig;
+
+import com.armilp.ezvcsurvival.commands.SoundEffectCommand;
 import com.armilp.ezvcsurvival.data.SoundData;
-import de.maxhenkel.voicechat.api.Position;
-import de.maxhenkel.voicechat.api.VoicechatApi;
-import de.maxhenkel.voicechat.api.VoicechatConnection;
-import de.maxhenkel.voicechat.api.VoicechatPlugin;
+import de.maxhenkel.voicechat.api.*;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.opus.OpusDecoder;
+import com.armilp.ezvcsurvival.config.VoiceConfig;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
+
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,11 +19,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+
 public class Plugin implements VoicechatPlugin {
 
     private static final boolean DEBUG = false;
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
+
+    private static final Map<UUID, Long> lastVoiceEffectTime = new ConcurrentHashMap<>();
+    private static final long DEATH_ANGELS_EFFECT_COOLDOWN_MS = 3000;
 
     private static VoicechatApi voicechatApi;
 
@@ -86,17 +90,13 @@ public class Plugin implements VoicechatPlugin {
     }
 
     public void onMicrophonePacket(MicrophonePacketEvent event) {
-        // Get the player who sent the packet
         VoicechatConnection sender = event.getSenderConnection();
         if (sender == null || sender.getPlayer() == null) {
-            return; // Ensure the player exists
+            return;
         }
 
-        // Check if the player is in creative mode and exit early
-        if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player) {
-            if (player.isCreative()) {
-                return; // Skip all processing for creative players
-            }
+        if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player && player.isCreative()) {
+            return;
         }
 
         if (decoder == null || decoder.isClosed()) {
@@ -106,7 +106,6 @@ public class Plugin implements VoicechatPlugin {
         decoder.resetState();
         byte[] opusEncodedData = event.getPacket().getOpusEncodedData();
         short[] decoded;
-
         try {
             decoded = decoder.decode(opusEncodedData);
         } catch (Exception e) {
@@ -116,15 +115,38 @@ public class Plugin implements VoicechatPlugin {
         double audioLevel = calculateAudioLevel(decoded);
 
         UUID playerUUID = sender.getPlayer().getUuid();
-        Position voicechatPosition = sender.getPlayer().getPosition();
+        de.maxhenkel.voicechat.api.Position voicechatPosition = sender.getPlayer().getPosition();
         BlockPos playerPosition = new BlockPos(
                 (int) Math.floor(voicechatPosition.getX()),
                 (int) Math.floor(voicechatPosition.getY()),
                 (int) Math.floor(voicechatPosition.getZ())
         );
 
-        boolean isWhispering = event.getPacket().isWhispering();
+        BlockPos senderPosition = playerPosition;
 
+        // Calculamos la intensidad percibida (dB)
+        double distance = Math.sqrt(playerPosition.getSquaredDistance(senderPosition));
+        double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
+
+        if (DEBUG) {
+            System.out.println("[DEBUG] Perceived Intensity: " + perceivedIntensity + " dB");
+        }
+
+        long currentTime = System.currentTimeMillis();
+        if (perceivedIntensity >= VoiceConfig.DEATH_ANGELS_THRESHOLD.get()) {
+            if (!lastVoiceEffectTime.containsKey(playerUUID) ||
+                    currentTime - lastVoiceEffectTime.get(playerUUID) > DEATH_ANGELS_EFFECT_COOLDOWN_MS) {
+                if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity serverPlayer) {
+                    SoundEffectCommand.applyEffect(serverPlayer);
+                    lastVoiceEffectTime.put(playerUUID, currentTime);
+                    if (DEBUG) {
+                        System.out.println("[DEBUG] Efecto aplicado al jugador " + playerUUID);
+                    }
+                }
+            }
+        }
+
+        boolean isWhispering = event.getPacket().isWhispering();
         double whisperRangeMultiplier = VoiceConfig.WHISPER_RANGE_MULTIPLIER.get();
         double whisperSpeedMultiplier = VoiceConfig.WHISPER_SPEED_MULTIPLIER.get();
         double thunderRangeMultiplier = VoiceConfig.THUNDER_RANGE_MULTIPLIER.get();
@@ -134,9 +156,11 @@ public class Plugin implements VoicechatPlugin {
         List<String> animalIds = getConfiguredAnimalIds();
 
         for (String animalId : animalIds) {
-            double threshold = getActivationThreshold(animalId, true);
-            double detectionRange = getDetectionRange(animalId, true);
-            double speed = getSpeed(animalId, true);
+            double threshold = getActivationThreshold(animalId);
+            double detectionRange = getDetectionRange(animalId);
+            double speed = getSpeed(animalId);
+
+
 
             if (isWhispering) {
                 detectionRange *= whisperRangeMultiplier;
@@ -152,7 +176,7 @@ public class Plugin implements VoicechatPlugin {
                     }
                 }
             } else {
-                if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player) {
+                if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity  player) {
                     if (player.isSneaking()) {
                         detectionRange *= sneakingRangeMultiplier;
                     }
@@ -162,27 +186,26 @@ public class Plugin implements VoicechatPlugin {
                 }
             }
 
-            BlockPos senderPosition = new BlockPos(
-                    (int) Math.floor(sender.getPlayer().getPosition().getX()),
-                    (int) Math.floor(sender.getPlayer().getPosition().getY()),
-                    (int) Math.floor(sender.getPlayer().getPosition().getZ())
+            BlockPos senderPos = new BlockPos(
+                    (int) Math.floor(voicechatPosition.getX()),
+                    (int) Math.floor(voicechatPosition.getY()),
+                    (int) Math.floor(voicechatPosition.getZ())
             );
 
-            double distance = playerPosition.getSquaredDistance(senderPosition);
-            double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
+            double distanceSq = playerPosition.getSquaredDistance(senderPos);
+            double perceivedIntensityAnimal = audioLevel - 20 * Math.log10(Math.sqrt(distanceSq) + 1);
 
             if (DEBUG) {
-                System.out.println("[DEBUG] Perceived Intensity for " + animalId + ": " + perceivedIntensity + " dB at distance " + distance);
+                System.out.println("[DEBUG] Perceived Intensity for " + animalId + ": " + perceivedIntensityAnimal + " dB at distance " + Math.sqrt(distanceSq));
             }
 
-            if (perceivedIntensity < threshold) {
+            if (perceivedIntensityAnimal < threshold) {
                 if (DEBUG) {
-                    System.out.println("[DEBUG] Intensity too low for " + animalId + ": " + perceivedIntensity + " dB");
+                    System.out.println("[DEBUG] Intensity too low for " + animalId + ": " + perceivedIntensityAnimal + " dB");
                 }
                 continue;
             }
-
-            if (distance <= detectionRange * detectionRange) {
+            if (distanceSq <= detectionRange * detectionRange) {
                 playerSoundLocations.put(playerUUID, new SoundData(playerPosition, detectionRange, speed));
 
                 if (DEBUG) {
@@ -192,9 +215,9 @@ public class Plugin implements VoicechatPlugin {
         }
 
         for (String mobId : mobIds) {
-            double threshold = getActivationThreshold(mobId, false);
-            double detectionRange = getDetectionRange(mobId, false);
-            double speed = getSpeed(mobId, false);
+            double threshold = getActivationThreshold(mobId);
+            double detectionRange = getDetectionRange(mobId);
+            double speed = getSpeed(mobId);
 
             if (isWhispering) {
                 detectionRange *= whisperRangeMultiplier;
@@ -204,7 +227,6 @@ public class Plugin implements VoicechatPlugin {
                     if (player.isSneaking()) {
                         detectionRange *= sneakingRangeMultiplier;
                     }
-
                     if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
@@ -220,27 +242,27 @@ public class Plugin implements VoicechatPlugin {
                 }
             }
 
-            BlockPos senderPosition = new BlockPos(
-                    (int) Math.floor(sender.getPlayer().getPosition().getX()),
-                    (int) Math.floor(sender.getPlayer().getPosition().getY()),
-                    (int) Math.floor(sender.getPlayer().getPosition().getZ())
+            BlockPos senderPos = new BlockPos(
+                    (int) Math.floor(voicechatPosition.getX()),
+                    (int) Math.floor(voicechatPosition.getY()),
+                    (int) Math.floor(voicechatPosition.getZ())
             );
 
-            double distance = playerPosition.getSquaredDistance(senderPosition);
-            double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
+            double distanceSq = playerPosition.getSquaredDistance(senderPos);
+            double perceivedIntensityMob = audioLevel - 20 * Math.log10(Math.sqrt(distanceSq) + 1);
 
             if (DEBUG) {
-                System.out.println("[DEBUG] Perceived Intensity for " + mobId + ": " + perceivedIntensity + " dB at distance " + distance);
+                System.out.println("[DEBUG] Perceived Intensity for " + mobId + ": " + perceivedIntensityMob + " dB at distance " + Math.sqrt(distanceSq));
             }
 
-            if (perceivedIntensity < threshold) {
+            if (perceivedIntensityMob < threshold) {
                 if (DEBUG) {
-                    System.out.println("[DEBUG] Intensity too low for " + mobId + ": " + perceivedIntensity + " dB");
+                    System.out.println("[DEBUG] Intensity too low for " + mobId + ": " + perceivedIntensityMob + " dB");
                 }
                 continue;
             }
 
-            if (distance <= detectionRange * detectionRange) {
+            if (distanceSq <= detectionRange * detectionRange) {
                 playerSoundLocations.put(playerUUID, new SoundData(playerPosition, detectionRange, speed));
 
                 if (DEBUG) {
@@ -248,12 +270,8 @@ public class Plugin implements VoicechatPlugin {
                 }
             }
         }
-
-        // Remove sound data after 5 seconds
         scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
     }
-
-
 
     private List<String> getConfiguredMobIds() {
         Map<String, Map<String, Double>> mobConfigs = VoiceConfig.getMobVoiceConfigs();
@@ -265,30 +283,24 @@ public class Plugin implements VoicechatPlugin {
         return new ArrayList<>(mobConfigs.keySet());
     }
 
-
-
-    private double getActivationThreshold(String mobId,boolean isAnimal) {
-        Map<String, Double> mobConfig = isAnimal ? VoiceConfig.getMobVoiceConfigs().get(mobId):
-                VoiceConfig.getAnimalVoiceConfigs().get(mobId);
+    private double getActivationThreshold(String mobId) {
+        Map<String, Double> mobConfig = VoiceConfig.getMobVoiceConfigs().get(mobId);
         if (mobConfig != null && mobConfig.containsKey("threshold")) {
             return mobConfig.get("threshold");
         }
         return -40.0;
     }
 
-    private double getDetectionRange(String mobId,boolean isAnimal) {
-        Map<String, Double> mobConfig = isAnimal ? VoiceConfig.getMobVoiceConfigs().get(mobId):
-                VoiceConfig.getAnimalVoiceConfigs().get(mobId);
+    private double getDetectionRange(String mobId) {
+        Map<String, Double> mobConfig = VoiceConfig.getMobVoiceConfigs().get(mobId);
         if (mobConfig != null && mobConfig.containsKey("range")) {
             return mobConfig.get("range");
         }
         return 16.0;
     }
 
-    private double getSpeed(String mobId,boolean isAnimal) {
-        Map<String, Double> mobConfig =isAnimal ? VoiceConfig.getMobVoiceConfigs().get(mobId):
-                VoiceConfig.getAnimalVoiceConfigs().get(mobId);
-
+    private double getSpeed(String mobId) {
+        Map<String, Double> mobConfig = VoiceConfig.getMobVoiceConfigs().get(mobId);
         if (mobConfig != null && mobConfig.containsKey("speed")) {
             return mobConfig.get("speed");
         }

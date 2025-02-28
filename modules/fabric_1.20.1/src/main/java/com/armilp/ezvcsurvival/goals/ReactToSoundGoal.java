@@ -6,6 +6,7 @@ import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.armilp.ezvcsurvival.event.GunFireListener;
 import com.armilp.ezvcsurvival.event.SoundEventTracker;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
@@ -20,7 +21,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class ReactToSoundGoal extends Goal {
-
     private final MobEntity mob;
     private final double speed;
     private final int range;
@@ -28,6 +28,10 @@ public class ReactToSoundGoal extends Goal {
 
     private Vec3d lastAttackerPos = null;
     private static final List<ReactToSoundGoal> activeGoals = new CopyOnWriteArrayList<>();
+
+    private static Vec3d lastPointBlankSoundPos = null;
+    private static long lastPointBlankSoundTimestamp = 0;
+    private static final long POINT_BLANK_SOUND_EXPIRATION_MS = 5000;
 
     public ReactToSoundGoal(MobEntity mob, double speed, int range, List<SoundGroupData> soundGroups) {
         this.mob = mob;
@@ -39,6 +43,11 @@ public class ReactToSoundGoal extends Goal {
 
     @Override
     public boolean canStart() {
+        if (lastPointBlankSoundPos != null &&
+                System.currentTimeMillis() - lastPointBlankSoundTimestamp > POINT_BLANK_SOUND_EXPIRATION_MS) {
+            lastPointBlankSoundPos = null;
+        }
+
         Vec3d mobCenterPos = mob.getPos();
         double effectiveRange = range;
         double effectiveSpeed = speed;
@@ -46,7 +55,7 @@ public class ReactToSoundGoal extends Goal {
         GunshotData gunshotData = GunFireListener.getLastGunshotData();
         if (gunshotData != null) {
             double rangeMultiplier = SoundConfig.getRangeMultiplier(gunshotData.gunType().name().toLowerCase());
-            effectiveRange = (int)(range * rangeMultiplier);
+            effectiveRange = range * rangeMultiplier;
             double speedMultiplier = SoundConfig.getSpeedMultiplier(gunshotData.gunType().name().toLowerCase());
             effectiveSpeed = speed * speedMultiplier;
         }
@@ -63,7 +72,7 @@ public class ReactToSoundGoal extends Goal {
         outer:
         for (SoundGroupData group : soundGroups) {
             for (String soundStr : group.sounds()) {
-                Identifier res = Identifier.tryParse(soundStr);
+                Identifier res = new Identifier(soundStr);
                 Vec3d pos = SoundEventTracker.getLastPlayedPositionForSound(res);
                 if (pos != null) {
                     soundEventPos = pos;
@@ -74,36 +83,38 @@ public class ReactToSoundGoal extends Goal {
             }
         }
 
-        boolean soundTriggered = false;
-        if (soundEventPos != null) {
-            double groupEffectiveRange = range * groupRangeMult;
-            soundTriggered = mobCenterPos.distanceTo(soundEventPos) <= groupEffectiveRange;
-        }
+        boolean soundTriggered = soundEventPos != null && mobCenterPos.distanceTo(soundEventPos) <= (range * groupRangeMult);
+        boolean pointBlankTriggered = lastPointBlankSoundPos != null && mobCenterPos.distanceTo(lastPointBlankSoundPos) <= effectiveRange;
+        boolean hurtTriggered = lastAttackerPos != null;
 
-        boolean hurtTriggered = !(mob instanceof Monster) && lastAttackerPos != null;
-
-        return gunshotTriggered || soundTriggered || hurtTriggered;
+        return gunshotTriggered || soundTriggered || pointBlankTriggered || hurtTriggered;
     }
 
-
+    @Override
     public void start() {
         updateNavigation();
     }
 
-    public void stop() {
-        activeGoals.remove(this);
-    }
-
+    @Override
     public void tick() {
         updateNavigation();
+    }
+
+    @Override
+    public void stop() {
+        activeGoals.remove(this);
     }
 
     public void onHurt(Vec3d attackerPos) {
         this.lastAttackerPos = attackerPos;
     }
 
-
     private void updateNavigation() {
+        if (lastPointBlankSoundPos != null &&
+                System.currentTimeMillis() - lastPointBlankSoundTimestamp > POINT_BLANK_SOUND_EXPIRATION_MS) {
+            lastPointBlankSoundPos = null;
+        }
+
         Vec3d currentPos = mob.getPos();
         Vec3d target = null;
         double effectiveRange = range;
@@ -112,7 +123,7 @@ public class ReactToSoundGoal extends Goal {
         GunshotData gunshotData = GunFireListener.getLastGunshotData();
         if (gunshotData != null) {
             double rangeMultiplier = SoundConfig.getRangeMultiplier(gunshotData.gunType().name().toLowerCase());
-            effectiveRange = (int)(range * rangeMultiplier);
+            effectiveRange = range * rangeMultiplier;
             double speedMultiplier = SoundConfig.getSpeedMultiplier(gunshotData.gunType().name().toLowerCase());
             effectiveSpeed = speed * speedMultiplier;
         }
@@ -123,7 +134,7 @@ public class ReactToSoundGoal extends Goal {
         outer:
         for (SoundGroupData group : soundGroups) {
             for (String soundStr : group.sounds()) {
-                Identifier res = Identifier.tryParse(soundStr);
+                Identifier res = new Identifier(soundStr);
                 Vec3d pos = SoundEventTracker.getLastPlayedPositionForSound(res);
                 if (pos != null) {
                     soundEventPos = pos;
@@ -134,55 +145,31 @@ public class ReactToSoundGoal extends Goal {
             }
         }
         if (soundEventPos != null) {
-            effectiveRange = (int)(range * groupRangeMult);
+            effectiveRange = range * groupRangeMult;
             effectiveSpeed = speed * groupSpeedMult;
         }
 
-        if (mob instanceof Monster) {
-            if (mob.getTarget() instanceof PlayerEntity) {
-                return;
-            }
-            if (gunshotData != null && currentPos.distanceTo(gunshotData.position()) <= effectiveRange) {
-                target = new Vec3d(gunshotData.position().x, mob.getY(), gunshotData.position().z);
-            } else if (soundEventPos != null && currentPos.distanceTo(soundEventPos) <= effectiveRange) {
-                target = new Vec3d(soundEventPos.x, mob.getY(), soundEventPos.z);
-            }
-        } else {
-            if (lastAttackerPos != null) {
-                Vec3d diff = currentPos.subtract(lastAttackerPos);
-                if (diff.lengthSquared() < 1e-4) {
-                    diff = new Vec3d(1, 0, 0);
-                }
-                target = currentPos.add(diff.normalize().multiply(effectiveRange));
-                lastAttackerPos = null;
-            } else if (gunshotData != null && currentPos.distanceTo(gunshotData.position()) <= effectiveRange) {
-                Vec3d diff = currentPos.subtract(gunshotData.position());
-                if (diff.lengthSquared() < 1e-4) {
-                    diff = new Vec3d(1, 0, 0);
-                }
-                target = currentPos.add(diff.normalize().multiply(effectiveRange));
-            } else if (soundEventPos != null && currentPos.distanceTo(soundEventPos) <= effectiveRange) {
-                Vec3d diff = currentPos.subtract(soundEventPos);
-                if (diff.lengthSquared() < 1e-4) {
-                    diff = new Vec3d(1, 0, 0);
-                }
-                target = currentPos.add(diff.normalize());
-            }
+        if (gunshotData != null && currentPos.distanceTo(gunshotData.position()) <= effectiveRange) {
+            target = gunshotData.position();
+        } else if (soundEventPos != null && currentPos.distanceTo(soundEventPos) <= effectiveRange) {
+            target = soundEventPos;
+        } else if (lastPointBlankSoundPos != null && currentPos.distanceTo(lastPointBlankSoundPos) <= effectiveRange) {
+            target = lastPointBlankSoundPos;
         }
 
         if (target != null) {
-            target = new Vec3d(target.x, mob.getY(), target.z);
             mob.getNavigation().startMovingTo(target.x, target.y, target.z, effectiveSpeed);
         }
     }
 
 
     public static void init() {
+
         ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register((serverWorld, entity, livingEntity) -> {
             for (ReactToSoundGoal goal : activeGoals) {
-                    if (goal.mob == entity && !(goal.mob instanceof Monster) && livingEntity.getAttacker() != null) {
-                        goal.onHurt(livingEntity.getAttacker().getPos());
-                    }
+                if (goal.mob == entity && !(goal.mob instanceof Monster) && livingEntity.getAttacker() != null) {
+                    goal.onHurt(livingEntity.getAttacker().getPos());
+                }
             }
         });
 

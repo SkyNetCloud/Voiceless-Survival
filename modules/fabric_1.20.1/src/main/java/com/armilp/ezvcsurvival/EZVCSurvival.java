@@ -8,6 +8,7 @@ import com.armilp.ezvcsurvival.goals.ReactToSoundGoal;
 import com.armilp.ezvcsurvival.goals.injector.FollowVoiceGoalInjector;
 import com.armilp.ezvcsurvival.goals.injector.ReactToSoundGoalInjector;
 import com.armilp.ezvcsurvival.goals.injector.RunAwayVoiceGoalInjector;
+import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.mojang.logging.LogUtils;
 import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
 import net.fabricmc.api.ModInitializer;
@@ -22,6 +23,8 @@ public class EZVCSurvival implements ModInitializer {
     public void onInitialize() {
         ForgeConfigRegistry.INSTANCE.register(MOD_ID, ModConfig.Type.COMMON, VoiceConfig.CONFIG, "ezvcsurvival/voices.toml");
         ForgeConfigRegistry.INSTANCE.register(MOD_ID, ModConfig.Type.COMMON, SoundConfig.SPEC, "ezvcsurvival/sounds.toml");
+
+        EZVCNetwork.registerPackets();
         SoundConfig.loadConfigs();
         FollowVoiceGoalInjector.init();
         RunAwayVoiceGoalInjector.init();
