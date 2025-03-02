@@ -6,19 +6,15 @@ import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.armilp.ezvcsurvival.event.GunFireListener;
 import com.armilp.ezvcsurvival.event.SoundEventTracker;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 public class ReactToSoundGoal extends Goal {
     private final MobEntity mob;
@@ -164,7 +160,6 @@ public class ReactToSoundGoal extends Goal {
 
 
     public static void init() {
-
         ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register((serverWorld, entity, livingEntity) -> {
             for (ReactToSoundGoal goal : activeGoals) {
                 if (goal.mob == entity && !(goal.mob instanceof Monster) && livingEntity.getAttacker() != null) {

@@ -1,17 +1,17 @@
 package com.armilp.ezvcsurvival;
 
 
-import com.armilp.ezvcsurvival.commands.SoundEffectCommand;
+import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.SoundData;
-import de.maxhenkel.voicechat.api.*;
+import de.maxhenkel.voicechat.api.VoicechatApi;
+import de.maxhenkel.voicechat.api.VoicechatConnection;
+import de.maxhenkel.voicechat.api.VoicechatPlugin;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.opus.OpusDecoder;
-import com.armilp.ezvcsurvival.config.VoiceConfig;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
-
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +50,7 @@ public class Plugin implements VoicechatPlugin {
     public void registerEvents(EventRegistration registration) {
         registration.registerEvent(MicrophonePacketEvent.class, this::onMicrophonePacket);
         if (DEBUG) {
-            System.out.println("[DEBUG] Registro del evento MicrophonePacketEvent");
+            System.out.println("[DEBUG] Recording the MicrophonePacketEvent");
         }
     }
 
