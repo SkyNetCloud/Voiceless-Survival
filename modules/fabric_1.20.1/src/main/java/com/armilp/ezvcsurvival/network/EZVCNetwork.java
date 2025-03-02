@@ -1,8 +1,6 @@
 package com.armilp.ezvcsurvival.network;
 
 
-import com.armilp.ezvcsurvival.network.PointBlankSoundPacket;
-import com.armilp.ezvcsurvival.network.SoundPlayedPacket;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.util.Identifier;
 

@@ -3,7 +3,6 @@ package com.armilp.ezvcsurvival.config;
 import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.data.GunTypeModifiers;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
-import fuzs.forgeconfigapiport.api.config.v2.ModConfigEvents;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.*;

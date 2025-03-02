@@ -1,17 +1,12 @@
 package com.armilp.ezvcsurvival.goals.injector;
 
 import com.armilp.ezvcsurvival.config.SoundConfig;
-import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.goals.ReactToSoundGoal;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
-
 import net.minecraft.entity.ai.goal.GoalSelector;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.Identifier;
 
 import java.lang.reflect.Field;
 import java.util.List;

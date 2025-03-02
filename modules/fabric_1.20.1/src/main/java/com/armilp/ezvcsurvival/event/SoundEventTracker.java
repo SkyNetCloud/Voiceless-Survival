@@ -4,7 +4,6 @@ import com.armilp.ezvcsurvival.data.TimedSoundData;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

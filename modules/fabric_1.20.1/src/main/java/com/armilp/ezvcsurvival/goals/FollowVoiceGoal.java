@@ -1,12 +1,10 @@
 package com.armilp.ezvcsurvival.goals;
 
 import com.armilp.ezvcsurvival.Plugin;
-import de.maxhenkel.voicechat.api.Player;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
-
 
 import java.util.EnumSet;
 
