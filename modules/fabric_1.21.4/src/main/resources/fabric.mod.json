@@ -21,7 +21,7 @@
     "fabricloader": ">=${loader_version}",
     "fabric": "*",
     "voicechat": ">=${minecraft_version}-${voicechat_api_version}",
-    "forgeconfigapiport": ">=${forge_config_api_port_version}",
+    "forgeconfigapiport": ">=${forgeconfigapiport}",
     "minecraft": "${minecraft_version}"
   }
 }
