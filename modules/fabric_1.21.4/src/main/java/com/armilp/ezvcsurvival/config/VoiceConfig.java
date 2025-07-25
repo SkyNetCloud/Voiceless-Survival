@@ -10,13 +10,12 @@ public class VoiceConfig {
     public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
     public static final ForgeConfigSpec CONFIG;
 
-
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> MOB_VOICE_CONFIGS;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ANIMAL_VOICE_CONFIGS;
 
-
     public static final ForgeConfigSpec.DoubleValue WHISPER_RANGE_MULTIPLIER;
     public static final ForgeConfigSpec.DoubleValue WHISPER_SPEED_MULTIPLIER;
+
     public static final ForgeConfigSpec.DoubleValue THUNDER_RANGE_MULTIPLIER;
     public static final ForgeConfigSpec.DoubleValue SNEAKING_RANGE_MULTIPLIER;
 
@@ -68,8 +67,6 @@ public class VoiceConfig {
         CONFIG = BUILDER.build();
     }
 
-
-
     public static Map<String, Map<String, Double>> getMobVoiceConfigs() {
         Map<String, Map<String, Double>> parsedConfigs = new HashMap<>();
         for (String config : MOB_VOICE_CONFIGS.get()) {
@@ -77,7 +74,6 @@ public class VoiceConfig {
             if (parts.length == 2) {
                 String mobId = parts[0];
                 String[] attributes = parts[1].split(",");
-
                 Map<String, Double> mobConfig = new HashMap<>();
                 for (String attribute : attributes) {
                     String[] keyValue = attribute.split("=");
@@ -95,6 +91,7 @@ public class VoiceConfig {
         return parsedConfigs;
     }
 
+
     public static Map<String, Map<String, Double>> getAnimalVoiceConfigs() {
         Map<String, Map<String, Double>> parsedConfigs = new HashMap<>();
         for (String config : ANIMAL_VOICE_CONFIGS.get()) {
@@ -102,7 +99,6 @@ public class VoiceConfig {
             if (parts.length == 2) {
                 String mobId = parts[0];
                 String[] attributes = parts[1].split(",");
-
                 Map<String, Double> mobConfig = new HashMap<>();
                 for (String attribute : attributes) {
                     String[] keyValue = attribute.split("=");

@@ -11,7 +11,9 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.EnumSet;
 
+@SuppressWarnings("unused")
 public class RunawayVoiceGoal extends Goal {
+
 
     private final AnimalEntity mob;
     private final double speedModifier;
@@ -24,14 +26,15 @@ public class RunawayVoiceGoal extends Goal {
     private int fleeTicks = 0;
     private int distanceCovered = 0;
 
-    public RunawayVoiceGoal(AnimalEntity mob, double speedModifier, int detectionRange, double threshold) {
+    public RunawayVoiceGoal(AnimalEntity mob, double speedModifier, int voiceDetectionRange, double threshold) {
         this.mob = mob;
         this.speedModifier = speedModifier;
-        this.voiceDetectionRange = detectionRange;
+        this.voiceDetectionRange = voiceDetectionRange;
         this.threshold = threshold;
         this.ambientSoundCount = 0;
         this.setControls(EnumSet.of(Control.MOVE, Control.LOOK));
     }
+
 
     @Override
     public boolean canStart() {
@@ -68,16 +71,15 @@ public class RunawayVoiceGoal extends Goal {
         mob.getNavigation().stop();
     }
 
-    private PlayerEntity findNearestPlayer() {
+    private PlayerEntity findNearestPlayer(){
         return mob.getWorld().getClosestPlayer(mob, voiceDetectionRange);
     }
 
     private void handleSoundThreat() {
         distanceCovered++;
-        if (distanceCovered > 10 && distanceCovered % 20 == 0) { // Pause every 10 blocks
+        if (distanceCovered > 10 && distanceCovered % 20 == 0) {
             mob.getNavigation().stop();
-            Vec3d targetCenter = Vec3d.ofCenter(targetSoundPosition);
-            mob.getLookControl().lookAt(targetCenter.x, targetCenter.y, targetCenter.z);
+            mob.getLookControl().lookAt(Vec3d.ofCenter(targetSoundPosition).x, Vec3d.ofCenter(targetSoundPosition).y, Vec3d.ofCenter(targetSoundPosition).z);
         }
 
         if (targetSoundPosition == null || mob.getBlockPos().getSquaredDistance(targetSoundPosition) > threshold * threshold) {
@@ -96,15 +98,14 @@ public class RunawayVoiceGoal extends Goal {
         double randomOffsetZ = (mob.getRandom().nextDouble() - 0.5) * 5.0;
 
         Vec3d fleeTarget = mob.getPos().add(fleeDirection).add(randomOffsetX, 0, randomOffsetZ);
-        if (isDangerousBlock(new BlockPos((int) fleeTarget.x, (int) fleeTarget.y, (int) fleeTarget.z))) {
-            fleeDirection = fleeDirection.add(mob.getRandom().nextDouble() * 5.0, 0, mob.getRandom().nextDouble() * 5.0);
+        if (isDangerousBlock(new BlockPos((int) fleeTarget.getX(), (int) fleeTarget.getY(), (int) fleeTarget.getZ()))) {
+            fleeDirection = fleeDirection.add(randomOffsetX, 0, randomOffsetZ).normalize().multiply(20.0);
             fleeTarget = mob.getPos().add(fleeDirection);
         }
 
-        mob.getNavigation().startMovingTo(fleeTarget.x, fleeTarget.y, fleeTarget.z, speedModifier);
+        mob.getNavigation().startMovingTo(fleeTarget.getX(), fleeTarget.getY(), fleeTarget.getZ(), speedModifier);
 
-        // Make the mob play a panic sound (if applicable), but limit to 2-4 times
-        if (ambientSoundCount < 2 && mob.getRandom().nextDouble() < 0.5) { // 50% chance per flee action
+        if (ambientSoundCount < 2 && mob.getRandom().nextDouble() < 0.5) {
             mob.playAmbientSound();
             ambientSoundCount++;
         }
@@ -113,10 +114,9 @@ public class RunawayVoiceGoal extends Goal {
     private boolean isDangerousBlock(BlockPos pos) {
         ServerWorld world = (ServerWorld) mob.getWorld();
         BlockState blockState = world.getBlockState(pos);
-
-        // Check if the block has fluid or is not solid
-        return !blockState.getFluidState().isEmpty() || !blockState.isSolidBlock(world, pos);
+        return !blockState.getFluidState().isEmpty() || !blockState.isAir() || blockState.isSolidBlock(world, pos);
     }
+
 
 }
 

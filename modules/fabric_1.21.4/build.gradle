@@ -43,6 +43,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
+    modImplementation"curse.maven:sound-physics-remastered-535489:6353011"
 
     modImplementation 'curse.maven:timeless-and-classics-zero-1028108:5529117-sources-5529578'
 

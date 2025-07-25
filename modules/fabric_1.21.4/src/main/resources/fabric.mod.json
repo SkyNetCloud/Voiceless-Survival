@@ -7,7 +7,7 @@
   "authors": [],
   "contact": {},
   "license": "All Rights Reserved by armilp",
-  "icon": "",
+  "icon": "assets/ezvcsurvival/voiceless.png",
   "environment": "*",
   "entrypoints": {
     "main": [

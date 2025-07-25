@@ -1,9 +1,6 @@
 package com.armilp.ezvcsurvival.goals;
 
-import com.armilp.ezvcsurvival.config.SoundConfig;
-import com.armilp.ezvcsurvival.data.GunshotData;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
-import com.armilp.ezvcsurvival.event.GunFireListener;
 import com.armilp.ezvcsurvival.event.SoundEventTracker;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -18,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+@SuppressWarnings({"unused", "UnusedAssignment"})
 public class ReactToSoundGoal extends Goal {
 
     private final MobEntity mob;
@@ -47,13 +45,13 @@ public class ReactToSoundGoal extends Goal {
         double groupRangeMult = 1.0;
         outer:
         for (SoundGroupData group : soundGroups) {
-            for (String soundStr : group.sounds()) {
+            for (String soundStr : group.getSounds()) {
                 Identifier res = getIdentifier(soundStr);
                 Vec3d pos = SoundEventTracker.getLastPlayedPositionForSound(res);
                 if (pos != null) {
                     soundEventPos = pos;
-                    groupSpeedMult = group.speedMultiplier();
-                    groupRangeMult = group.rangeMultiplier();
+                    groupSpeedMult = group.getSpeedMultiplier();
+                    groupRangeMult = group.getRangeMultiplier();
                     break outer;
                 }
             }
@@ -98,13 +96,13 @@ public class ReactToSoundGoal extends Goal {
         double groupRangeMult = 1.0;
         outer:
         for (SoundGroupData group : soundGroups) {
-            for (String soundStr : group.sounds()) {
+            for (String soundStr : group.getSounds()) {
                 Identifier res = getIdentifier(soundStr);
                 Vec3d pos = SoundEventTracker.getLastPlayedPositionForSound(res);
                 if (pos != null) {
                     soundEventPos = pos;
-                    groupSpeedMult = group.speedMultiplier();
-                    groupRangeMult = group.rangeMultiplier();
+                    groupSpeedMult = group.getSpeedMultiplier();
+                    groupRangeMult = group.getRangeMultiplier();
                     break outer;
                 }
             }

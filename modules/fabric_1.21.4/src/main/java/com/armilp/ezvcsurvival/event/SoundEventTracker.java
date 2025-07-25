@@ -20,8 +20,8 @@ public class SoundEventTracker {
     public static Vec3d getLastPlayedPositionForSound(Identifier soundLocation) {
         long now = System.currentTimeMillis();
         TimedSoundData data = lastPlayedPositions.get(soundLocation);
-        if (data != null && (now - data.timestamp() <= SOUND_EXPIRATION_MS)) {
-            return data.position();
+        if (data != null && (now - data.timestamp <= SOUND_EXPIRATION_MS)) {
+            return data.position;
         }
         return null;
     }

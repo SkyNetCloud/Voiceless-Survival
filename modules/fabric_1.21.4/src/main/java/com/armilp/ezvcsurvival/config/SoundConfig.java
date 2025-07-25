@@ -1,7 +1,6 @@
 package com.armilp.ezvcsurvival.config;
 
 import com.armilp.ezvcsurvival.EZVCSurvival;
-import com.armilp.ezvcsurvival.data.GunTypeModifiers;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import net.minecraftforge.common.ForgeConfigSpec;
 
@@ -9,10 +8,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
+@SuppressWarnings("SequencedCollectionMethodCanBeUsed")
 public class SoundConfig {
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> SOUND_GROUPS;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> MOB_SOUND_REACTIONS;
+    public static final ForgeConfigSpec.DoubleValue THUNDER_RANGE_MULTIPLIER;
 
     private static final Map<String, SoundGroupData> soundGroupDataMap = new HashMap<>();
     private static final Map<String, Map<String, Object>> mobReactionsMap = new HashMap<>();
@@ -49,8 +50,16 @@ public class SoundConfig {
         );
         builder.pop();
 
+        builder.push("weather");
+        builder.comment("Range multiplier applied when it is raining or thundering.",
+                "Value between 0 and 1. A lower value will reduce the effective sound range.");
+        THUNDER_RANGE_MULTIPLIER = builder.defineInRange("thunder_range_multiplier", 0.8, 0.0, 1.0);
+        builder.pop();
+
         SPEC = builder.build();
     }
+
+
 
     public static void loadConfigs() {
         loadSoundGroups();
@@ -60,7 +69,7 @@ public class SoundConfig {
     private static void loadSoundGroups() {
         soundGroupDataMap.clear();
         List<? extends String> groups = SOUND_GROUPS.get();
-        if (groups == null || groups.isEmpty()) {
+        if (groups.isEmpty()) {
             groups = List.of(
                     "wood_sounds=block.wood.break,block.wood.hit,block.wood.place,1.0,1.0",
                     "animal_hurts=entity.cow.hurt,entity.pig.hurt"
@@ -110,7 +119,7 @@ public class SoundConfig {
     private static void loadMobSoundReactions() {
         mobReactionsMap.clear();
         List<? extends String> reactions = MOB_SOUND_REACTIONS.get();
-        if (reactions == null || reactions.isEmpty()) {
+        if (reactions.isEmpty()) {
             reactions = List.of(
                     "minecraft:zombie=speed=1.5,range=20,groups=wood_sounds",
                     "minecraft:cow=speed=1.8,range=16,groups=animal_hurts"
