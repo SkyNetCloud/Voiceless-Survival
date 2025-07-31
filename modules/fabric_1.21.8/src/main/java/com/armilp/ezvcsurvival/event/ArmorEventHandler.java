@@ -1,5 +1,6 @@
 package com.armilp.ezvcsurvival.event;
 
+import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.ArmorEffect;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
@@ -7,11 +8,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.armilp.ezvcsurvival.config.VoiceConfig.ARMOR_EFFECTS;
 
 public class ArmorEventHandler  {
     private static final Map<String, ArmorEffect> armorEffectsMap = new HashMap<>();
@@ -19,7 +19,7 @@ public class ArmorEventHandler  {
 
     private static void init() {
         if (initialized) return;
-        List<? extends String> configList = ARMOR_EFFECTS.get();
+        List<String> configList = new ArrayList<>(VoiceConfig.getArmorEffects().keySet());
         for (String entry : configList) {
             String[] parts = entry.split("=");
             if (parts.length != 2) continue;
@@ -30,7 +30,7 @@ public class ArmorEventHandler  {
                 double speedMultiplier = Double.parseDouble(values[0].trim());
                 double rangeMultiplier = Double.parseDouble(values[1].trim());
                 armorEffectsMap.put(itemId, new ArmorEffect(speedMultiplier, rangeMultiplier));
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException ignored) {
             }
         }
         initialized = true;
@@ -51,8 +51,8 @@ public class ArmorEventHandler  {
                 Identifier id = Registries.ITEM.getId(stack.getItem());
                 if (armorEffectsMap.containsKey(id.toString())) {
                     ArmorEffect effect = armorEffectsMap.get(id.toString());
-                    speedMultiplier *= effect.speedMultiplier;
-                    rangeMultiplier *= effect.rangeMultiplier;
+                    speedMultiplier *= effect.speedMultiplier();
+                    rangeMultiplier *= effect.rangeMultiplier();
                 }
             }
         }

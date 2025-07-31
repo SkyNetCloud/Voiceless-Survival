@@ -1,8 +1,11 @@
 package com.armilp.ezvcsurvival;
 
 
+import com.armilp.ezvcsurvival.compat.audio.AudioModifierFactory;
+import com.armilp.ezvcsurvival.compat.audio.modifier.IAudioModifier;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.SoundData;
+import com.armilp.ezvcsurvival.event.ArmorEventHandler;
 import de.maxhenkel.voicechat.api.VoicechatApi;
 import de.maxhenkel.voicechat.api.VoicechatConnection;
 import de.maxhenkel.voicechat.api.VoicechatPlugin;
@@ -11,6 +14,7 @@ import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.opus.OpusDecoder;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -21,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Plugin implements VoicechatPlugin {
 
-    private static final boolean DEBUG = false;
+    public static final boolean DEBUG = false;
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
 
@@ -52,6 +56,7 @@ public class Plugin implements VoicechatPlugin {
         }
     }
 
+    @SuppressWarnings("unused")
     public static double calculateAudioLevel(short[] samples) {
         double rms = 0D;
         for (short sample : samples) {
@@ -67,19 +72,21 @@ public class Plugin implements VoicechatPlugin {
         }
     }
 
+    @SuppressWarnings("unused")
     public static BlockPos getLastSoundLocation(BlockPos zombiePosition, double range) {
         return playerSoundLocations.values().stream()
-                .filter(data -> zombiePosition.getSquaredDistance(data.getPosition()) <= data.getRange() * data.getRange())
-                .min(Comparator.comparingDouble(data -> zombiePosition.getSquaredDistance(data.getPosition())))
-                .map(SoundData::getPosition)
+                .filter(data -> zombiePosition.getSquaredDistance(data.position()) <= data.range() * data.range())
+                .min(Comparator.comparingDouble(data -> zombiePosition.getSquaredDistance(data.position())))
+                .map(SoundData::position)
                 .orElse(null);
     }
 
+    @SuppressWarnings("unused")
     public static double getLastSoundSpeed(BlockPos zombiePosition, double range) {
         return playerSoundLocations.values().stream()
-                .filter(data -> zombiePosition.getSquaredDistance(data.getPosition()) <= data.getRange() * data.getRange())
-                .min(Comparator.comparingDouble(data -> zombiePosition.getSquaredDistance(data.getPosition())))
-                .map(SoundData::getSpeed)
+                .filter(data -> zombiePosition.getSquaredDistance(data.position()) <= data.range() * data.range())
+                .min(Comparator.comparingDouble(data -> zombiePosition.getSquaredDistance(data.position())))
+                .map(SoundData::speed)
                 .orElse(1.0);
     }
 
@@ -125,10 +132,10 @@ public class Plugin implements VoicechatPlugin {
 
         boolean isWhispering = event.getPacket().isWhispering();
 
-        double whisperRangeMultiplier = VoiceConfig.WHISPER_RANGE_MULTIPLIER.get();
-        double whisperSpeedMultiplier = VoiceConfig.WHISPER_SPEED_MULTIPLIER.get();
-        double thunderRangeMultiplier = VoiceConfig.THUNDER_RANGE_MULTIPLIER.get();
-        double sneakingRangeMultiplier = VoiceConfig.SNEAKING_RANGE_MULTIPLIER.get();
+        double whisperRangeMultiplier = VoiceConfig.getWhisperConfig().rangeMultiplier;
+        double whisperSpeedMultiplier = VoiceConfig.getWhisperConfig().speedMultiplier;
+        double thunderRangeMultiplier = VoiceConfig.getMiscConfig().thunderRangeMultiplier;
+        double sneakingRangeMultiplier = VoiceConfig.getMiscConfig().sneakingRangeMultiplier;
 
         List<String> mobIds = getConfiguredMobIds();
         List<String> animalIds = getConfiguredAnimalIds();
@@ -150,6 +157,9 @@ public class Plugin implements VoicechatPlugin {
                     if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
+                    double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
+                    detectionRange *= armorMult[1];
+                    speed *= armorMult[0];
                 }
             } else {
                 if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player) {
@@ -159,6 +169,9 @@ public class Plugin implements VoicechatPlugin {
                     if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
+                    double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
+                    detectionRange *= armorMult[1];
+                    speed *= armorMult[0];
                 }
             }
 
@@ -167,6 +180,12 @@ public class Plugin implements VoicechatPlugin {
                     (int) Math.floor(sender.getPlayer().getPosition().getY()),
                     (int) Math.floor(sender.getPlayer().getPosition().getZ())
             );
+
+            Vec3d senderVec = new Vec3d(voicechatPosition.getX(), voicechatPosition.getY(), voicechatPosition.getZ());
+            Vec3d playerVec = new Vec3d(voicechatPosition.getX(), voicechatPosition.getY(), voicechatPosition.getZ());
+
+            IAudioModifier audioModifier = AudioModifierFactory.createAudioModifier(0.5, "voicechat", playerVec, senderVec);
+            detectionRange = audioModifier.computeModifiedRange(detectionRange);
 
             double distance = Math.sqrt(playerPosition.getSquaredDistance(senderPosition));
             double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
@@ -209,6 +228,9 @@ public class Plugin implements VoicechatPlugin {
                     if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
+                    double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
+                    detectionRange *= armorMult[1];
+                    speed *= armorMult[0];
                 }
             } else {
                 Object minecraftPlayer = sender.getPlayer().getPlayer();
@@ -219,6 +241,9 @@ public class Plugin implements VoicechatPlugin {
                     if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
+                    double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
+                    detectionRange *= armorMult[1];
+                    speed *= armorMult[0];
                 }
             }
 
@@ -227,6 +252,12 @@ public class Plugin implements VoicechatPlugin {
                     (int) Math.floor(sender.getPlayer().getPosition().getY()),
                     (int) Math.floor(sender.getPlayer().getPosition().getZ())
             );
+
+            Vec3d senderVec = new Vec3d(voicechatPosition.getX(), voicechatPosition.getY(), voicechatPosition.getZ());
+            Vec3d playerVec = new Vec3d(voicechatPosition.getX(), voicechatPosition.getY(), voicechatPosition.getZ());
+
+            IAudioModifier audioModifier = AudioModifierFactory.createAudioModifier(0.5, "voicechat", playerVec, senderVec);
+            detectionRange = audioModifier.computeModifiedRange(detectionRange);
 
             double distance = Math.sqrt(playerPosition.getSquaredDistance(senderPosition));
             double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
@@ -252,38 +283,38 @@ public class Plugin implements VoicechatPlugin {
         }
         scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
     }
-
     private List<String> getConfiguredMobIds() {
-        Map<String, Map<String, Double>> mobConfigs = VoiceConfig.getMobVoiceConfigs();
+        Map<String, VoiceConfig.VoiceAttributes> mobConfigs = VoiceConfig.getMobVoiceConfigs();
         return new ArrayList<>(mobConfigs.keySet());
     }
 
     private List<String> getConfiguredAnimalIds() {
-        Map<String, Map<String, Double>> mobConfigs = VoiceConfig.getAnimalVoiceConfigs();
+        Map<String, VoiceConfig.VoiceAttributes> mobConfigs = VoiceConfig.getAnimalVoiceConfigs();
         return new ArrayList<>(mobConfigs.keySet());
     }
 
     private double getActivationThreshold(String mobId) {
-        Map<String, Double> mobConfig = VoiceConfig.getMobVoiceConfigs().get(mobId);
-        if (mobConfig != null && mobConfig.containsKey("threshold")) {
-            return mobConfig.get("threshold");
+        VoiceConfig.VoiceAttributes attributes = VoiceConfig.getMobVoiceConfigs().get(mobId);
+        if (attributes != null) {
+            return attributes.threshold;
         }
         return -40.0;
     }
 
     private double getDetectionRange(String mobId) {
-        Map<String, Double> mobConfig = VoiceConfig.getMobVoiceConfigs().get(mobId);
-        if (mobConfig != null && mobConfig.containsKey("range")) {
-            return mobConfig.get("range");
+        VoiceConfig.VoiceAttributes attributes = VoiceConfig.getMobVoiceConfigs().get(mobId);
+        if (attributes != null) {
+            return attributes.range;
         }
         return 16.0;
     }
 
     private double getSpeed(String mobId) {
-        Map<String, Double> mobConfig = VoiceConfig.getMobVoiceConfigs().get(mobId);
-        if (mobConfig != null && mobConfig.containsKey("speed")) {
-            return mobConfig.get("speed");
+        VoiceConfig.VoiceAttributes attributes = VoiceConfig.getMobVoiceConfigs().get(mobId);
+        if (attributes != null) {
+            return attributes.speed;
         }
         return 1.0;
     }
+
 }

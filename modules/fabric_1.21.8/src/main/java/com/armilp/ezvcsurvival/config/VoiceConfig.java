@@ -1,130 +1,93 @@
 package com.armilp.ezvcsurvival.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import net.fabricmc.loader.api.FabricLoader;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class VoiceConfig {
-    public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
-    public static final ForgeConfigSpec CONFIG;
 
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> MOB_VOICE_CONFIGS;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ANIMAL_VOICE_CONFIGS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ARMOR_EFFECTS;
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("ezvcsurvival/voices.json");
 
-    public static final ForgeConfigSpec.DoubleValue WHISPER_RANGE_MULTIPLIER;
-    public static final ForgeConfigSpec.DoubleValue WHISPER_SPEED_MULTIPLIER;
+    private static VoiceConfigData config = new VoiceConfigData();
 
-    public static final ForgeConfigSpec.DoubleValue THUNDER_RANGE_MULTIPLIER;
-    public static final ForgeConfigSpec.DoubleValue SNEAKING_RANGE_MULTIPLIER;
-
-    static {
-
-        BUILDER.comment("FollowVoice Config",
-                        "Defines how mobs react to player voices, including their movement speed, detection range, and reaction threshold.")
-                .push("mob_voice_configs");
-        MOB_VOICE_CONFIGS = BUILDER.defineList(
-                "mob_configs",
-                List.of(
-                        "minecraft:zombie=speed=1.5,range=20,threshold=-40.0",
-                        "minecraft:skeleton=speed=1.2,range=15,threshold=-35.0"
-                ),
-                obj -> obj instanceof String && ((String) obj).contains("=")
-        );
-        BUILDER.pop();
-
-
-        BUILDER.comment("RunawayVoiceGoal Config",
-                        "Defines how animals react to player voices, including their fleeing speed, detection range, and reaction threshold.")
-                .push("animal_voice_configs");
-        ANIMAL_VOICE_CONFIGS = BUILDER.defineList(
-                "animal_configs",
-                List.of(
-                        "minecraft:cow=speed=1.5,range=15,threshold=-45.0",
-                        "minecraft:pig=speed=1.2,range=5,threshold=-45.0"
-                ),
-                obj -> obj instanceof String && ((String) obj).contains("=")
-        );
-        BUILDER.pop();
-
-
-        BUILDER.comment("Whisper Config",
-                        "Multipliers that affect the detection range and movement speed when the player is whispering.")
-                .push("whisper_configs");
-        WHISPER_RANGE_MULTIPLIER = BUILDER.defineInRange("whisper_range_multiplier", 0.5, 0.0, 1.0);
-        WHISPER_SPEED_MULTIPLIER = BUILDER.defineInRange("whisper_speed_multiplier", 0.8, 0.0, 1.0);
-        BUILDER.pop();
-
-
-        BUILDER.comment("Misc Config",
-                        "Multipliers that affect the detection range of voices in specific situations.")
-                .push("misc_config");
-        THUNDER_RANGE_MULTIPLIER = BUILDER.defineInRange("thunder_range_multiplier", 0.5, 0.0, 1.0);
-        SNEAKING_RANGE_MULTIPLIER = BUILDER.defineInRange("sneaking_range_multiplier", 0.5, 0.0, 1.0);
-        BUILDER.pop();
-
-        BUILDER.comment("Armor Effects Config",
-                "Define multipliers for mob detection range and speed when a player wears specific armor items.",
-                "Format: item_id=speedMultiplier,rangeMultiplier",
-                "Example: minecraft:diamond_helmet=0.5,0.5");
-        BUILDER.push("armor_effects");
-        ARMOR_EFFECTS = BUILDER.defineList("effects",
-                () -> List.of("minecraft:diamond_helmet=1.0,0.5", "minecraft:diamond_chestplate=1.0,0.7"),
-                obj -> obj instanceof String && ((String) obj).contains("=")
-        );
-        BUILDER.pop();
-
-        CONFIG = BUILDER.build();
-    }
-
-    public static Map<String, Map<String, Double>> getMobVoiceConfigs() {
-        Map<String, Map<String, Double>> parsedConfigs = new HashMap<>();
-        for (String config : MOB_VOICE_CONFIGS.get()) {
-            String[] parts = config.split("=", 2);
-            if (parts.length == 2) {
-                String mobId = parts[0];
-                String[] attributes = parts[1].split(",");
-                Map<String, Double> mobConfig = new HashMap<>();
-                for (String attribute : attributes) {
-                    String[] keyValue = attribute.split("=");
-                    if (keyValue.length == 2) {
-                        try {
-                            mobConfig.put(keyValue[0].trim(), Double.parseDouble(keyValue[1].trim()));
-                        } catch (NumberFormatException e) {
-                            System.err.println("[VoiceConfig] Invalid number format in: " + attribute);
-                        }
-                    }
-                }
-                parsedConfigs.put(mobId, mobConfig);
+    public static void load() {
+        if (!Files.exists(CONFIG_PATH)) {
+            save(); // Save default
+        } else {
+            try (Reader reader = Files.newBufferedReader(CONFIG_PATH)) {
+                config = GSON.fromJson(reader, VoiceConfigData.class);
+            } catch (IOException e) {
+                System.err.println("Failed to load voice config: " + e.getMessage());
             }
         }
-        return parsedConfigs;
     }
 
-
-    public static Map<String, Map<String, Double>> getAnimalVoiceConfigs() {
-        Map<String, Map<String, Double>> parsedConfigs = new HashMap<>();
-        for (String config : ANIMAL_VOICE_CONFIGS.get()) {
-            String[] parts = config.split("=", 2);
-            if (parts.length == 2) {
-                String mobId = parts[0];
-                String[] attributes = parts[1].split(",");
-                Map<String, Double> mobConfig = new HashMap<>();
-                for (String attribute : attributes) {
-                    String[] keyValue = attribute.split("=");
-                    if (keyValue.length == 2) {
-                        try {
-                            mobConfig.put(keyValue[0].trim(), Double.parseDouble(keyValue[1].trim()));
-                        } catch (NumberFormatException e) {
-                            System.err.println("[VoiceConfig] Invalid number format in: " + attribute);
-                        }
-                    }
-                }
-                parsedConfigs.put(mobId, mobConfig);
-            }
+    public static void save() {
+        try (Writer writer = Files.newBufferedWriter(CONFIG_PATH)) {
+            GSON.toJson(config, writer);
+        } catch (IOException e) {
+           System.out.println("Saved voice config to " + CONFIG_PATH);
         }
-        return parsedConfigs;
+    }
+
+    public static Map<String, VoiceAttributes> getMobVoiceConfigs() {
+        return config.mobVoiceConfigs;
+    }
+
+    public static Map<String, VoiceAttributes> getAnimalVoiceConfigs() {
+        return config.animalVoiceConfigs;
+    }
+
+    public static WhisperConfig getWhisperConfig() {
+        return config.whisperConfig;
+    }
+
+    public static MiscConfig getMiscConfig() {
+        return config.miscConfig;
+    }
+
+    public static Map<String, ArmorEffect> getArmorEffects() {
+        return config.armorEffects;
+    }
+
+    // === CONFIG DATA STRUCTURES === //
+
+    public static class VoiceConfigData {
+        public Map<String, VoiceAttributes> mobVoiceConfigs = new HashMap<>();
+        public Map<String, VoiceAttributes> animalVoiceConfigs = new HashMap<>();
+        public WhisperConfig whisperConfig = new WhisperConfig();
+        public MiscConfig miscConfig = new MiscConfig();
+        public Map<String, ArmorEffect> armorEffects = new HashMap<>();
+    }
+
+    public static class VoiceAttributes {
+        public double speed = 1.0;
+        public double range = 16.0;
+        public double threshold = -40.0;
+    }
+
+    public static class WhisperConfig {
+        public double rangeMultiplier = 0.5;
+        public double speedMultiplier = 0.8;
+    }
+
+    public static class MiscConfig {
+        public double thunderRangeMultiplier = 0.5;
+        public double sneakingRangeMultiplier = 0.5;
+    }
+
+    @SuppressWarnings("unused")
+    public static class ArmorEffect {
+        public double speedMultiplier = 1.0;
+        public double rangeMultiplier = 1.0;
     }
 }

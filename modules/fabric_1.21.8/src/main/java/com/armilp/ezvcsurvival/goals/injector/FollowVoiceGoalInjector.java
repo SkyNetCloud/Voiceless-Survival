@@ -28,22 +28,24 @@ public class FollowVoiceGoalInjector {
     }
 
     private static void addFollowVoiceGoal(MobEntity mob, ServerWorld world) {
-        Map<String, Map<String, Double>> configs = VoiceConfig.getMobVoiceConfigs();
+        Map<String, VoiceConfig.VoiceAttributes> configs = VoiceConfig.getMobVoiceConfigs();
         Identifier mobId = ENTITY_TYPE.getId(mob.getType());
 
         if (configs.containsKey(mobId.toString())) {
-            Map<String, Double> config = configs.get(mobId.toString());
-            double speed = config.getOrDefault("speed", 1.0);
-            double range = config.getOrDefault("range", 16.0);
-            double threshold = config.getOrDefault("threshold", -40.0);
+            VoiceConfig.VoiceAttributes config = configs.get(mobId.toString());
+            double speed = config.speed;
+            double range = config.range;
+            double threshold = config.threshold;
+
             if (world.getPlayers(player -> player.interactionManager.getGameMode().isSurvivalLike()).isEmpty()) {
-                try{
+                try {
                     Field goalSelectorField = MobEntity.class.getDeclaredField("goalSelector");
                     goalSelectorField.setAccessible(true);
                     GoalSelector goalSelector = (GoalSelector) goalSelectorField.get(mob);
-                    goalSelector.add(1, new FollowVoiceGoal(mob, speed, (int) range,threshold, 10000));
-                } catch (Exception ignored){
-
+                    goalSelector.add(1, new FollowVoiceGoal(mob, speed, (int) range, threshold, 10000));
+                } catch (Exception e) {
+                    //noinspection CallToPrintStackTrace
+                    e.printStackTrace();
                 }
             }
         }

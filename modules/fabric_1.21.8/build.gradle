@@ -7,11 +7,10 @@ plugins {
     id 'net.darkhax.curseforgegradle'
 }
 
-version = project.mod_version
-group = project.mod_group_id
-
+version = mod_version
+group = mod_group_id
 base {
-    archivesName = "${mod_name} ${minecraft_version}"
+    archivesName = mod_id
 }
 
 def changelogText = project.file('changelog.md').text
@@ -44,7 +43,6 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     modImplementation"curse.maven:sound-physics-remastered-535489:6809526"
-    modImplementation 'curse.maven:timeless-and-classics-zero-1028108:5529117-sources-5529578'
 
     // Voice Chat API dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
@@ -87,26 +85,23 @@ jar {
 tasks.register('publishCurseForge', TaskPublishCurseForge) {
     apiToken = System.getenv("CURSEFORGE_TOKEN")
 
-def mainFile = upload('1173633', file("build/libs/${mod_name} ${minecraft_version}-${mod_version}.jar"))
-    mainFile.displayName = "${mod_name} ${minecraft_version}-${mod_version} (Fabric)"
-    mainFile.releaseType = 'beta'
+    def mainFile = upload('1173633', file("build/libs/${mod_id}-${mod_version}.jar"))
+    mainFile.displayName = "${mod_name}-${mod_version}"
+    mainFile.releaseType = 'release'
     mainFile.changelog = changelogText
-    mainFile.changelogType = "markdown"
 
-    mainFile.addRequirement("fabric-api")
     mainFile.addRequirement("simple-voice-chat")
-    mainFile.addRequirement("forge-config-api-port-fabric")
-    mainFile.addOptional("timeless-and-classics-zero")
+    mainFile.addOptional("sound-physics-remastered")
 }
 
 
 modrinth {
     token = System.getenv("MODRINTH_TOKEN")// Remember to have the MODRINTH_TOKEN environment variable set or else this will fail - just make sure it stays private!
     projectId = "voiceless-survival" // This can be the project ID or the slug. Either will work!
-    versionNumber = "${minecraft_version}-${mod_version}" // You don't need to set this manually. Will fail if Modrinth has this version already
-    versionName = "${mod_name}-${minecraft_version}-${mod_version} (Fabric)"
+    versionName = "${mod_name} ${mod_version}"
+    versionNumber = "${mod_version}"
     versionType = "beta" // This is the default -- can also be `beta` or `alpha`
-    uploadFile = file("build/libs/${mod_name} ${minecraft_version}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
+    uploadFile = file("build/libs/${mod_id}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
     gameVersions = ["${minecraft_version}"] as Iterable<? extends String>
     // Must be an array, even with only one version
     loaders = ["fabric"] // Must also be an array - no need to specify this if you're using Loom or ForgeGradle

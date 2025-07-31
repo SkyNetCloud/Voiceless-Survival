@@ -1,6 +1,9 @@
 ### Changelog
 
-#### Version 0.8.2
+#### Version 1.0.0
 
-- The configuration system has been **redesigned** for better clarity and organization. The configuration file paths have been changed to `config/ezvcsurvival/`, and the files are now named `voices.toml` and `sounds.toml`.
-- Added the ability to set speed and range multipliers for mobs in groups, allowing for more customization in how mobs react to sounds.
+- Some minor code cleanup and optimizations for performance
+- This mod uses Simple Voice Chat version 1.21.8–2.5.35 
+- Mod is now on 1.21.8 minecraft version
+
+### Any issues with this mod should be reported on the [eZApocalypse Mods Discord](https://discord.gg/jqBFMhnJPe)

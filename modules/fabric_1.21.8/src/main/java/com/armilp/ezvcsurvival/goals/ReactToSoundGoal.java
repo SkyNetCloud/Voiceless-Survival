@@ -1,5 +1,6 @@
 package com.armilp.ezvcsurvival.goals;
 
+import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.armilp.ezvcsurvival.event.SoundEventTracker;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
@@ -34,11 +35,10 @@ public class ReactToSoundGoal extends Goal {
         activeGoals.add(this);
     }
 
+    @SuppressWarnings({"unused", "UnusedAssignment"})
     @Override
     public boolean canStart() {
         Vec3d mobCenterPos = mob.getPos();
-
-        // Se obtiene la última posición de algún sonido reproducido de los grupos definidos.
         Vec3d soundEventPos = null;
         double groupSpeedMult = 1.0;
         double groupRangeMult = 1.0;
@@ -55,15 +55,12 @@ public class ReactToSoundGoal extends Goal {
                 }
             }
         }
-
         boolean soundTriggered = false;
         if (soundEventPos != null) {
-            double groupEffectiveRange = range * groupRangeMult;
+            double groupEffectiveRange = range * groupRangeMult * SoundConfig.THUNDER_RANGE_MULTIPLIER;
             soundTriggered = mobCenterPos.distanceTo(soundEventPos) <= groupEffectiveRange;
         }
-
         boolean hurtTriggered = !(mob instanceof Monster) && lastAttackerPos != null;
-
         return soundTriggered || hurtTriggered;
     }
 
