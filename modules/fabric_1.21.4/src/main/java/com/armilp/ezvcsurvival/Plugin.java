@@ -40,7 +40,7 @@ public class Plugin implements VoicechatPlugin
 
     @Override
     public String getPluginId() {
-        return "ezvcsurvival";
+        return "ezvcsurvival.mixins.json";
     }
 
     @Nullable
