@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "com.armilp.ezvcsurvival.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MobEntityMixinGoals"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
