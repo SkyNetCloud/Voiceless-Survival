@@ -1,138 +1,144 @@
 package com.armilp.ezvcsurvival.config;
 
+import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
-import com.armilp.ezvcsurvival.utils.InjectorLogger;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.SerializedName;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourceType;
+import net.minecraft.util.Identifier;
+import net.minecraftforge.common.ForgeConfigSpec;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-
 public class SoundConfig {
 
-        private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-        private static final File CONFIG_FILE = new File("config/ezvcsurvival/sounds.json");
+    // Replace ForgeConfigSpec.DoubleValue with a simple wrapper
+    public static class DoubleValue {
+        private double value;
+        private final double defaultValue;
+        private final double min;
+        private final double max;
 
-        private static final Map<String, SoundGroupData> soundGroupDataMap = new HashMap<>();
-        private static final Map<String, MobReaction> mobReactionsMap = new HashMap<>();
-
-        public static double THUNDER_RANGE_MULTIPLIER = 0.8;
-
-        public static class MobReaction {
-            public double speed = 1.0;
-            public double range = 16.0;
-            public List<String> groups = new ArrayList<>();
+        public DoubleValue(double defaultValue, double min, double max) {
+            this.defaultValue = defaultValue;
+            this.value = defaultValue;
+            this.min = min;
+            this.max = max;
         }
 
-        public static class SoundGroupEntry {
-            public List<String> sounds = new ArrayList<>();
-            @SerializedName("speed_multiplier")
-            public double speedMultiplier = 1.0;
-            @SerializedName("range_multiplier")
-            public double rangeMultiplier = 1.0;
-
-            public SoundGroupData toData(String name) {
-                return new SoundGroupData(name, sounds, speedMultiplier, rangeMultiplier);
-            }
+        public double get() {
+            return value;
         }
 
-        public static class ConfigData {
-            @SerializedName("sound_groups")
-            public Map<String, SoundGroupEntry> soundGroups = new HashMap<>();
-            @SerializedName("mob_sound_reactions")
-            public Map<String, MobReaction> mobReactions = new HashMap<>();
-            @SerializedName("thunder_range_multiplier")
-            public double thunderRangeMultiplier = 0.8;
+        public void set(double value) {
+            this.value = Math.max(min, Math.min(max, value));
+        }
+    }
+
+    // Simple Builder class to mimic ForgeConfigSpec.Builder
+    public static class Builder {
+        public Builder push(String path) {
+            return this;
         }
 
-        public static void load() {
-            if (!CONFIG_FILE.exists()) {
-                InjectorLogger.logInfo(SoundConfig.class, "Creating default sound config file...");
-                saveDefaults();
-            }
+        public Builder pop() {
+            return this;
+        }
 
-            try (FileReader reader = new FileReader(CONFIG_FILE)) {
-                ConfigData config = GSON.fromJson(reader, ConfigData.class);
+        public DoubleValue defineInRange(String path, double defaultValue, double min, double max) {
+            return new DoubleValue(defaultValue, min, max);
+        }
 
-                soundGroupDataMap.clear();
-                for (Map.Entry<String, SoundGroupEntry> entry : config.soundGroups.entrySet()) {
-                    soundGroupDataMap.put(entry.getKey(), entry.getValue().toData(entry.getKey()));
+        public Object build() {
+            return new Object(); // Dummy object
+        }
+    }
+
+    public static final ForgeConfigSpec.DoubleValue THUNDER_RANGE_MULTIPLIER;
+
+    private static final List<SoundGroupData> priorityGroups = new ArrayList<>();
+    private static final List<SoundGroupData> customSoundGroups = new ArrayList<>();
+
+    public static final ForgeConfigSpec SPEC;
+
+
+    static {
+        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+
+        builder.push("weather");
+        THUNDER_RANGE_MULTIPLIER = builder.defineInRange("thunder_range_multiplier", 0.8, 0.0, 1.0);
+        builder.pop();
+
+        SPEC = builder.build();
+    }
+
+    public static void registerConfigListeners() {
+        // Initial load (equivalent to ModConfigEvent.Loading)
+        onModConfigLoading();
+
+        // Register reload listener (equivalent to ModConfigEvent.Reloading)
+        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(
+                new SimpleSynchronousResourceReloadListener() {
+                    @Override
+                    public Identifier getFabricId() {
+                        return Identifier.of(EZVCSurvival.MOD_ID, "sound_config");
+                    }
+
+                    @Override
+                    public void reload(ResourceManager manager) {
+                        onModConfigReloading();
+                    }
                 }
+        );
+    }
 
-                mobReactionsMap.clear();
-                mobReactionsMap.putAll(config.mobReactions);
+    private static void onModConfigLoading() {
+        EZVCSurvival.LOGGER.info("Loading EZVCSurvival configuration...");
+        loadConfigs();
+    }
 
-                THUNDER_RANGE_MULTIPLIER = config.thunderRangeMultiplier;
+    private static void onModConfigReloading() {
+        EZVCSurvival.LOGGER.info("Reloading EZVCSurvival configuration...");
+        loadConfigs();
+    }
 
-                InjectorLogger.logInfo(SoundConfig.class,"Loaded sound config successfully.");
+    public static void loadConfigs() {
+        try {
+            GeneralSoundsConfig.init();
+            mergeGeneralSoundsFromJson();
+            refreshPriorityGroups();
+        } catch (Exception e) {
+            EZVCSurvival.LOGGER.warn("Error loading JSON sound configs: {}", e.getMessage());
+        }
+    }
 
-            } catch (Exception ignored) {
+    private static void refreshPriorityGroups() {
+        priorityGroups.clear();
+        GeneralSoundsConfig.processPrioritySounds(priorityGroups);
+    }
+
+    private static void mergeGeneralSoundsFromJson() {
+        customSoundGroups.removeIf(g -> g.groupName().startsWith("auto_sound_"));
+
+        Map<String, GeneralSoundsConfig.SoundEntry> sounds = GeneralSoundsConfig.getSounds();
+        if (sounds != null) {
+            for (Map.Entry<String, GeneralSoundsConfig.SoundEntry> e : sounds.entrySet()) {
+                GeneralSoundsConfig.SoundEntry se = e.getValue();
+                customSoundGroups.add(new SoundGroupData(
+                        "auto_sound_" + e.getKey().replace(':', '_').replace('.', '_'),
+                        List.of(e.getKey()),
+                        se.speed_multiplier,
+                        se.range_multiplier
+                ));
             }
         }
+    }
 
-        private static void saveDefaults() {
-            ConfigData defaults = new ConfigData();
-
-            defaults.soundGroups.put("wood_sounds", createGroup(
-                    List.of("block.wood.break", "block.wood.hit", "block.wood.place")
-            ));
-            defaults.soundGroups.put("animal_hurts", createGroup(
-                    List.of("entity.cow.hurt", "entity.pig.hurt")
-            ));
-
-            defaults.mobReactions.put("minecraft:zombie", createReaction(1.5, 20.0, List.of("wood_sounds")));
-            defaults.mobReactions.put("minecraft:cow", createReaction(1.8, 16.0, List.of("animal_hurts")));
-
-            defaults.thunderRangeMultiplier = 0.8;
-
-            try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
-                GSON.toJson(defaults, writer);
-            } catch (Exception ignored) {
-
-            }
-        }
-
-        private static SoundGroupEntry createGroup(List<String> sounds) {
-            SoundGroupEntry entry = new SoundGroupEntry();
-            entry.sounds = sounds;
-            entry.speedMultiplier = 1.0;
-            entry.rangeMultiplier = 1.0;
-            return entry;
-        }
-
-        private static MobReaction createReaction(double speed, double range, List<String> groups) {
-            MobReaction reaction = new MobReaction();
-            reaction.speed = speed;
-            reaction.range = range;
-            reaction.groups = groups;
-            return reaction;
-        }
-
-        @SuppressWarnings("StatementWithEmptyBody")
-        public static List<SoundGroupData> getSoundGroupsForMob(String mobId) {
-            MobReaction reaction = mobReactionsMap.get(mobId);
-            if (reaction == null || reaction.groups == null) return List.of();
-
-            List<SoundGroupData> result = new ArrayList<>();
-            for (String group : reaction.groups) {
-                SoundGroupData data = soundGroupDataMap.get(group);
-                if (data != null) {
-                    result.add(data);
-                } else {
-
-                }
-            }
-            return result;
-        }
-
-        public static MobReaction getMobSoundReaction(String mobId) {
-            return mobReactionsMap.get(mobId);
-        }
+    public static List<SoundGroupData> getEnabledSoundGroups() {
+        return Collections.unmodifiableList(customSoundGroups);
+    }
 }

@@ -13,10 +13,16 @@
     "main": [
       "com.armilp.ezvcsurvival.EZVCSurvival"
     ],
+    "client": [
+      "com.armilp.ezvcsurvival.client.EZVCSurvivalClient"
+    ],
     "voicechat": [
       "com.armilp.ezvcsurvival.Plugin"
     ]
   },
+    "mixins": [
+        "ezvcsurvival.mixins.json"
+    ],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric": "*",

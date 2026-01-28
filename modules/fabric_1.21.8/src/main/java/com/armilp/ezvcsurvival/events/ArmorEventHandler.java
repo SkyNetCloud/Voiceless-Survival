@@ -1,4 +1,4 @@
-package com.armilp.ezvcsurvival.event;
+package com.armilp.ezvcsurvival.events;
 
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.ArmorEffect;
@@ -19,7 +19,7 @@ public class ArmorEventHandler  {
 
     private static void init() {
         if (initialized) return;
-        List<String> configList = new ArrayList<>(VoiceConfig.getArmorEffects().keySet());
+        List<? extends String> configList = VoiceConfig.ARMOR_EFFECTS.get();
         for (String entry : configList) {
             String[] parts = entry.split("=");
             if (parts.length != 2) continue;

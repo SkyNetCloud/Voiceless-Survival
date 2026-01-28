@@ -12,13 +12,13 @@ public class InjectorLogger {
 
 
 
-    @SuppressWarnings("unused")
-    public static void logDebug(Class<?> clazz, String message) {
-        if (Plugin.DEBUG) {
-            Logger logger = LoggerFactory.getLogger(clazz);
-            logger.debug(message);
-        }
-    }
+//    @SuppressWarnings("unused")
+//    public static void logDebug(Class<?> clazz, String message) {
+//        if (Plugin.DEBUG) {
+//            Logger logger = LoggerFactory.getLogger(clazz);
+//            logger.debug(message);
+//        }
+//    }
 
     public static void logError(Class<?> clazz, String message, Throwable throwable) {
         Logger logger = LoggerFactory.getLogger(clazz);
