@@ -1,4 +1,4 @@
-package com.armilp.ezvcsurvival.event;
+package com.armilp.ezvcsurvival.events;
 
 
 import net.minecraft.client.MinecraftClient;

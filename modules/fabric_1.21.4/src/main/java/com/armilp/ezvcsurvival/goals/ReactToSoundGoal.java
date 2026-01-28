@@ -1,7 +1,7 @@
 package com.armilp.ezvcsurvival.goals;
 
 import com.armilp.ezvcsurvival.data.SoundGroupData;
-import com.armilp.ezvcsurvival.event.SoundEventTracker;
+import com.armilp.ezvcsurvival.events.SoundEventTracker;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.ai.goal.Goal;

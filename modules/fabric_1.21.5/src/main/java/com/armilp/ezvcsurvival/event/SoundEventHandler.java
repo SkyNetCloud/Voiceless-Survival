@@ -1,11 +1,12 @@
-package com.armilp.ezvcsurvival.event;
+package com.armilp.ezvcsurvival.events;
+
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.SoundInstance;
-import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
+@SuppressWarnings("unused")
 public class SoundEventHandler {
 
     public static void onPlaySound(SoundInstance event) {

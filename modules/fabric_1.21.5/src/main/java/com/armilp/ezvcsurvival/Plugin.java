@@ -1,28 +1,29 @@
 package com.armilp.ezvcsurvival;
 
-import com.armilp.ezvcsurvival.compat.audio.AudioModifierFactory;
-import com.armilp.ezvcsurvival.compat.audio.modifier.IAudioModifier;
-import com.armilp.ezvcsurvival.data.SoundData;
 
-import com.armilp.ezvcsurvival.event.ArmorEventHandler;
+import com.armilp.ezvcsurvival.config.VoiceConfig;
+import com.armilp.ezvcsurvival.data.SoundData;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.maxhenkel.voicechat.api.*;
+import de.maxhenkel.voicechat.api.VoicechatApi;
+import de.maxhenkel.voicechat.api.VoicechatConnection;
+import de.maxhenkel.voicechat.api.VoicechatPlugin;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
 import de.maxhenkel.voicechat.api.opus.OpusDecoder;
-
-import com.armilp.ezvcsurvival.config.VoiceConfig;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
-
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
-public class Plugin implements VoicechatPlugin {
+@SuppressWarnings("unused")
+public class Plugin implements VoicechatPlugin
+{
 
     private static final boolean DEBUG = false;
 
@@ -39,7 +40,7 @@ public class Plugin implements VoicechatPlugin {
 
     @Override
     public String getPluginId() {
-        return "ezvcsurvival";
+        return "ezvcsurvival.mixins.json";
     }
 
     @Nullable
@@ -160,9 +161,6 @@ public class Plugin implements VoicechatPlugin {
                     if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
-                    double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
-                    detectionRange *= armorMult[1];
-                    speed *= armorMult[0];
                 }
             } else {
                 if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player) {
@@ -172,9 +170,6 @@ public class Plugin implements VoicechatPlugin {
                     if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
-                    double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
-                    detectionRange *= armorMult[1];
-                    speed *= armorMult[0];
                 }
             }
 
@@ -183,12 +178,6 @@ public class Plugin implements VoicechatPlugin {
                     (int) Math.floor(sender.getPlayer().getPosition().getY()),
                     (int) Math.floor(sender.getPlayer().getPosition().getZ())
             );
-
-            Vec3d senderVec = new Vec3d(voicechatPosition.getX(), voicechatPosition.getY(), voicechatPosition.getZ());
-            Vec3d playerVec = new Vec3d(voicechatPosition.getX(), voicechatPosition.getY(), voicechatPosition.getZ());
-
-            IAudioModifier audioModifier = AudioModifierFactory.createAudioModifier(0.5, "voicechat", playerVec, senderVec);
-            detectionRange = audioModifier.computeModifiedRange(detectionRange);
 
             double distance = Math.sqrt(playerPosition.getSquaredDistance(senderPosition));
             double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);
@@ -231,9 +220,6 @@ public class Plugin implements VoicechatPlugin {
                     if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
-                    double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
-                    detectionRange *= armorMult[1];
-                    speed *= armorMult[0];
                 }
             } else {
                 Object minecraftPlayer = sender.getPlayer().getPlayer();
@@ -244,9 +230,6 @@ public class Plugin implements VoicechatPlugin {
                     if (player.getWorld().isRaining() || player.getWorld().isThundering()) {
                         detectionRange *= thunderRangeMultiplier;
                     }
-                    double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
-                    detectionRange *= armorMult[1];
-                    speed *= armorMult[0];
                 }
             }
 
@@ -255,12 +238,6 @@ public class Plugin implements VoicechatPlugin {
                     (int) Math.floor(sender.getPlayer().getPosition().getY()),
                     (int) Math.floor(sender.getPlayer().getPosition().getZ())
             );
-
-            Vec3d senderVec = new Vec3d(voicechatPosition.getX(), voicechatPosition.getY(), voicechatPosition.getZ());
-            Vec3d playerVec = new Vec3d(voicechatPosition.getX(), voicechatPosition.getY(), voicechatPosition.getZ());
-
-            IAudioModifier audioModifier = AudioModifierFactory.createAudioModifier(0.5, "voicechat", playerVec, senderVec);
-            detectionRange = audioModifier.computeModifiedRange(detectionRange);
 
             double distance = Math.sqrt(playerPosition.getSquaredDistance(senderPosition));
             double perceivedIntensity = audioLevel - 20 * Math.log10(distance + 1);

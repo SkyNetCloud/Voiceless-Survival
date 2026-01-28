@@ -14,12 +14,14 @@ base {
 }
 
 def changelogText = project.file('changelog.md').text
-def site_debugMode = false
-
+def site_debugMode = true
 
 repositories {
-
+    maven { url = "https://maven.maxhenkel.de/repository/public" }
+    maven { url = "https://api.modrinth.com/maven" }
+    mavenCentral()
 }
+
 
 loom {
     runs {
@@ -42,7 +44,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    modImplementation"curse.maven:sound-physics-remastered-535489:6809526"
+   //modImplementation"curse.maven:sound-physics-remastered-535489:6809526"
 
     // Voice Chat API dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
@@ -52,7 +54,7 @@ dependencies {
     compileOnly "com.electronwill.night-config:toml:3.6.0"
 
     // Forge Config API Port
-    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:21.8.0"
+    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:21.8.2"
 }
 
 

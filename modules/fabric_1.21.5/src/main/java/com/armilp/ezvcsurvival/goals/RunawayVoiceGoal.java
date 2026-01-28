@@ -1,19 +1,17 @@
 package com.armilp.ezvcsurvival.goals;
 
 import com.armilp.ezvcsurvival.Plugin;
-import de.maxhenkel.voicechat.api.Player;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import org.apache.logging.log4j.core.jmx.Server;
 
 import java.util.EnumSet;
 
+@SuppressWarnings("unused")
 public class RunawayVoiceGoal extends Goal {
 
 

@@ -19,8 +19,11 @@ def site_debugMode = false
 
 
 repositories {
-
+    maven { url = "https://maven.maxhenkel.de/repository/public" }
+    maven { url = "https://api.modrinth.com/maven" }
+    mavenCentral()
 }
+
 
 loom {
     runs {

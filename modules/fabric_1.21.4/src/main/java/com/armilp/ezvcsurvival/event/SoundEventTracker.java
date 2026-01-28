@@ -1,4 +1,4 @@
-package com.armilp.ezvcsurvival.event;
+package com.armilp.ezvcsurvival.events;
 
 import com.armilp.ezvcsurvival.data.TimedSoundData;
 import net.minecraft.util.Identifier;

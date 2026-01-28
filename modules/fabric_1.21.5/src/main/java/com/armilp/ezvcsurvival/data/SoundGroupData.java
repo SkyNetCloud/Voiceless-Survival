@@ -3,6 +3,7 @@ package com.armilp.ezvcsurvival.data;
 
 import java.util.List;
 
+@SuppressWarnings({"ClassCanBeRecord", "unused"})
 public class SoundGroupData {
     private final String groupName;
     private final List<String> sounds;

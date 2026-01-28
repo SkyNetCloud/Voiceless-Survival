@@ -1,12 +1,8 @@
 plugins {
-    id 'fabric-loom' version '1.10-SNAPSHOT' apply false
+    id 'fabric-loom' version '1.15-SNAPSHOT' apply false
     id "com.modrinth.minotaur" version "2.+" apply false
     id 'net.darkhax.curseforgegradle' version '1.1.+' apply false
 }
-
-
-
-
 
 subprojects {
     
@@ -49,6 +45,8 @@ subprojects {
 
     // Configure repositories
     repositories {
+        maven { url = "https://maven.maxhenkel.de/repository/public" }
+        maven { url = "https://api.modrinth.com/maven" }
         mavenCentral()
         maven {
             // Add curse maven to repositories

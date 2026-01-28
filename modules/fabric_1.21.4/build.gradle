@@ -11,7 +11,7 @@ version = project.mod_version
 group = project.mod_group_id
 
 base {
-    archivesName = "${mod_name} ${minecraft_version}"
+    archivesName = "${mod_name}"
 }
 
 def changelogText = project.file('changelog.md').text
@@ -19,7 +19,9 @@ def site_debugMode = false
 
 
 repositories {
-
+    maven { url = "https://maven.maxhenkel.de/repository/public" }
+    maven { url = "https://api.modrinth.com/maven" }
+    mavenCentral()
 }
 
 loom {
@@ -88,7 +90,7 @@ jar {
 tasks.register('publishCurseForge', TaskPublishCurseForge) {
     apiToken = System.getenv("CURSEFORGE_TOKEN")
 
-    def mainFile = upload('1173633', file("build/libs/${mod_id}-${mod_version}.jar"))
+    def mainFile = upload('1173633', file("build/libs/${mod_name}-${mod_version}.jar"))
     mainFile.displayName = "${mod_name}-${mod_version}"
     mainFile.releaseType = 'release'
     mainFile.changelog = changelogText
@@ -103,8 +105,8 @@ modrinth {
     projectId = "voiceless-survival" // This can be the project ID or the slug. Either will work!
     versionName = "${mod_name} ${mod_version}"
     versionNumber = "${mod_version}"
-    versionType = "beta" // This is the default -- can also be `beta` or `alpha`
-    uploadFile = file("build/libs/${mod_id}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
+    versionType = "release" // This is the default -- can also be `beta` or `alpha`
+    uploadFile = file("build/libs/${mod_name}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
     gameVersions = ["${minecraft_version}"] as Iterable<? extends String>
     // Must be an array, even with only one version
     loaders = ["fabric"] // Must also be an array - no need to specify this if you're using Loom or ForgeGradle
