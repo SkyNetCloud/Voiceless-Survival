@@ -164,7 +164,8 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
         private void renderEntityReaction(DrawContext context, int textLeft, int top, int width, int height,
                                           int centerY, int statusRight) {
             ConfigListScreen.EntityReactionItem entityItem = (ConfigListScreen.EntityReactionItem) item;
-            String entityId = entityItem.id();
+
+            String entityId = entityItem.cleanId();
 
             String entityName = getEntityDisplayName(entityId);
 
@@ -224,12 +225,51 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
                 EntityType<?> type = Registries.ENTITY_TYPE.get(key);
                 if (type != null) {
                     String translationKey = type.getTranslationKey();
-                    return Text.translatable(translationKey).getString();
+                    Text translated = Text.translatable(translationKey);
+                    String result = translated.getString();
+
+                    // Check if the translation exists (not the key itself)
+                    if (!result.equals(translationKey)) {
+                        return result;
+                    }
                 }
-                return key.getPath();
-            } catch (Exception ignored) {
-                return entityId.contains(":") ? entityId.substring(entityId.indexOf(':') + 1) : entityId;
+
+                // If no valid translation, return a cleaned up version of the path
+                String path = key.getPath();
+                return capitalizeWords(path.replace("_", " "));
+
+            } catch (Exception e) {
+                // Clean up any "Optional[ResourceKey[" prefixes
+                String cleaned = entityId
+                        .replace("Optional[ResourceKey[", "")
+                        .replace("]]", "")
+                        .replace("minecraft:", "");
+
+                // Extract the actual entity name (last part after any dots)
+                String[] parts = cleaned.split("\\.");
+                String lastPart = parts[parts.length - 1];
+
+                return capitalizeWords(lastPart.replace("_", " "));
             }
+        }
+
+        private String capitalizeWords(String text) {
+            if (text == null || text.isEmpty()) {
+                return text;
+            }
+
+            String[] words = text.split(" ");
+            StringBuilder result = new StringBuilder();
+
+            for (String word : words) {
+                if (!word.isEmpty()) {
+                    result.append(Character.toUpperCase(word.charAt(0)))
+                            .append(word.substring(1).toLowerCase())
+                            .append(" ");
+                }
+            }
+
+            return result.toString().trim();
         }
 
         @Override
@@ -291,13 +331,23 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
             if (item instanceof ConfigListScreen.EntityConfigItem entityItem) {
                 var config = entityItem.getConfig();
 
-                tooltip.add(Text.literal(entityItem.getDisplayName()).formatted(Formatting.GOLD, Formatting.BOLD));
-                tooltip.add(Text.literal("ID: " + entityItem.getId()).formatted(Formatting.GRAY));
+                // Clean the display name
+                String displayName = entityItem.getDisplayName();
+                String cleanDisplayName = cleanEntityIdString(displayName);
+
+                // Clean the ID
+                String id = entityItem.getId();
+                String cleanId = cleanEntityIdString(id);
+
+                tooltip.add(Text.literal(cleanDisplayName).formatted(Formatting.GOLD, Formatting.BOLD));
+                tooltip.add(Text.literal("ID: " + cleanId).formatted(Formatting.GRAY));
                 tooltip.add(Text.literal(""));
                 tooltip.add(Text.translatable("tooltip.ezvcsurvival.configuration"));
                 tooltip.add(Text.translatable("tooltip.ezvcsurvival.enabled",
-                        config.enabled ? Text.translatable("gui.ezvcsurvival.enabled").formatted(Formatting.GREEN) : Text.translatable("gui.ezvcsurvival.disabled").formatted(Formatting.RED)));
-                tooltip.add(Text.translatable("tooltip.ezvcsurvival.speed", Text.literal(String.valueOf(config.speed)).formatted(Formatting.YELLOW)));
+                        config.enabled ? Text.translatable("gui.ezvcsurvival.enabled").formatted(Formatting.GREEN) :
+                                Text.translatable("gui.ezvcsurvival.disabled").formatted(Formatting.RED)));
+                tooltip.add(Text.translatable("tooltip.ezvcsurvival.speed",
+                        Text.literal(String.valueOf(config.speed)).formatted(Formatting.YELLOW)));
                 tooltip.add(Text.translatable("tooltip.ezvcsurvival.range",
                         Text.literal(String.valueOf(config.range)).formatted(Formatting.YELLOW)));
                 tooltip.add(Text.translatable("tooltip.ezvcsurvival.threshold",
@@ -306,7 +356,11 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
             } else if (item instanceof ConfigListScreen.SoundConfigItem soundItem) {
                 var config = soundItem.getConfig();
 
-                tooltip.add(Text.literal("Sound: " + soundItem.getId()).formatted(Formatting.GOLD, Formatting.BOLD));
+                // Clean sound ID
+                String soundId = soundItem.getId();
+                String cleanSoundId = cleanEntityIdString(soundId);
+
+                tooltip.add(Text.literal("Sound: " + cleanSoundId).formatted(Formatting.GOLD, Formatting.BOLD));
                 tooltip.add(Text.literal(""));
                 tooltip.add(Text.translatable("tooltip.ezvcsurvival.configuration"));
                 tooltip.add(Text.translatable("tooltip.ezvcsurvival.enabled",
@@ -321,10 +375,14 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
             } else if (item instanceof ConfigListScreen.EntityReactionItem) {
                 ConfigListScreen.EntityReactionItem reactionItem = (ConfigListScreen.EntityReactionItem) item;
                 var reaction = reactionItem.reaction();
-                String entityName = getEntityDisplayName(reactionItem.id());
+
+                // Clean entity ID
+                String entityId = reactionItem.id();
+                String cleanEntityId = cleanEntityIdString(entityId);
+                String entityName = getEntityDisplayName(cleanEntityId);
 
                 tooltip.add(Text.literal(entityName).formatted(Formatting.GOLD, Formatting.BOLD));
-                tooltip.add(Text.literal("ID: " + reactionItem.id()).formatted(Formatting.GRAY));
+                tooltip.add(Text.literal("ID: " + cleanEntityId).formatted(Formatting.GRAY));
                 tooltip.add(Text.literal(""));
                 tooltip.add(Text.translatable("tooltip.ezvcsurvival.sound_reaction"));
                 tooltip.add(Text.translatable("tooltip.ezvcsurvival.enabled",
@@ -338,6 +396,19 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
             }
 
             return tooltip;
+        }
+
+        private String cleanEntityIdString(String entityId) {
+            if (entityId == null) return "";
+
+            // Remove Optional[ResourceKey[ prefix and other unwanted parts
+            return entityId
+                    .replace("Optional[ResourceKey[", "")
+                    .replace("]]", "")
+                    .replace("minecraft:", "")
+                    .replace("[", "")
+                    .replace("]", "")
+                    .trim();
         }
 
         private void openEditScreen() {

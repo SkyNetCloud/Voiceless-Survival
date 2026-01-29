@@ -1,5 +1,6 @@
 package com.armilp.ezvcsurvival.mixin;
 
+import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.config.*;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.armilp.ezvcsurvival.goals.FollowVoiceGoal;
@@ -46,7 +47,8 @@ public abstract class MobEntityMixin {
 
         if (VoiceConfig.DEBUG.get()) {
             Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
-            System.out.println("[EZVCSurvival] Mob created: " + (id != null ? id.toString() : "unknown"));
+            EZVCSurvival.LOGGER.debug("[EZVCSurvival] Mob created: {}",
+                    id != null ? id.toString() : "unknown");
         }
 
         // Register this mob for future updates
@@ -70,6 +72,10 @@ public abstract class MobEntityMixin {
         // Only inject if not already injected (prevents double injection)
         if (!ezvc$hasGoalsInjected) {
             ezvc$injectGoals(mob, false);
+        } else if (VoiceConfig.DEBUG.get()) {
+            Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
+            EZVCSurvival.LOGGER.debug("[EZVCSurvival] Goals already injected for: {}",
+                    id != null ? id.toString() : "unknown");
         }
     }
 
@@ -91,7 +97,7 @@ public abstract class MobEntityMixin {
         // Skip if already injected
         if (ezvc$hasGoalsInjected) {
             if (VoiceConfig.DEBUG.get() && isDelayed) {
-                System.out.println("[EZVCSurvival] Goals already injected, skipping delayed injection");
+                EZVCSurvival.LOGGER.debug("[EZVCSurvival] Goals already injected, skipping delayed injection");
             }
             return;
         }
@@ -99,7 +105,7 @@ public abstract class MobEntityMixin {
         Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
         if (id == null) {
             if (VoiceConfig.DEBUG.get()) {
-                System.out.println("[EZVCSurvival] Cannot get entity identifier");
+                EZVCSurvival.LOGGER.debug("[EZVCSurvival] Cannot get entity identifier");
             }
             return;
         }
@@ -108,8 +114,8 @@ public abstract class MobEntityMixin {
         boolean isAnimal = mob instanceof AnimalEntity;
 
         if (VoiceConfig.DEBUG.get()) {
-            System.out.println("[EZVCSurvival] Injecting goals for: " + mobId +
-                    " (isAnimal: " + isAnimal + ", delayed: " + isDelayed + ")");
+            EZVCSurvival.LOGGER.debug("[EZVCSurvival] Injecting goals for: {} (isAnimal: {}, delayed: {})",
+                    mobId, isAnimal, isDelayed);
         }
 
         // Clear any existing EZVC goals first (just in case)
@@ -141,12 +147,12 @@ public abstract class MobEntityMixin {
             ezvc$hasGoalsInjected = true;
 
             if (VoiceConfig.DEBUG.get()) {
-                System.out.println("[EZVCSurvival] Successfully injected goals for: " + mobId);
+                EZVCSurvival.LOGGER.debug("[EZVCSurvival] Successfully injected goals for: {}", mobId);
             }
         } else {
             if (VoiceConfig.DEBUG.get()) {
-                System.out.println("[EZVCSurvival] No goals injected for: " + mobId +
-                        " (config disabled or not applicable)");
+                EZVCSurvival.LOGGER.debug("[EZVCSurvival] No goals injected for: {} (config disabled or not applicable)",
+                        mobId);
             }
         }
     }
@@ -158,31 +164,75 @@ public abstract class MobEntityMixin {
 
             if (cfg == null) {
                 if (VoiceConfig.DEBUG.get()) {
-                    System.out.println("[EZVCSurvival]   No FollowVoiceGoal config for: " + mobId);
+                    EZVCSurvival.LOGGER.debug("[EZVCSurvival]   No FollowVoiceGoal config for: {}", mobId);
                 }
                 return false;
             }
 
             if (VoiceConfig.DEBUG.get()) {
-                System.out.println("[EZVCSurvival]   FollowVoiceGoal config - enabled: " + cfg.enabled +
-                        ", speed: " + cfg.speed + ", range: " + cfg.range);
+                EZVCSurvival.LOGGER.debug("[EZVCSurvival]   FollowVoiceGoal config - enabled: {}, speed: {}, range: {}, threshold: {}",
+                        cfg.enabled, cfg.speed, cfg.range, cfg.threshold);
+
+                // Debug: Check if mob can pathfind
+                EZVCSurvival.LOGGER.debug("[EZVCSurvival]   Mob navigation state - isIdle: {}, isFollowingPath: {}, Mob type: {}",
+                        mob.getNavigation().isIdle(),
+                        mob.getNavigation().isFollowingPath(),
+                        mob.getType());
+
+                // Debug: Check mob's current goal selector
+                GoalSelector goalSelector = ezvc$getGoalSelector(mob);
+                try {
+                    // Use reflection to count goals (for debugging)
+                    java.lang.reflect.Field field = goalSelector.getClass().getDeclaredField("goals");
+                    field.setAccessible(true);
+                    java.util.Set<?> goals = (java.util.Set<?>) field.get(goalSelector);
+                    EZVCSurvival.LOGGER.debug("[EZVCSurvival]   Existing goals in selector: {}", goals.size());
+                } catch (Exception e) {
+                    EZVCSurvival.LOGGER.debug("[EZVCSurvival]   Could not count goals: {}", e.getMessage());
+                }
             }
 
             if (cfg.enabled && cfg.speed > 0 && cfg.range > 0) {
                 FollowVoiceGoal goal = new FollowVoiceGoal(mob, cfg.speed, (int) cfg.range, cfg.threshold, 10000);
                 GoalSelector goalSelector = ezvc$getGoalSelector(mob);
-                goalSelector.add(0, goal);
+
+                // DEBUG: Try different priorities - priority 0 might be conflicting with essential mob AI
+                int priority = 5; // Changed from 0 to 3 to avoid conflicts with essential goals
+
+                goalSelector.add(priority, goal);
                 ezvc$injectedGoals.add(goal);
 
                 if (VoiceConfig.DEBUG.get()) {
-                    System.out.println("[EZVCSurvival]   Injected FollowVoiceGoal with priority 0");
+                    EZVCSurvival.LOGGER.debug("[EZVCSurvival]   Injected FollowVoiceGoal with priority {}", priority);
+
+                    // Verify injection
+                    try {
+                        java.lang.reflect.Field field = goalSelector.getClass().getDeclaredField("goals");
+                        field.setAccessible(true);
+                        java.util.Set<?> goals = (java.util.Set<?>) field.get(goalSelector);
+
+                        boolean found = false;
+                        for (Object goalObj : goals) {
+                            if (goalObj == goal) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        EZVCSurvival.LOGGER.debug("[EZVCSurvival]   Goal injection verified: {}", found);
+                    } catch (Exception e) {
+                        EZVCSurvival.LOGGER.debug("[EZVCSurvival]   Could not verify goal injection: {}", e.getMessage());
+                    }
                 }
                 return true;
+            } else {
+                if (VoiceConfig.DEBUG.get()) {
+                    EZVCSurvival.LOGGER.debug("[EZVCSurvival]   FollowVoiceGoal not enabled or invalid config");
+                }
             }
         } catch (Exception e) {
             if (VoiceConfig.DEBUG.get()) {
-                System.err.println("[EZVCSurvival]   ERROR injecting FollowVoiceGoal for " + mobId + ": " + e.getMessage());
-                e.printStackTrace();
+                EZVCSurvival.LOGGER.error("[EZVCSurvival]   ERROR injecting FollowVoiceGoal for {}: {}",
+                        mobId, e.getMessage(), e);
             }
         }
         return false;
@@ -195,14 +245,14 @@ public abstract class MobEntityMixin {
 
             if (cfg == null) {
                 if (VoiceConfig.DEBUG.get()) {
-                    System.out.println("[EZVCSurvival]   No RunawayVoiceGoal config for: " + mobId);
+                    EZVCSurvival.LOGGER.debug("[EZVCSurvival]   No RunawayVoiceGoal config for: {}", mobId);
                 }
                 return false;
             }
 
             if (VoiceConfig.DEBUG.get()) {
-                System.out.println("[EZVCSurvival]   RunawayVoiceGoal config - enabled: " + cfg.enabled +
-                        ", speed: " + cfg.speed + ", range: " + cfg.range);
+                EZVCSurvival.LOGGER.debug("[EZVCSurvival]   RunawayVoiceGoal config - enabled: {}, speed: {}, range: {}, threshold: {}",
+                        cfg.enabled, cfg.speed, cfg.range, cfg.threshold);
             }
 
             if (cfg.enabled && cfg.speed > 0 && cfg.range > 0) {
@@ -212,14 +262,14 @@ public abstract class MobEntityMixin {
                 ezvc$injectedGoals.add(goal);
 
                 if (VoiceConfig.DEBUG.get()) {
-                    System.out.println("[EZVCSurvival]   Injected RunawayVoiceGoal with priority 4");
+                    EZVCSurvival.LOGGER.debug("[EZVCSurvival]   Injected RunawayVoiceGoal with priority 4");
                 }
                 return true;
             }
         } catch (Exception e) {
             if (VoiceConfig.DEBUG.get()) {
-                System.err.println("[EZVCSurvival]   ERROR injecting RunawayVoiceGoal for " + mobId + ": " + e.getMessage());
-                e.printStackTrace();
+                EZVCSurvival.LOGGER.error("[EZVCSurvival]   ERROR injecting RunawayVoiceGoal for {}: {}",
+                        mobId, e.getMessage(), e);
             }
         }
         return false;
@@ -232,14 +282,14 @@ public abstract class MobEntityMixin {
 
             if (r == null) {
                 if (VoiceConfig.DEBUG.get()) {
-                    System.out.println("[EZVCSurvival]   No GeneralSoundGoal config for: " + mobId);
+                    EZVCSurvival.LOGGER.debug("[EZVCSurvival]   No GeneralSoundGoal config for: {}", mobId);
                 }
                 return false;
             }
 
             if (VoiceConfig.DEBUG.get()) {
-                System.out.println("[EZVCSurvival]   GeneralSoundGoal config - enabled: " + r.enabled +
-                        ", speed: " + r.speed + ", range: " + r.range);
+                EZVCSurvival.LOGGER.debug("[EZVCSurvival]   GeneralSoundGoal config - enabled: {}, speed: {}, range: {}",
+                        r.enabled, r.speed, r.range);
             }
 
             if (r.enabled && r.speed > 0 && r.range > 0) {
@@ -252,19 +302,19 @@ public abstract class MobEntityMixin {
                     ezvc$injectedGoals.add(goal);
 
                     if (VoiceConfig.DEBUG.get()) {
-                        System.out.println("[EZVCSurvival]   Injected ReactToGeneralSoundGoal with priority 2");
+                        EZVCSurvival.LOGGER.debug("[EZVCSurvival]   Injected ReactToGeneralSoundGoal with priority 2");
                     }
                     return true;
                 } else {
                     if (VoiceConfig.DEBUG.get()) {
-                        System.out.println("[EZVCSurvival]   No enabled sound groups available");
+                        EZVCSurvival.LOGGER.debug("[EZVCSurvival]   No enabled sound groups available");
                     }
                 }
             }
         } catch (Exception e) {
             if (VoiceConfig.DEBUG.get()) {
-                System.err.println("[EZVCSurvival]   ERROR injecting ReactToGeneralSoundGoal for " + mobId + ": " + e.getMessage());
-                e.printStackTrace();
+                EZVCSurvival.LOGGER.error("[EZVCSurvival]   ERROR injecting ReactToGeneralSoundGoal for {}: {}",
+                        mobId, e.getMessage(), e);
             }
         }
         return false;
@@ -274,23 +324,27 @@ public abstract class MobEntityMixin {
     private void ezvc$cleanupGoals(MobEntity mob) {
         if (mob == null || mob.isRemoved()) return;
 
+        if (VoiceConfig.DEBUG.get()) {
+            EZVCSurvival.LOGGER.debug("[EZVCSurvival] Cleaning up goals for mob");
+        }
+
         // Remove goals from goal selector
         for (Goal goal : ezvc$injectedGoals) {
             try {
                 GoalSelector goalSelector = ezvc$getGoalSelector(mob);
                 goalSelector.remove(goal);
+
+                if (VoiceConfig.DEBUG.get()) {
+                    EZVCSurvival.LOGGER.debug("[EZVCSurvival]   Removed goal: {}", goal.getClass().getSimpleName());
+                }
             } catch (Exception e) {
                 if (VoiceConfig.DEBUG.get()) {
-                    System.err.println("[EZVCSurvival] Error removing goal: " + e.getMessage());
+                    EZVCSurvival.LOGGER.error("[EZVCSurvival]   Error removing goal: {}", e.getMessage(), e);
                 }
             }
         }
 
         ezvc$injectedGoals.clear();
-
-        if (VoiceConfig.DEBUG.get() && ezvc$hasGoalsInjected) {
-            System.out.println("[EZVCSurvival] Cleaned up goals for mob");
-        }
     }
 
     @Unique
@@ -301,8 +355,8 @@ public abstract class MobEntityMixin {
 
         if (VoiceConfig.DEBUG.get()) {
             Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
-            System.out.println("[EZVCSurvival] Refreshing goals for: " +
-                    (id != null ? id.toString() : "unknown"));
+            EZVCSurvival.LOGGER.debug("[EZVCSurvival] Refreshing goals for: {}",
+                    id != null ? id.toString() : "unknown");
         }
 
         // Reset injection flag to allow re-injection
@@ -313,5 +367,28 @@ public abstract class MobEntityMixin {
 
         // Re-inject with current config
         ezvc$injectGoals(mob, false);
+    }
+
+    @Unique
+    public void ezvc$forceReinjectGoals() {
+        MobEntity mob = (MobEntity) (Object) this;
+
+        if (VoiceConfig.DEBUG.get()) {
+            EZVCSurvival.LOGGER.debug("[EZVCSurvival] FORCE re-injecting goals!");
+        }
+
+        ezvc$hasGoalsInjected = false;
+        ezvc$cleanupGoals(mob);
+        ezvc$injectGoals(mob, false);
+    }
+
+    @Unique
+    public boolean ezvc$areGoalsInjected() {
+        return ezvc$hasGoalsInjected;
+    }
+
+    @Unique
+    public int ezvc$getInjectedGoalCount() {
+        return ezvc$injectedGoals.size();
     }
 }

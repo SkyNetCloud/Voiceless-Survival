@@ -70,11 +70,11 @@ public class FollowVoiceGoal extends Goal {
 
 
     private void handlePlayerInteraction() {
-        if (targetPlayer.isCreative()) {
-            targetPlayer = null;
-            mob.getNavigation().stop();
-            return;
-        }
+//        if (targetPlayer.isCreative()) {
+//            targetPlayer = null;
+//            mob.getNavigation().stop();
+//            return;
+//        }
 
 
         long currentTime = System.currentTimeMillis();

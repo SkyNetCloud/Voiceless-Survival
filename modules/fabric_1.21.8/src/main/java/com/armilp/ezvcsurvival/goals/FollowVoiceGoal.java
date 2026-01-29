@@ -1,7 +1,6 @@
 package com.armilp.ezvcsurvival.goals;
 
 import com.armilp.ezvcsurvival.Plugin;
-import de.maxhenkel.voicechat.api.Player;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -15,11 +14,12 @@ public class FollowVoiceGoal extends Goal {
     private final MobEntity mob;
     private final double speedModifier;
     private final int voiceDetectionRange;
-    private PlayerEntity targetPlayer;
     private final double threshold;
     private BlockPos targetSoundPosition;
     private long timePlayerInRange;
     private final long maxFollowTime;
+    private int updateCooldown;
+    private static final int UPDATE_INTERVAL = 20; // Update every 20 ticks (1 second)
 
     public FollowVoiceGoal(MobEntity mob, double speedModifier, int detectionRange, double threshold, long maxFollowTime) {
         this.mob = mob;
@@ -27,7 +27,8 @@ public class FollowVoiceGoal extends Goal {
         this.voiceDetectionRange = detectionRange;
         this.threshold = threshold;
         this.maxFollowTime = maxFollowTime;
-        this.setControls(EnumSet.of(Control.MOVE, Control.TARGET));
+        this.setControls(EnumSet.of(Control.MOVE));
+        this.updateCooldown = 0;
     }
 
     @Override
@@ -36,16 +37,22 @@ public class FollowVoiceGoal extends Goal {
             return false;
         }
 
-        targetPlayer = getNearestPlayerInRange();
-        targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
-        return targetPlayer != null || targetSoundPosition != null;
+        // Only check for sound location periodically to reduce lag
+        if (updateCooldown <= 0) {
+            targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            updateCooldown = UPDATE_INTERVAL;
+        } else {
+            updateCooldown--;
+        }
+
+        return targetSoundPosition != null;
     }
 
     @Override
     public void start() {
-        if (targetPlayer != null) {
-            timePlayerInRange = System.currentTimeMillis();
-        } else if (targetSoundPosition != null) {
+        timePlayerInRange = System.currentTimeMillis();
+        updateCooldown = 0; // Reset cooldown when starting
+        if (targetSoundPosition != null) {
             moveToSoundPosition();
         }
     }
@@ -55,55 +62,32 @@ public class FollowVoiceGoal extends Goal {
         if (mob.getTarget() != null) {
             return false;
         }
-        return targetPlayer != null || (targetSoundPosition != null && !mob.getNavigation().isIdle());
+
+        // Update sound position periodically while continuing
+        if (updateCooldown <= 0) {
+            targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            updateCooldown = UPDATE_INTERVAL;
+        } else {
+            updateCooldown--;
+        }
+
+        return targetSoundPosition != null;
     }
 
     @Override
     public void tick() {
-        if (targetPlayer != null) {
-            targetSoundPosition = null;
-            handlePlayerInteraction();
-        } else if (targetSoundPosition != null) {
-            handleSoundInteraction();
-        }
-    }
-
-    @Override
-    public void stop() {
-        targetSoundPosition = null;
-        targetPlayer = null;
-        mob.getNavigation().stop();
-    }
-
-    private void handlePlayerInteraction() {
-        if (targetPlayer.isCreative() || targetPlayer.isSpectator()) {
-            targetPlayer = null;
-            mob.getNavigation().stop();
+        if (targetSoundPosition == null) {
             return;
         }
 
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - timePlayerInRange > maxFollowTime) {
-            targetPlayer = null;
-            mob.getNavigation().stop();
-            return;
-        }
-
-        mob.getNavigation().setSpeed(speedModifier);
-
-        if (mob.getTarget() == null) {
-            mob.setTarget(targetPlayer);
-        }
-    }
-
-    private void handleSoundInteraction() {
-        BlockPos groundedPos = mob.getWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, targetSoundPosition);
-        double dx = (mob.getX() - (groundedPos.getX() + 0.5));
-        double dz = (mob.getZ() - (groundedPos.getZ() + 0.5));
+        // FIXED: Use a proper arrival distance (e.g., 3.0 blocks)
+        double dx = mob.getX() - (targetSoundPosition.getX() + 0.5);
+        double dz = mob.getZ() - (targetSoundPosition.getZ() + 0.5);
         double distanceSq = dx * dx + dz * dz;
-        double arrivalThresholdSq = this.threshold * this.threshold;
+        double ARRIVAL_DISTANCE_SQ = 3.0 * 3.0; // Arrive within 3 blocks
 
-        if (distanceSq <= arrivalThresholdSq) {
+        if (distanceSq <= ARRIVAL_DISTANCE_SQ) {
+            // Arrived at sound location, check for new sound
             targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
             if (targetSoundPosition != null) {
                 moveToSoundPosition();
@@ -113,33 +97,54 @@ public class FollowVoiceGoal extends Goal {
             return;
         }
 
-        if (distanceSq > (voiceDetectionRange * voiceDetectionRange) / 2.0) {
-            BlockPos newSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
-            if (newSoundPosition == null) {
-                targetSoundPosition = null;
-                mob.getNavigation().stop();
-                return;
-            } else {
-                targetSoundPosition = newSoundPosition;
-                moveToSoundPosition();
-            }
+        // Check if mob is stuck or needs path recalculation
+        if (!mob.getNavigation().isFollowingPath() || mob.getNavigation().isIdle()) {
+            moveToSoundPosition();
         }
-        mob.getNavigation().setSpeed(speedModifier);
     }
 
-    private PlayerEntity getNearestPlayerInRange() {
-        return mob.getWorld().getClosestPlayer(mob, 5);
+    @Override
+    public void stop() {
+        targetSoundPosition = null;
+        mob.getNavigation().stop();
     }
 
     private void moveToSoundPosition() {
-        if (targetSoundPosition != null) {
-            BlockPos ground = mob.getWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, targetSoundPosition);
+        if (targetSoundPosition == null) {
+            return;
+        }
+
+        // Get ground position at sound location
+        BlockPos groundPos = mob.getWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, targetSoundPosition);
+
+        // Move to the ground position
+        boolean pathStarted = mob.getNavigation().startMovingTo(
+                groundPos.getX() + 0.5,
+                groundPos.getY(),
+                groundPos.getZ() + 0.5,
+                speedModifier
+        );
+
+        if (!pathStarted) {
+            // Try moving directly to the sound position if pathfinding fails
             mob.getNavigation().startMovingTo(
-                    ground.getX() + 0.5,
-                    ground.getY(),
-                    ground.getZ() + 0.5,
+                    targetSoundPosition.getX() + 0.5,
+                    targetSoundPosition.getY(),
+                    targetSoundPosition.getZ() + 0.5,
                     speedModifier
             );
         }
+    }
+
+    public long getTimePlayerInRange() {
+        return timePlayerInRange;
+    }
+
+    public void setTimePlayerInRange(long timePlayerInRange) {
+        this.timePlayerInRange = timePlayerInRange;
+    }
+
+    public long getMaxFollowTime() {
+        return maxFollowTime;
     }
 }

@@ -24,6 +24,9 @@ public class VoiceConfig {
     public static final ForgeConfigSpec.IntValue SCULK_SENSOR_RANGE;
     public static final ForgeConfigSpec.IntValue SCULK_SENSOR_FREQUENCY;
 
+    // Sound Tracking Config
+    public static final ForgeConfigSpec.IntValue SOUND_TIMEOUT_SECONDS;
+
     public static final ForgeConfigSpec.BooleanValue DEBUG;
 
     static {
@@ -69,6 +72,15 @@ public class VoiceConfig {
                 () -> List.of("minecraft:diamond_helmet=0.9,0.6", "minecraft:diamond_chestplate=1.0,0.7"),
                 obj -> obj instanceof String && ((String) obj).contains("=")
         );
+        BUILDER.pop();
+
+        // ADDED THIS SECTION
+        BUILDER.comment("Sound Tracking Config",
+                        "How long sounds remain detectable by mobs after being made",
+                        "Higher values = sounds persist longer, mobs have more time to react",
+                        "Lower values = sounds disappear faster, less lag potential")
+                .push("sound_tracking");
+        SOUND_TIMEOUT_SECONDS = BUILDER.defineInRange("sound_timeout_seconds", 15, 5, 60);
         BUILDER.pop();
 
         BUILDER.comment("Debugging Config")

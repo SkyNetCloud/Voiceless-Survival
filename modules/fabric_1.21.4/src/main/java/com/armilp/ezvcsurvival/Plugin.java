@@ -104,11 +104,11 @@ public class Plugin implements VoicechatPlugin
         }
 
         // Check if the player is in creative mode
-        if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player) {
-            if (player.isCreative()) {
-                return; // Cancel processing if the player is in creative mode
-            }
-        }
+//        if (sender.getPlayer().getPlayer() instanceof ServerPlayerEntity player) {
+//            if (player.isCreative()) {
+//                return; // Cancel processing if the player is in creative mode
+//            }
+//        }
 
         if (decoder == null || decoder.isClosed()) {
             decoder = voicechatApi.createDecoder();
