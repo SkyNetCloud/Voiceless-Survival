@@ -4,6 +4,7 @@ import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.SoundData;
 import com.armilp.ezvcsurvival.events.ArmorEventHandler;
+import com.armilp.ezvcsurvival.sculk.SculkVibrationHelper;
 import de.maxhenkel.voicechat.api.*;
 import de.maxhenkel.voicechat.api.events.EventRegistration;
 import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
@@ -12,8 +13,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,22 +23,9 @@ import java.util.concurrent.TimeUnit;
 @ForgeVoicechatPlugin
 public class Plugin implements VoicechatPlugin {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger("EZVCSurvival");
-    private static boolean DEBUG;
-    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-
-    // Store sound data with timestamps
-    private static class TimedSoundData {
-        public final SoundData data;
-        public final long timestamp;
-
-        public TimedSoundData(SoundData data, long timestamp) {
-            this.data = data;
-            this.timestamp = timestamp;
-        }
-    }
-
-    private static final Map<UUID, TimedSoundData> playerSoundLocations = new ConcurrentHashMap<>();
+    private boolean DEBUG;
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> lastSculkVibrationTime = new ConcurrentHashMap<>();
     private static final long SCULK_VIBRATION_COOLDOWN_MS = 500;
     private static VoicechatApi voicechatApi;
@@ -56,13 +42,8 @@ public class Plugin implements VoicechatPlugin {
     public void initialize(VoicechatApi api) {
         voicechatApi = api;
         this.DEBUG = VoiceConfig.DEBUG.get();
-
-        // Start cleanup task for old sounds
-        startCleanupTask();
-
         if (DEBUG) {
-            LOGGER.debug("[EZVCSurvival] VoiceChat Plugin initialized");
-            LOGGER.debug("[EZVCSurvival] Debug mode enabled");
+            System.out.println("[DEBUG] VoiceChat Plugin initialized");
         }
     }
 
@@ -70,15 +51,15 @@ public class Plugin implements VoicechatPlugin {
     public void registerEvents(EventRegistration registration) {
         registration.registerEvent(MicrophonePacketEvent.class, this::onMicrophonePacket);
         if (DEBUG) {
-            LOGGER.debug("[EZVCSurvival] Registered MicrophonePacketEvent");
+            System.out.println("[DEBUG] Registered MicrophonePacketEvent");
         }
     }
 
     public static double getMaxAudioLevel(short[] samples) {
         double rms = 0D;
 
-        for (int i = 0; i < samples.length; i++) {
-            double sample = (double) samples[i] / (double) Short.MAX_VALUE;
+        for (short value : samples) {
+            double sample = (double) value / (double) Short.MAX_VALUE;
             rms += sample * sample;
         }
 
@@ -97,66 +78,12 @@ public class Plugin implements VoicechatPlugin {
 
     @Nullable
     public static BlockPos getLastSoundLocation(BlockPos mobPosition, double range, double minDb) {
-        long now = System.currentTimeMillis();
-
-        // Get timeout from config or use default (15 seconds)
-        long maxAge;
-        try {
-            maxAge = VoiceConfig.SOUND_TIMEOUT_SECONDS.get() * 1000L;
-        } catch (Exception e) {
-            maxAge = 15000L; // Default 15 seconds if config not loaded
-        }
-
-        if (DEBUG) {
-            LOGGER.debug("[EZVCSurvival] getLastSoundLocation called - Mob at: {}, Range: {}, Min dB: {}",
-                    mobPosition, range, minDb);
-            LOGGER.debug("[EZVCSurvival] Tracking {} sound locations", playerSoundLocations.size());
-        }
-
-        long finalMaxAge = maxAge;
         return playerSoundLocations.values().stream()
-                .filter(timedData -> {
-                    long age = now - timedData.timestamp;
-                    boolean isValid = age <= finalMaxAge;
-                    if (DEBUG && !isValid) {
-                        LOGGER.debug("[EZVCSurvival] Filtered out sound - too old: {}ms > {}ms", age, finalMaxAge);
-                    }
-                    return isValid;
-                })
-                .filter(timedData -> {
-                    boolean meetsThreshold = timedData.data.audioLevelDb() >= minDb;
-                    if (DEBUG && !meetsThreshold) {
-                        LOGGER.debug("[EZVCSurvival] Filtered out sound - dB too low: {} < {}",
-                                timedData.data.audioLevelDb(), minDb);
-                    }
-                    return meetsThreshold;
-                })
-                .filter(timedData -> {
-                    double distanceSq = mobPosition.getSquaredDistance(timedData.data.position());
-                    boolean inRange = distanceSq <= range * range;
-                    if (DEBUG && !inRange) {
-                        LOGGER.debug("[EZVCSurvival] Filtered out sound - out of range: {} > {} blocks",
-                                Math.sqrt(distanceSq), range);
-                    }
-                    return inRange;
-                })
-                .min(Comparator.comparingDouble(timedData ->
-                        mobPosition.getSquaredDistance(timedData.data.position())))
-                .map(timedData -> {
-                    if (DEBUG) {
-                        LOGGER.debug("[EZVCSurvival] Found valid sound at: {} ({}dB, {}ms old)",
-                                timedData.data.position(),
-                                timedData.data.audioLevelDb(),
-                                now - timedData.timestamp);
-                    }
-                    return timedData.data.position();
-                })
-                .orElseGet(() -> {
-                    if (DEBUG) {
-                        LOGGER.debug("[EZVCSurvival] No valid sound found for mob at {}", mobPosition);
-                    }
-                    return null;
-                });
+                .filter(data -> data.audioLevelDb() >= minDb)
+                .filter(data -> mobPosition.getSquaredDistance(data.position()) <= range * range)
+                .min(Comparator.comparingDouble(data -> mobPosition.getSquaredDistance(data.position())))
+                .map(SoundData::position)
+                .orElse(null);
     }
 
     public void onMicrophonePacket(MicrophonePacketEvent event) {
@@ -181,18 +108,10 @@ public class Plugin implements VoicechatPlugin {
         try {
             decoded = localDecoder.decode(opusEncodedData);
         } catch (Exception e) {
-            if (DEBUG) {
-                LOGGER.error("[EZVCSurvival] Failed to decode audio packet: {}", e.getMessage());
-            }
             return;
         }
 
         double audioLevel = getMaxAudioLevel(decoded);
-
-        // Debug: Log all sounds above a certain threshold
-        if (DEBUG && audioLevel > -40.0) {
-            LOGGER.debug("[EZVCSurvival] Raw sound detected: {}dB", audioLevel);
-        }
 
         UUID playerUUID = sender.getPlayer().getUuid();
         Position voicechatPosition = sender.getPlayer().getPosition();
@@ -216,18 +135,12 @@ public class Plugin implements VoicechatPlugin {
 
         List<String> allIds = new ArrayList<>(EntityVoiceConfig.getAllEntityIds());
 
-        if (DEBUG) {
-            LOGGER.debug("[EZVCSurvival] Processing sound for {} entities", allIds.size());
-        }
-
         long currentTime = System.currentTimeMillis();
-        boolean anyEntityDetectedSound = false;
 
         for (String id : allIds) {
             EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.getMonster(id);
             if (cfg == null) cfg = EntityVoiceConfig.getAnimal(id);
             if (cfg == null || !cfg.enabled) continue;
-
             double threshold = cfg.threshold;
             double detectionRange = cfg.range;
             double speed = cfg.speed;
@@ -248,104 +161,49 @@ public class Plugin implements VoicechatPlugin {
 
             double modifiedRange = detectionRange;
 
-            // Calculate actual distance from sound source to mobs (this would need mob positions)
-            // For now, we'll just check if the sound is loud enough
-            double distanceVolume = 1.0; // Simplified for now
+            double distance = senderVec.distanceTo(new Vec3d(playerPosition.getX(), playerPosition.getY(), playerPosition.getZ()));
+            double distanceVolume = 1.0 - Math.min(distance, modifiedRange) / modifiedRange;
 
-            // Check if sound meets threshold and range requirements
-            boolean meetsThreshold = audioLevel >= threshold;
-            boolean meetsRange = true; // We'll check range when mobs query for sounds
-
-            if (meetsThreshold && meetsRange) {
+            if (audioLevel >= threshold && distanceVolume > 0.0) {
                 BlockPos precisePos = new BlockPos(
                         (int) Math.floor(senderVec.x),
                         (int) Math.floor(senderVec.y),
                         (int) Math.floor(senderVec.z)
                 );
-
-                // Store the sound with timestamp
                 playerSoundLocations.put(
                         playerUUID,
-                        new TimedSoundData(new SoundData(precisePos, audioLevel), currentTime)
+                        new SoundData(precisePos, audioLevel)
                 );
-
-                anyEntityDetectedSound = true;
-
                 if (DEBUG) {
-                    LOGGER.debug("[EZVCSurvival] {} detected sound! Threshold: {}dB | Audio: {}dB | Range: {} | Position: {}",
-                            id, threshold, audioLevel, modifiedRange, precisePos);
+                    System.out.println("[DEBUG] " + id + " detects sound! " +
+                            "Threshold: " + threshold + " dB | " +
+                            "AudioLevel: " + audioLevel + " dB | " +
+                            "Range: " + detectionRange + " | " +
+                            "Speed: " + speed + " | " +
+                            "Position: " + precisePos);
                 }
-            } else if (DEBUG && audioLevel > -60.0) {
-                LOGGER.debug("[EZVCSurvival] {} did NOT detect sound - Threshold: {}dB | Audio: {}dB | Range: {}",
-                        id, threshold, audioLevel, modifiedRange);
+                if (DEBUG) {
+                    System.out.println("[DEBUG] Intensity/range too low for " + id + ": "
+                            + audioLevel + " dB | " + distanceVolume);
+                }
             }
         }
 
-        // Sculk Sensor Voice Detection (commented out for now)
-        // if (VoiceConfig.SCULK_SENSOR_ENABLED.get() && sender.getPlayer().getPlayer() instanceof ServerPlayerEntity serverPlayer) {
-        //     if (!lastSculkVibrationTime.containsKey(playerUUID)
-        //             || currentTime - lastSculkVibrationTime.get(playerUUID) > SCULK_VIBRATION_COOLDOWN_MS) {
-        //         if (audioLevel >= VoiceConfig.SCULK_SENSOR_THRESHOLD.get()) {
-        //             SculkVibrationHelper.generateVibration(serverPlayer, VoiceConfig.SCULK_SENSOR_RANGE.get(), audioLevel);
-        //             lastSculkVibrationTime.put(playerUUID, currentTime);
-        //             if (DEBUG) {
-        //                 LOGGER.debug("[EZVCSurvival] Sculk vibration generated for player {} | AudioLevel: {} dB",
-        //                         playerUUID, audioLevel);
-        //             }
-        //         }
-        //     }
-        // }
-
-        // Don't schedule removal - let cleanup task handle it
-        // This way sounds persist for the full timeout period
-    }
-
-    private void startCleanupTask() {
-        scheduler.scheduleAtFixedRate(() -> {
-            long now = System.currentTimeMillis();
-            long maxAge = VoiceConfig.SOUND_TIMEOUT_SECONDS.get() * 1000L;
-
-            int initialSize = playerSoundLocations.size();
-            playerSoundLocations.entrySet().removeIf(entry ->
-                    (now - entry.getValue().timestamp) > maxAge);
-
-            int removed = initialSize - playerSoundLocations.size();
-            if (DEBUG && removed > 0) {
-                LOGGER.debug("[EZVCSurvival] Cleanup task removed {} old sounds", removed);
+        // Sculk Sensor Voice Detection
+        if (VoiceConfig.SCULK_SENSOR_ENABLED.get() && sender.getPlayer().getPlayer() instanceof ServerPlayerEntity serverPlayer) {
+            if (!lastSculkVibrationTime.containsKey(playerUUID)
+                    || currentTime - lastSculkVibrationTime.get(playerUUID) > SCULK_VIBRATION_COOLDOWN_MS) {
+                if (audioLevel >= VoiceConfig.SCULK_SENSOR_THRESHOLD.get()) {
+                    SculkVibrationHelper.generateVibration(serverPlayer, VoiceConfig.SCULK_SENSOR_RANGE.get(), audioLevel);
+                    lastSculkVibrationTime.put(playerUUID, currentTime);
+                    if (DEBUG) {
+                        System.out.println("[DEBUG] Sculk vibration generated for player " + playerUUID +
+                                " | AudioLevel: " + audioLevel + " dB");
+                    }
+                }
             }
-        }, 1, 1, TimeUnit.SECONDS);
-    }
-
-    public static void debugSoundLocations() {
-        if (LOGGER.isDebugEnabled()) {
-            long now = System.currentTimeMillis();
-            LOGGER.debug("[EZVCSurvival] === SOUND LOCATION DEBUG ===");
-            LOGGER.debug("[EZVCSurvival] Currently tracking {} sound locations:", playerSoundLocations.size());
-
-            if (playerSoundLocations.isEmpty()) {
-                LOGGER.debug("[EZVCSurvival] No sounds being tracked");
-            } else {
-                playerSoundLocations.forEach((uuid, timedData) -> {
-                    long age = now - timedData.timestamp;
-                    LOGGER.debug("[EZVCSurvival]   Player: {}, Position: {}, Age: {}ms, Volume: {}dB",
-                            uuid.toString().substring(0, 8) + "...",
-                            timedData.data.position(),
-                            age,
-                            timedData.data.audioLevelDb());
-                });
-            }
-            LOGGER.debug("[EZVCSurvival] === END DEBUG ===");
         }
-    }
 
-    public static int getTrackedSoundCount() {
-        return playerSoundLocations.size();
-    }
-
-    public static void clearAllSounds() {
-        playerSoundLocations.clear();
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("[EZVCSurvival] Cleared all tracked sounds");
-        }
+        //scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
     }
 }
