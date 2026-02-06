@@ -2,12 +2,9 @@ package com.armilp.ezvcsurvival.events;
 
 import com.armilp.ezvcsurvival.data.TimedSoundData;
 import com.armilp.ezvcsurvival.goals.ReactToGeneralSoundGoal;
-import com.armilp.ezvcsurvival.mixin.MobEntityAccessor;
-
-import de.maxhenkel.voicechat.api.ServerLevel;
+import com.armilp.ezvcsurvival.mixins.MobEntityAccessor;
 import net.minecraft.entity.ai.goal.PrioritizedGoal;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.registry.tag.EntityTypeTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;

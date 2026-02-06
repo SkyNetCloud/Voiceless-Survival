@@ -4,7 +4,7 @@ import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
-import com.armilp.ezvcsurvival.utils.MobGoalManager;
+import com.armilp.ezvcsurvival.goals.MobGoalInjector;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -165,16 +165,14 @@ public record UpdateConfigPayload(
                                 packet.configType + " - " + packet.targetId);
                     }
 
-                    // Notify about config changes (mixins handle the actual goal injection)
-                    MobGoalManager.notifyConfigReloaded(server);
 
-                    // For entity-specific changes, also send entity-specific notification
+                    MobGoalInjector.refreshAll();
                     if (packet.configType == ConfigType.ENTITY_VOICE ||
                             packet.configType == ConfigType.GENERAL_SOUND_ENTITY) {
 
                         if (packet.targetId != null && !packet.targetId.isEmpty() &&
                                 !"global".equals(packet.targetId) && !"refresh".equals(packet.targetId)) {
-                            MobGoalManager.notifyEntityConfigChanged(server, packet.targetId);
+                            MobGoalInjector.refreshEntityId(packet.targetId);
                         }
                     }
 
@@ -289,9 +287,7 @@ public record UpdateConfigPayload(
             GeneralSoundsConfig.init();
             EntityVoiceConfig.init();
             SoundConfig.loadConfigs();
-
-            // Notify about refresh
-            MobGoalManager.notifyConfigReloaded(server);
+            MobGoalInjector.refreshAll();
 
             if (VoiceConfig.DEBUG.get()) {
                 System.out.println("[EZVCSurvival] Manual refresh completed");

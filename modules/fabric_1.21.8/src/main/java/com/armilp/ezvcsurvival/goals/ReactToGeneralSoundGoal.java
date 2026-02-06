@@ -14,7 +14,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Heightmap;
 
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
@@ -63,8 +62,7 @@ public class ReactToGeneralSoundGoal extends Goal {
         if (!GeneralSoundsConfig.canEntityReactToSound(entityId, soundId)) return;
 
         boolean isPriority = false;
-        for (int i = 0, size = soundGroups.size(); i < size; i++) {
-            SoundGroupData group = soundGroups.get(i);
+        for (SoundGroupData group : soundGroups) {
             if (group.groupName().startsWith("auto_priority_")) {
                 if (group.sounds().contains(soundId)) {
                     isPriority = true;
@@ -77,8 +75,7 @@ public class ReactToGeneralSoundGoal extends Goal {
 
         if (!isPriority) {
             boolean found = false;
-            for (int i = 0, size = soundGroups.size(); i < size; i++) {
-                SoundGroupData group = soundGroups.get(i);
+            for (SoundGroupData group : soundGroups) {
                 if (group.sounds().contains(soundId)) {
                     speedMult = group.speedMultiplier();
                     rangeMult = group.rangeMultiplier();
@@ -250,7 +247,7 @@ public class ReactToGeneralSoundGoal extends Goal {
         }
 
         Vec3d currentPos = mob.getPos();
-        boolean isPriority = lastPrioritySoundPos != null && targetSoundPos.equals(lastPrioritySoundPos);
+        boolean isPriority = targetSoundPos.equals(lastPrioritySoundPos);
 
         double effectiveRange = range * targetRangeMultiplier;
         double effectiveSpeed = speed * targetSpeedMultiplier;

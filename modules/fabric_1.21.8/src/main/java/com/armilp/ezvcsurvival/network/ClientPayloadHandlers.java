@@ -1,10 +1,10 @@
 package com.armilp.ezvcsurvival.network;
 
-import net.minecraft.client.MinecraftClient;
 import com.armilp.ezvcsurvival.EZVCSurvival;
-import com.armilp.ezvcsurvival.client.gui.ConfigEditorScreen; // Assuming you have this
+import com.armilp.ezvcsurvival.client.gui.ConfigEditorScreen;
+import net.minecraft.client.MinecraftClient;
 
-import java.awt.Desktop;
+import java.awt.*;
 import java.io.File;
 
 public class ClientPayloadHandlers {

@@ -17,7 +17,6 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 
 import java.util.*;
-import java.util.List;
 
 public class ConfigListScreen extends Screen {
 

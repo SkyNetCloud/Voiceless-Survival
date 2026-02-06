@@ -8,8 +8,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
-import java.awt.*;
-
 public class ConfigEditorScreen extends Screen {
 
     private static final int BUTTON_WIDTH = 120;

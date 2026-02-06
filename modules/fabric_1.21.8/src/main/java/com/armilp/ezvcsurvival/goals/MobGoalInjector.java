@@ -15,7 +15,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 
-
 import java.util.*;
 
 public class MobGoalInjector {
