@@ -264,11 +264,11 @@ public class ConfigEditScreen extends Screen {
         int fieldCount = getFieldCount();
         int buttonY = startY + (fieldCount * FIELD_SPACING) + 30;
 
-//        this.saveButton = ButtonWidget.builder(
-//                Text.translatable("button.ezvcsurvival.save"),
-//                b -> saveConfig()
-//        ).dimensions(centerX - CENTER_X_OFFSET - BUTTON_WIDTH - BUTTON_SPACING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
-//        this.addDrawableChild(this.saveButton);
+        this.saveButton = ButtonWidget.builder(
+                Text.translatable("button.ezvcsurvival.save"),
+                b -> saveConfig()
+        ).dimensions(centerX - CENTER_X_OFFSET - BUTTON_WIDTH - BUTTON_SPACING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
+        this.addDrawableChild(this.saveButton);
 
         ButtonWidget cancelButton = ButtonWidget.builder(
                 Text.translatable("button.ezvcsurvival.cancel"),

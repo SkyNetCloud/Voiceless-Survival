@@ -1,6 +1,7 @@
 package com.armilp.ezvcsurvival.goals;
 
 import com.armilp.ezvcsurvival.Plugin;
+import com.armilp.ezvcsurvival.config.VoiceConfig;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.passive.AnimalEntity;
@@ -33,6 +34,8 @@ public class RunawayVoiceGoal extends Goal {
     @Override
     public boolean canStart() {
         targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+        boolean canStart = targetSoundPosition != null;
+
         return targetSoundPosition != null;
     }
     

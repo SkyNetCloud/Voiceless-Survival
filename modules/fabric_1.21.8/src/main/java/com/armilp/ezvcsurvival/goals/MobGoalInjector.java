@@ -1,5 +1,6 @@
 package com.armilp.ezvcsurvival.goals;
 
+import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
@@ -9,8 +10,10 @@ import com.armilp.ezvcsurvival.mixins.MobEntityAccessor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.PrioritizedGoal;
+import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.AnimalEntity;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
@@ -31,8 +34,8 @@ public class MobGoalInjector {
             if (!hasActiveGoals(mob)) {
                 injectGoals(mob);
 
-//                CompoundTag data = mob.getPersistentData();
-//                data.putBoolean(TAG, true);
+                NbtCompound nbt = new NbtCompound();
+                nbt.putBoolean(TAG, true);
                 TRACKED_MOBS.add(mob);
 
                 if (VoiceConfig.DEBUG.get()) {
@@ -140,7 +143,10 @@ public class MobGoalInjector {
             if (!isAnimal) {
                 injectedGoals.followGoal = injectFollowVoiceGoal(mob, mobId);
             } else {
-                injectedGoals.runawayGoal = injectRunawayVoiceGoal((AnimalEntity) mob, mobId);
+                if (mob instanceof AnimalEntity) {
+                    AnimalEntity animal = (AnimalEntity) mob;
+                    injectedGoals.runawayGoal = injectRunawayVoiceGoal(animal, mobId);
+                }
             }
         }
 
@@ -173,7 +179,7 @@ public class MobGoalInjector {
             EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.getAnimal(mobId);
             if (cfg != null && cfg.enabled && cfg.speed > 0 && cfg.range > 0) {
                 Goal goal = new RunawayVoiceGoal(animal, cfg.speed, (int) cfg.range, cfg.threshold);
-                acc(animal).vs$getGoalSelector().add(4, goal);
+                acc(animal).vs$getGoalSelector().add(1, goal);
                 return goal;
             }
         } catch (Exception e) {

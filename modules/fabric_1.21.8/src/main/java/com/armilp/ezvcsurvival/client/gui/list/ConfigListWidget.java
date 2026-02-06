@@ -6,8 +6,10 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.screen.narration.NarrationPart;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.registry.Registries;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -227,10 +229,20 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
 
         private String getEntityDisplayName(String entityId) {
             try {
-                EntityType<?> type = Registries.ENTITY_TYPE.get(Identifier.tryParse(entityId));
+                Identifier identifier = Identifier.tryParse(entityId);
+                if (identifier == null) {
+                    return entityId;
+                }
+
+                EntityType<?> type = Registries.ENTITY_TYPE.get(identifier);
+                if (type == null) {
+                    return identifier.getPath();
+                }
+
                 String translationKey = type.getTranslationKey();
-                return Text.translatable(translationKey).getString();
-            } catch (Exception ignored) {
+                return translationKey != null ? Text.translatable(translationKey).getString() : identifier.getPath();
+
+            } catch (Exception e) {
                 return entityId.contains(":") ? entityId.substring(entityId.indexOf(':') + 1) : entityId;
             }
         }
@@ -323,7 +335,7 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
             } else if (item instanceof ConfigListScreen.EntityReactionItem(
                     String id, com.armilp.ezvcsurvival.config.GeneralSoundsConfig.Reaction reaction
             )) {
-                String entityName = getEntityDisplayName(id);
+                String entityName = getEntityDisplayName(cleanElementId(id));
 
 
 

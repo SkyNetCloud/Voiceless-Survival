@@ -8,6 +8,7 @@ import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.goals.MobGoalInjector;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
+import com.armilp.ezvcsurvival.sculk.ModGameEvent;
 import com.mojang.logging.LogUtils;
 import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import net.fabricmc.api.ModInitializer;
@@ -35,6 +36,7 @@ public class EZVCSurvival implements ModInitializer {
         EntityVoiceConfig.init();
         GeneralSoundsConfig.init();
         SoundConfig.loadConfigs();
+        ModGameEvent.register();
 
         ServerEntityEvents.ENTITY_LOAD.register(MobGoalInjector::onEntityJoin);
 
