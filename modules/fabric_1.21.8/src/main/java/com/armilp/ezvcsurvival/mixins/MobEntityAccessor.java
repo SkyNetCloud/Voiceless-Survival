@@ -1,4 +1,4 @@
-package com.armilp.ezvcsurvival.mixin;
+package com.armilp.ezvcsurvival.mixins;
 
 import net.minecraft.entity.ai.goal.GoalSelector;
 import net.minecraft.entity.mob.MobEntity;
