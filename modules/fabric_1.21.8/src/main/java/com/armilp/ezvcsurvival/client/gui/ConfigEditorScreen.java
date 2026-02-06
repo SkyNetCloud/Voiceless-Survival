@@ -2,6 +2,7 @@ package com.armilp.ezvcsurvival.client.gui;
 
 import com.armilp.ezvcsurvival.client.gui.list.ConfigListScreen;
 import com.armilp.ezvcsurvival.utils.ModInfo;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -80,5 +81,25 @@ public class ConfigEditorScreen extends Screen {
         Text version = ModInfo.getVersion();
         int versionWidth = getTextRenderer().getWidth(version);
         context.drawText(getTextRenderer(), version, this.width - versionWidth - 5, 5, 0xFFAAAAAA, true);
+    }
+
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) {
+            MinecraftClient.getInstance().setScreen(null);
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public void resize(MinecraftClient client, int width, int height) {
+        super.resize(client, width, height);
+    }
+
+    @Override
+    public boolean shouldPause() {
+        return false;
     }
 }

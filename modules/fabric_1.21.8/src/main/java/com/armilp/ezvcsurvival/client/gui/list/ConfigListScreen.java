@@ -7,7 +7,6 @@ import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.network.UpdateConfigPayload;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.EditBox;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -17,7 +16,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 
@@ -162,7 +160,7 @@ public class ConfigListScreen extends Screen {
         for (EntityType<?> type : Registries.ENTITY_TYPE) {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
-            String id = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString();
+            String id = Registries.ENTITY_TYPE.getKey(type).toString();
             EntityVoiceConfig.EntityConfig config = EntityVoiceConfig.get(id);
             if (config == null) {
                 config = EntityVoiceConfig.EntityConfig.defaultFor(type);
@@ -170,7 +168,7 @@ public class ConfigListScreen extends Screen {
             }
             items.add(new EntityConfigItem(id, type, config));
         }
-        items.sort(Comparator.comparing(item -> ((EntityConfigItem) item).getDisplayName()));
+        items.sort(Comparator.comparing(item -> ((EntityConfigItem) item).getDisplayName().getString()));
     }
 
     private void loadGeneralSoundConfigs() {
@@ -319,8 +317,7 @@ public class ConfigListScreen extends Screen {
 
         int titleWidth = this.textRenderer.getWidth(this.title);
         int separatorY = 20;
-        graphics.fill(this.width / 2 - titleWidth / 2 - 10, separatorY,
-                this.width / 2 + titleWidth / 2 + 10, separatorY + 1, 0x55FFFFFF);
+        graphics.fill(this.width / 2 - titleWidth / 2 - 10, separatorY, this.width / 2 + titleWidth / 2 + 10, separatorY + 1, 0x55FFFFFF);
         this.list.render(graphics, mouseX, mouseY, partialTick);
         searchBox.render(graphics, mouseX, mouseY, partialTick);
         if (searchBox.getText().isEmpty() && !searchBox.isFocused()) {
@@ -333,7 +330,7 @@ public class ConfigListScreen extends Screen {
                     false
             );
         }
-        int searchLabelY = searchBox.getY() - 20;
+        int searchLabelY = searchBox.getY() - 10;
         graphics.drawText(this.textRenderer, Text.translatable("gui.ezvcsurvival.search"),
                 searchBox.getX(), searchLabelY, 0xFFCCCCCC, false);
 
@@ -341,7 +338,7 @@ public class ConfigListScreen extends Screen {
     }
 
     private void renderTopInfo(DrawContext graphics) {
-        int topInfoY = 35; // Position right below the separator line
+        int topInfoY = 70; // Position right below the separator line
         int leftMargin = (this.width - Math.max(this.width - 40, MIN_WIDTH)) / 2;
 
         // Get count and instructions components
@@ -428,20 +425,16 @@ public class ConfigListScreen extends Screen {
 
     public static class EntityConfigItem {
         private final String id;
-        private final EntityType<?> type;
+        private final EntityType<?> entry;
         private final EntityVoiceConfig.EntityConfig config;
 
-        public EntityConfigItem(String id, EntityType<?> type, EntityVoiceConfig.EntityConfig config) {
+        public EntityConfigItem(String id, EntityType<?> entry, EntityVoiceConfig.EntityConfig config) {
             this.id = id;
-            this.type = type;
+            this.entry = entry;
             this.config = config;
         }
 
         public String getId() {
-            return cleanEntityId(id);
-        }
-
-        public String getRawId() {
             return id;
         }
 
@@ -449,23 +442,12 @@ public class ConfigListScreen extends Screen {
             return config;
         }
 
-        public String getDisplayName() {
-            return type.getTranslationKey();
-        }
-
-        private String cleanEntityId(String entityId) {
-            if (entityId == null) return null;
-
-            if (entityId.startsWith("Optional[ResourceKey[") && entityId.contains(" / ")) {
-                int start = entityId.indexOf(" / ") + 3;
-                int end = entityId.indexOf("]]", start);
-                if (end != -1) {
-                    return entityId.substring(start, end);
-                }
-            }
-            return entityId;
+        public Text getDisplayName() {
+            return entry.getName();
         }
     }
+
+
 
     public static class SoundConfigItem {
         private final String id;
@@ -493,24 +475,10 @@ public class ConfigListScreen extends Screen {
         }
     }
 
+
     public record EntityReactionItem(String id, GeneralSoundsConfig.Reaction reaction) {
-        public String cleanId() {
-            return cleanEntityId(id);
-        }
-
-        private String cleanEntityId(String entityId) {
-            if (entityId == null) return null;
-
-            if (entityId.startsWith("Optional[ResourceKey[") && entityId.contains(" / ")) {
-                int start = entityId.indexOf(" / ") + 3;
-                int end = entityId.indexOf("]]", start);
-                if (end != -1) {
-                    return entityId.substring(start, end);
-                }
-            }
-            return entityId;
-        }
     }
+
 
     private void renderTooltips(DrawContext graphics, int mouseX, int mouseY) {
         if (list == null) return;
@@ -527,16 +495,4 @@ public class ConfigListScreen extends Screen {
         }
     }
 
-    public static String cleanEntityId(String entityId) {
-        if (entityId == null) return null;
-
-        if (entityId.startsWith("Optional[ResourceKey[") && entityId.contains(" / ")) {
-            int start = entityId.indexOf(" / ") + 3;
-            int end = entityId.indexOf("]]", start);
-            if (end != -1) {
-                return entityId.substring(start, end);
-            }
-        }
-        return entityId;
-    }
 }

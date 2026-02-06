@@ -1,6 +1,7 @@
 package com.armilp.ezvcsurvival.client.gui.edit;
 
 
+import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.client.gui.list.ConfigListScreen;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
@@ -16,10 +17,13 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.EditBoxWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.awt.*;
 
 public class ConfigEditScreen extends Screen {
+
+    public static final Identifier MENU_BACKGROUND_TEXTURE = Identifier.ofVanilla("textures/gui/menu_background.png");
 
     public enum EditType {
         ENTITY_CONFIG,
@@ -31,6 +35,7 @@ public class ConfigEditScreen extends Screen {
     private final EditType editType;
     private final String elementId;
     private final String elementName;
+    private final String cleanElementId;
 
     private ButtonWidget enabledButton;
     private TextFieldWidget speedBox;
@@ -67,8 +72,33 @@ public class ConfigEditScreen extends Screen {
         this.editType = editType;
         this.elementId = elementId;
         this.elementName = elementName;
+        this.cleanElementId = cleanElementId(elementId);
 
         loadCurrentValues();
+    }
+
+
+
+    private static String cleanElementId(String rawId) {
+        if (rawId == null || rawId.isEmpty()) {
+            return rawId;
+        }
+
+        // Handle Optional[ResourceKey[minecraft:entity_type / minecraft:allay]]
+        if (rawId.contains("Optional[ResourceKey[")) {
+            // Find the part after the slash
+            int slashIndex = rawId.indexOf('/');
+            if (slashIndex > 0) {
+                // Extract from after slash to before the closing bracket
+                String idPart = rawId.substring(slashIndex + 1);
+                int bracketIndex = idPart.indexOf(']');
+                if (bracketIndex > 0) {
+                    return idPart.substring(0, bracketIndex).trim();
+                }
+            }
+        }
+
+        return rawId;
     }
 
     private static String getTitleKey(EditType editType) {
@@ -83,7 +113,7 @@ public class ConfigEditScreen extends Screen {
     private void loadCurrentValues() {
         switch (editType) {
             case ENTITY_CONFIG -> {
-                EntityVoiceConfig.EntityConfig entityConfig = EntityVoiceConfig.get(elementId);
+                EntityVoiceConfig.EntityConfig entityConfig = EntityVoiceConfig.get(cleanElementId);
                 if (entityConfig != null) {
                     this.enabled = entityConfig.enabled;
                     this.speed = entityConfig.speed;
@@ -107,7 +137,7 @@ public class ConfigEditScreen extends Screen {
                 }
             }
             case GENERAL_SOUND_CONFIG -> {
-                GeneralSoundsConfig.SoundEntry soundConfig = GeneralSoundsConfig.getSounds().get(elementId);
+                GeneralSoundsConfig.SoundEntry soundConfig = GeneralSoundsConfig.getSounds().get(cleanElementId);
                 if (soundConfig != null) {
                     this.enabled = soundConfig.enabled;
                     this.speed = soundConfig.speed_multiplier;
@@ -132,7 +162,7 @@ public class ConfigEditScreen extends Screen {
             }
             case GENERAL_SOUND_ENTITY -> {
                 var reactions = GeneralSoundsConfig.getMobReactions();
-                GeneralSoundsConfig.Reaction generalReaction = reactions != null ? reactions.get(elementId) : null;
+                GeneralSoundsConfig.Reaction generalReaction = reactions != null ? reactions.get(cleanElementId) : null;
                 if (generalReaction != null) {
                     this.enabled = generalReaction.enabled;
                     this.speed = generalReaction.speed;
@@ -241,11 +271,11 @@ public class ConfigEditScreen extends Screen {
         int fieldCount = getFieldCount();
         int buttonY = startY + (fieldCount * FIELD_SPACING) + 30;
 
-        this.saveButton = ButtonWidget.builder(
-                Text.translatable("button.ezvcsurvival.save"),
-                b -> saveConfig()
-        ).dimensions(centerX - CENTER_X_OFFSET - BUTTON_WIDTH - BUTTON_SPACING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
-        this.addDrawableChild(this.saveButton);
+//        this.saveButton = ButtonWidget.builder(
+//                Text.translatable("button.ezvcsurvival.save"),
+//                b -> saveConfig()
+//        ).dimensions(centerX - CENTER_X_OFFSET - BUTTON_WIDTH - BUTTON_SPACING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
+//        this.addDrawableChild(this.saveButton);
 
         ButtonWidget cancelButton = ButtonWidget.builder(
                 Text.translatable("button.ezvcsurvival.cancel"),
@@ -384,8 +414,10 @@ public class ConfigEditScreen extends Screen {
         int titleY = TOP_MARGIN;
         graphics.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, titleY, 0xFFFFFFFF);
 
-        String elementInfo = "ID: " + elementId;
-        int elementInfoY = titleY + 18;
+
+
+        String elementInfo = "ID: " + cleanElementId;
+        int elementInfoY = titleY + 15;
         graphics.drawCenteredTextWithShadow(this.textRenderer, elementInfo, this.width / 2, elementInfoY, 0xFFAAAAAA);
 
         int lineY = elementInfoY + 10;
