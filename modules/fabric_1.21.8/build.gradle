@@ -14,7 +14,7 @@ base {
 }
 
 def changelogText = project.file('changelog.md').text
-def site_debugMode = true
+def site_debugMode = false
 
 repositories {
     maven { url = "https://maven.maxhenkel.de/repository/public" }
@@ -98,11 +98,14 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
 
     def mainFile = upload('1173633', file("build/libs/${mod_id}-${mod_version}.jar"))
     mainFile.displayName = "${mod_name}-${mod_version}"
-    mainFile.releaseType = 'release'
+    mainFile.releaseType = 'beta'
     mainFile.changelog = changelogText
+    debugMode = site_debugMode
 
     mainFile.addRequirement("simple-voice-chat")
-    mainFile.addOptional("sound-physics-remastered")
+    mainFile.addRequirement("forge-config-api-port")
+    mainFile.addRequirement("modmenu")
+    //mainFile.addOptional("sound-physics-remastered")
 }
 
 
@@ -124,6 +127,7 @@ modrinth {
         required.project "fabric-api"
         required.project 'simple-voice-chat'
         required.project 'forge-config-api-port'
+        required.project 'modmenu'
         //optional.project 'timeless-and-classics-zero'
     }
 }
