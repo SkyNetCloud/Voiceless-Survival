@@ -9,7 +9,6 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.World;
 
 import java.util.EnumSet;
 
@@ -37,9 +36,7 @@ public class RunawayVoiceGoal extends Goal {
         targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
         return targetSoundPosition != null;
     }
-
-
-
+    
     @Override
     public boolean shouldContinue() {
         return targetSoundPosition != null && !mob.getNavigation().isIdle();
@@ -125,9 +122,9 @@ public class RunawayVoiceGoal extends Goal {
     }
 
     private boolean isDangerousBlock(BlockPos pos) {
-        World level = mob.getWorld();
-        BlockState blockState = level.getBlockState(pos);
+        ServerWorld getWorld = (ServerWorld) mob.getWorld();
+        BlockState blockState = getWorld.getBlockState(pos);
 
-        return !blockState.getFluidState().isEmpty() || !blockState.isOpaqueFullCube();
+        return !blockState.getFluidState().isEmpty() || !blockState.isSolidBlock(getWorld, pos);
     }
 }
