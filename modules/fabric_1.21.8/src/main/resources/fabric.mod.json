@@ -18,6 +18,9 @@
     ],
     "voicechat": [
       "com.armilp.ezvcsurvival.Plugin"
+    ],
+    "modmenu": [
+      "com.armilp.ezvcsurvival.integration.ModMenu"
     ]
   },
     "mixins": [
@@ -27,6 +30,8 @@
     "fabricloader": ">=${loader_version}",
     "fabric": "*",
     "voicechat": ">=${minecraft_version}-${voicechat_api_version}",
+    "forgeconfigapiport": ">=${forge_config_api_port_version}",
+    "modmenu": ">=${modmenu_version}",
     "minecraft": "${minecraft_version}"
   }
 }
