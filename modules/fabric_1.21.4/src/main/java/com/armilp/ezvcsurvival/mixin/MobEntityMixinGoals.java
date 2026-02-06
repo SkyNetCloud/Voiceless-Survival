@@ -1,4 +1,4 @@
-package com.armilp.ezvcsurvival.mixin;
+package com.armilp.ezvcsurvival.mixins;
 
 import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
