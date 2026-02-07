@@ -44,7 +44,7 @@ public class ConfigListScreen extends Screen {
     private static final int MAX_BUTTON_WIDTH = 120;
     private static final int BUTTON_HEIGHT = 20;
     private static final int SEARCH_HEIGHT = 15;
-    private static final int VERTICAL_SPACING = 6;
+    private static final int VERTICAL_SPACING = 14;
     private static final int HORIZONTAL_SPACING = 6;
 
     public ConfigListScreen(ListType listType, Screen parent) {
@@ -74,7 +74,7 @@ public class ConfigListScreen extends Screen {
         int usableWidth = Math.max(this.width - 40, MIN_WIDTH);
         int leftMargin = (this.width - usableWidth) / 2;
         int rightMargin = leftMargin;
-        int topRowY = 20;
+        int topRowY = 25;
         int searchRowY = topRowY + BUTTON_HEIGHT + VERTICAL_SPACING * 2;
         int listStartY = searchRowY + SEARCH_HEIGHT + VERTICAL_SPACING * 3;
         int availableButtonWidth = usableWidth;
@@ -309,7 +309,7 @@ public class ConfigListScreen extends Screen {
     public void render(DrawContext graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 8, 0xFFFFFFFF);
+        graphics.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 5, 0xFFFFFFFF);
 
         // Render count and instructions at the TOP (right after title)
         renderTopInfo(graphics);
@@ -337,7 +337,7 @@ public class ConfigListScreen extends Screen {
     }
 
     private void renderTopInfo(DrawContext graphics) {
-        int topInfoY = 70; // Position right below the separator line
+        int topInfoY = 100; // Position right below the separator line
         int leftMargin = (this.width - Math.max(this.width - 40, MIN_WIDTH)) / 2;
 
         // Get count and instructions components

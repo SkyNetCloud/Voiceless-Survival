@@ -24,7 +24,7 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
     private static final int PADDING = 10;
 
     public ConfigListWidget(ConfigListScreen parent, MinecraftClient client, int width, int height, int top, int bottom) {
-        super(client, width, height, top, bottom, 20); // itemHeight = 20
+        super(client, width, height, 120, bottom, 20); // itemHeight = 20
         this.parent = parent;
     }
 
@@ -121,8 +121,7 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
             int maxTextWidth = width - STATUS_AREA_WIDTH - PADDING * 2;
             String displayName = truncateText(entityName, maxTextWidth);
 
-
-            context.drawText(client.textRenderer, displayName, textLeft, centerY - 4, 0xFFFFFFFF, false);
+           context.drawText(client.textRenderer, displayName, textLeft, centerY - 4, 0xFFFFFFFF, false);
 
             Text statusText = entityItem.getConfig().enabled
                     ? Text.translatable("gui.ezvcsurvival.enabled")
@@ -171,16 +170,10 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
         private void renderEntityReaction(DrawContext context, int textLeft, int top, int width, int height,
                                           int centerY, int statusRight) {
             ConfigListScreen.EntityReactionItem entityItem = (ConfigListScreen.EntityReactionItem) item;
-            String entityId = entityItem.id();
+            String entityId = getEntityDisplayName(cleanElementId(entityItem.id()));
 
-            if (entityId.contains("Optional[ResourceKey[")){
-                int startIndex = entityId.indexOf('/') + 1;
-                int endIndex = entityId.indexOf(']');
-                if (startIndex > 0 && endIndex > startIndex) {
-                    entityId = entityId.substring(startIndex, endIndex);
-                    context.drawText(client.textRenderer, entityId, textLeft, centerY - 4, 0xFFFFFFFF, false);
-                }
-            }
+
+            context.drawText(client.textRenderer, entityId, textLeft, centerY - 4, 0xFFFFFFFF, false);
 
             Text statusText = entityItem.reaction().enabled
                     ? Text.translatable("gui.ezvcsurvival.enabled")
@@ -227,7 +220,7 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
             return text.substring(0, left) + ellipsis;
         }
 
-        private String getEntityDisplayName(String entityId) {
+        public String getEntityDisplayName(String entityId) {
             try {
                 Identifier identifier = Identifier.tryParse(entityId);
                 if (identifier == null) {
@@ -353,7 +346,7 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
         }
 
 
-        private static String cleanElementId(String rawId) {
+        public static String cleanElementId(String rawId) {
             if (rawId == null || rawId.isEmpty()) {
                 return rawId;
             }

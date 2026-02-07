@@ -14,6 +14,9 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import static com.armilp.ezvcsurvival.client.gui.edit.SoundFilterEditScreen.getEntityDisplayName;
+import static com.armilp.ezvcsurvival.client.gui.list.ConfigListWidget.UniversalEntry.cleanElementId;
+
 public class ConfigEditScreen extends Screen {
 
     public static final Identifier MENU_BACKGROUND_TEXTURE = Identifier.ofVanilla("textures/gui/menu_background.png");
@@ -28,7 +31,6 @@ public class ConfigEditScreen extends Screen {
     private final EditType editType;
     private final String elementId;
     private final String elementName;
-    private final String cleanElementId;
 
     private ButtonWidget enabledButton;
     private TextFieldWidget speedBox;
@@ -60,39 +62,15 @@ public class ConfigEditScreen extends Screen {
     private static final int BUTTON_SPACING = 10;
 
     public ConfigEditScreen(Screen parent, EditType editType, String elementId, String elementName) {
-        super(Text.translatable(getTitleKey(editType), elementName));
+        super(Text.translatable(getTitleKey(editType), cleanElementId(getEntityDisplayName(elementId))));
         this.parent = parent;
         this.editType = editType;
-        this.elementId = elementId;
-        this.elementName = elementName;
-        this.cleanElementId = cleanElementId(elementId);
+        this.elementId = cleanElementId(elementId);
+        this.elementName = cleanElementId(getEntityDisplayName(elementName));
 
         loadCurrentValues();
     }
 
-
-
-    private static String cleanElementId(String rawId) {
-        if (rawId == null || rawId.isEmpty()) {
-            return rawId;
-        }
-
-        // Handle Optional[ResourceKey[minecraft:entity_type / minecraft:allay]]
-        if (rawId.contains("Optional[ResourceKey[")) {
-            // Find the part after the slash
-            int slashIndex = rawId.indexOf('/');
-            if (slashIndex > 0) {
-                // Extract from after slash to before the closing bracket
-                String idPart = rawId.substring(slashIndex + 1);
-                int bracketIndex = idPart.indexOf(']');
-                if (bracketIndex > 0) {
-                    return idPart.substring(0, bracketIndex).trim();
-                }
-            }
-        }
-
-        return rawId;
-    }
 
     private static String getTitleKey(EditType editType) {
         return switch (editType) {
@@ -106,7 +84,7 @@ public class ConfigEditScreen extends Screen {
     private void loadCurrentValues() {
         switch (editType) {
             case ENTITY_CONFIG -> {
-                EntityVoiceConfig.EntityConfig entityConfig = EntityVoiceConfig.get(cleanElementId);
+                EntityVoiceConfig.EntityConfig entityConfig = EntityVoiceConfig.get(elementName);
                 if (entityConfig != null) {
                     this.enabled = entityConfig.enabled;
                     this.speed = entityConfig.speed;
@@ -130,7 +108,7 @@ public class ConfigEditScreen extends Screen {
                 }
             }
             case GENERAL_SOUND_CONFIG -> {
-                GeneralSoundsConfig.SoundEntry soundConfig = GeneralSoundsConfig.getSounds().get(cleanElementId);
+                GeneralSoundsConfig.SoundEntry soundConfig = GeneralSoundsConfig.getSounds().get(elementName);
                 if (soundConfig != null) {
                     this.enabled = soundConfig.enabled;
                     this.speed = soundConfig.speed_multiplier;
@@ -155,7 +133,7 @@ public class ConfigEditScreen extends Screen {
             }
             case GENERAL_SOUND_ENTITY -> {
                 var reactions = GeneralSoundsConfig.getMobReactions();
-                GeneralSoundsConfig.Reaction generalReaction = reactions != null ? reactions.get(cleanElementId) : null;
+                GeneralSoundsConfig.Reaction generalReaction = reactions != null ? reactions.get(elementName) : null;
                 if (generalReaction != null) {
                     this.enabled = generalReaction.enabled;
                     this.speed = generalReaction.speed;
@@ -409,7 +387,7 @@ public class ConfigEditScreen extends Screen {
 
 
 
-        String elementInfo = "ID: " + cleanElementId;
+        String elementInfo = "ID: " + elementId;
         int elementInfoY = titleY + 15;
         graphics.drawCenteredTextWithShadow(this.textRenderer, elementInfo, this.width / 2, elementInfoY, 0xFFAAAAAA);
 
@@ -425,7 +403,7 @@ public class ConfigEditScreen extends Screen {
         int startY = TOP_MARGIN + 40;
         int currentY = startY;
 
-        graphics.drawTextWithShadow(this.textRenderer, "Enabled", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
+        graphics.drawTextWithShadow(this.textRenderer, "Enabled", centerX - CENTER_X_OFFSET, currentY - 12, 0xFFFFFFFF);
         currentY += FIELD_SPACING + 20;
 
         graphics.drawTextWithShadow(this.textRenderer, "Speed", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);

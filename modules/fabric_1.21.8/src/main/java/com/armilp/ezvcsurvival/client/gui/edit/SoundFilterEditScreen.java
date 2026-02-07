@@ -7,11 +7,13 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.entity.EntityType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,14 +44,37 @@ public class SoundFilterEditScreen extends Screen {
     private static final int SUGGESTION_HEIGHT = 20;
     private static final int SCROLLBAR_WIDTH = 10;
 
+
     public SoundFilterEditScreen(Screen parent, String entityId, String entityName) {
-        super(Text.literal("Sound Filters: " + entityName));
+        super(Text.literal("Sound Filters: " + SoundFilterEditScreen.getEntityDisplayName(entityId)));
         this.parent = parent;
         this.entityId = entityId;
         this.entityName = entityName;
         loadCurrentFilters();
         loadSuggestions();
     }
+
+
+    public static String getEntityDisplayName(String entityId) {
+        try {
+            Identifier identifier = Identifier.tryParse(entityId);
+            if (identifier == null) {
+                return entityId;
+            }
+
+            EntityType<?> type = Registries.ENTITY_TYPE.get(identifier);
+            if (type == null) {
+                return identifier.getPath();
+            }
+
+            String translationKey = type.getTranslationKey();
+            return translationKey != null ? Text.translatable(translationKey).getString() : identifier.getPath() ;
+
+        } catch (Exception e) {
+            return entityId.contains(":") ? entityId.substring(entityId.indexOf(':') + 1) : entityId;
+        }
+    }
+
 
     private void loadCurrentFilters() {
         GeneralSoundsConfig.Reaction reaction = GeneralSoundsConfig.getMobReactions().get(entityId);
@@ -60,15 +85,16 @@ public class SoundFilterEditScreen extends Screen {
         }
     }
 
+
     private void loadSuggestions() {
         suggestions = new ArrayList<>();
 
         Registries.SOUND_EVENT.forEach(sound -> {
-            RegistryKey<? extends Registry<SoundEvent>> key = Registries.SOUND_EVENT.getKey();
-            if (key != null) {
-                String soundId = key.toString();
-                String category = categorizeSound(soundId);
-                suggestions.add(new SuggestionEntry(soundId, category));
+            Identifier soundId = Registries.SOUND_EVENT.getId(sound);
+            if (soundId != null) {
+                String soundIdString = soundId.toString();
+                String category = categorizeSound(soundIdString);
+                suggestions.add(new SuggestionEntry(soundIdString, category));
             }
         });
 
