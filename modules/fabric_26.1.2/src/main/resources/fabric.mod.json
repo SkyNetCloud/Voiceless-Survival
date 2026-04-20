@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "ezvcsurvival",
+  "version": "${version}",
+  "name": "Voiceless Survival",
+  "description": "Be Quiet or you'll be seen",
+  "authors": [],
+  "contact": {},
+  "license": "All Rights Reserved by armilp",
+  "icon": "assets/ezvcsurvival/voiceless.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.armilp.ezvcsurvival.EZVCSurvival"
+    ],
+    "client": [
+      "com.armilp.ezvcsurvival.client.EZVCSurvivalClient"
+    ],
+    "voicechat": [
+      "com.armilp.ezvcsurvival.Plugin"
+    ]
+  },
+    "mixins": [
+        "ezvcsurvival.mixins.json"
+    ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "voicechat": ">=${minecraft_version}-${voicechat_api_version}",
+    "forgeconfigapiport": ">=${forge_config_api_port_version}",
+    "modmenu": ">=${modmenu_version}",
+    "minecraft": "${minecraft_version}"
+  }
+}

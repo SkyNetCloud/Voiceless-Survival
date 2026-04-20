@@ -1,0 +1,23 @@
+package com.armilp.ezvcsurvival.utils;
+
+
+import com.armilp.ezvcsurvival.EZVCSurvival;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
+import net.minecraft.network.chat.Component;
+
+public class ModInfo {
+
+    public static Component getVersion() {
+        return Component.literal(EZVCSurvival.MOD_ID + "-v" + getVersionString());
+    }
+
+    public static String getVersionString() {
+        ModContainer modContainer = FabricLoader.getInstance().getModContainer(EZVCSurvival.MOD_ID).orElse(null);
+        if (modContainer != null) {
+            return modContainer.getMetadata().getVersion().getFriendlyString();
+        }
+        return "2.0.0";
+    }
+
+}
