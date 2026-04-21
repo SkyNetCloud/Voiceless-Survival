@@ -3,46 +3,53 @@ package com.armilp.ezvcsurvival.network;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.command.DefaultPermissions;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
+
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
+
+import static com.armilp.ezvcsurvival.EZVCSurvival.MOD_ID;
 
 
-public record OpenConfigEditorPayload() implements CustomPayload {
-    public static final CustomPayload.Id<OpenConfigEditorPayload> ID =
-            new CustomPayload.Id<>(Identifier.of("ezvcsurvival", "open_config_editor"));
+public record OpenConfigEditorPayload() implements CustomPacketPayload {
 
-    public static final PacketCodec<RegistryByteBuf, OpenConfigEditorPayload> CODEC =
-            PacketCodec.unit(new OpenConfigEditorPayload());
+    public static final Identifier OPEN_CONFIG_EDITOR_PAYLOAD = Identifier.fromNamespaceAndPath(MOD_ID, "open_config_editor");
+    public static final CustomPacketPayload.Type<OpenConfigEditorPayload> OPEN_CONFIG_EDITOR_TYPE = new CustomPacketPayload.Type<>(OPEN_CONFIG_EDITOR_PAYLOAD);
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, OpenConfigEditorPayload> OPEN_CONFIG_EDITOR_CODEC = StreamCodec.unit(new OpenConfigEditorPayload());
+
 
     @Override
-    public CustomPayload.Id<? extends CustomPayload> getId() {
-        return ID;
+    public Type<? extends CustomPacketPayload> type() {
+        return OPEN_CONFIG_EDITOR_TYPE;
     }
 
+
+
     public static void registerClientReceiver() {
-        ClientPlayNetworking.registerGlobalReceiver(ID, (payload, context) -> {
+        ClientPlayNetworking.registerGlobalReceiver(OPEN_CONFIG_EDITOR_TYPE, (payload, context) -> {
             context.client().execute(ClientPayloadHandlers::handleOpenConfigEditor);
         });
     }
 
     public static void registerServerReceiver() {
-        ServerPlayNetworking.registerGlobalReceiver(ID, (payload, context) -> {
-            ServerPlayerEntity player = context.player();
-            if (player != null && player.getPermissions().hasPermission(DefaultPermissions.GAMEMASTERS)) { // Ops only
+        ServerPlayNetworking.registerGlobalReceiver(OPEN_CONFIG_EDITOR_TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
+            if (player != null && player.permissions().hasPermission(Permissions.COMMANDS_ADMIN)) { // Ops only
                 ServerPlayNetworking.send(player, payload);
             }
         });
     }
 
-    public static void sendToClient(ServerPlayerEntity player) {
+    public static void sendToClient(ServerPlayer player) {
         ServerPlayNetworking.send(player, new OpenConfigEditorPayload());
     }
 
     public static void sendToServer() {
         ClientPlayNetworking.send(new OpenConfigEditorPayload());
     }
+
 }

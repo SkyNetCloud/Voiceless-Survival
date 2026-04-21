@@ -6,24 +6,61 @@ import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.goals.MobGoalInjector;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Identifier;
+
+import static com.armilp.ezvcsurvival.EZVCSurvival.MOD_ID;
 
 public record UpdateConfigPayload(
         ConfigType configType,
-        String targetId,
+        String  targetId,
         boolean enabled,
         double value1,
         double value2,
         double value3,
         boolean boolValue
-) implements CustomPayload {
+) implements CustomPacketPayload {
 
-    public static final CustomPayload.Id<UpdateConfigPayload> PACKET_ID =
-            new CustomPayload.Id<>(Identifier.of("ezvcsurvival", "update_config"));
+    public static final Identifier UPDATE_CONFIG_PAYLOAD = Identifier.fromNamespaceAndPath(MOD_ID, "update_config");
+    public static final CustomPacketPayload.Type<UpdateConfigPayload> UPDATE_CONFIG_TYPE = new CustomPacketPayload.Type<>(UPDATE_CONFIG_PAYLOAD);
+    public static final StreamCodec<RegistryFriendlyByteBuf, UpdateConfigPayload> UPDATE_CONFIG_CODEC = new StreamCodec<RegistryFriendlyByteBuf, UpdateConfigPayload>() {
+        @Override
+        public UpdateConfigPayload decode(RegistryFriendlyByteBuf buffer) {
+            ConfigType configType = ConfigType.fromId(ByteBufCodecs.VAR_INT.decode(buffer));
+            String targetId = ByteBufCodecs.STRING_UTF8.decode(buffer);
+            boolean enabled = ByteBufCodecs.BOOL.decode(buffer);
+            double value1 = ByteBufCodecs.DOUBLE.decode(buffer);
+            double value2 = ByteBufCodecs.DOUBLE.decode(buffer);
+            double value3 = ByteBufCodecs.DOUBLE.decode(buffer);
+            boolean boolValue = ByteBufCodecs.BOOL.decode(buffer);
+
+            return new UpdateConfigPayload(configType, targetId, enabled, value1, value2, value3, boolValue);
+        }
+
+        @Override
+        public void encode(RegistryFriendlyByteBuf buffer, UpdateConfigPayload packet) {
+            ByteBufCodecs.VAR_INT.encode(buffer, packet.configType().getId());
+            ByteBufCodecs.STRING_UTF8.encode(buffer, packet.targetId());
+            ByteBufCodecs.BOOL.encode(buffer, packet.enabled());
+            ByteBufCodecs.DOUBLE.encode(buffer, packet.value1());
+            ByteBufCodecs.DOUBLE.encode(buffer, packet.value2());
+            ByteBufCodecs.DOUBLE.encode(buffer, packet.value3());
+            ByteBufCodecs.BOOL.encode(buffer, packet.boolValue());
+        }
+    };
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return UPDATE_CONFIG_TYPE;
+    }
+
 
     public enum ConfigType {
         ENTITY_VOICE(0),
@@ -85,33 +122,6 @@ public record UpdateConfigPayload(
         );
     }
 
-    public static final PacketCodec<RegistryByteBuf, UpdateConfigPayload> CODEC = PacketCodec.of(
-            (packet, buf) -> {
-                buf.writeInt(packet.configType.getId());
-                buf.writeString(packet.targetId);
-                buf.writeBoolean(packet.enabled);
-                buf.writeDouble(packet.value1);
-                buf.writeDouble(packet.value2);
-                buf.writeDouble(packet.value3);
-                buf.writeBoolean(packet.boolValue);
-            },
-            buf -> {
-                ConfigType type = ConfigType.fromId(buf.readInt());
-                String targetId = buf.readString();
-                boolean enabled = buf.readBoolean();
-                double value1 = buf.readDouble();
-                double value2 = buf.readDouble();
-                double value3 = buf.readDouble();
-                boolean boolValue = buf.readBoolean();
-
-                return new UpdateConfigPayload(type, targetId, enabled, value1, value2, value3, boolValue);
-            }
-    );
-
-    @Override
-    public Id<? extends CustomPayload> getId() {
-        return PACKET_ID;
-    }
 
     public static void handle(UpdateConfigPayload packet, ServerPlayNetworking.Context context) {
         context.server().execute(() -> {
@@ -242,7 +252,7 @@ public record UpdateConfigPayload(
             if (packet.value1() != 0.0) se.speed_multiplier = packet.value1();
             if (packet.value2() != 0.0) se.range_multiplier = packet.value2();
         } else {
-            GeneralSoundsConfig.setSoundEntry(packet.targetId(), packet.enabled(),
+            GeneralSoundsConfig.setSoundEntry(String.valueOf(packet.targetId()), packet.enabled(),
                     packet.value1() != 0.0 ? packet.value1() : 1.0,
                     packet.value2() != 0.0 ? packet.value2() : 1.0,
                     packet.boolValue());

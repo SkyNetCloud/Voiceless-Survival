@@ -6,13 +6,13 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 
 public final class EZVCNetwork {
     public static final int PROTOCOL_VERSION = 1;
@@ -20,23 +20,27 @@ public final class EZVCNetwork {
 
     public EZVCNetwork() {}
 
-    public static void registerCommon() {
-        PayloadTypeRegistry.playS2C().register(GeneralSoundPayload.ID, GeneralSoundPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(OpenConfigEditorPayload.ID, OpenConfigEditorPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(UpdateConfigPayload.PACKET_ID, UpdateConfigPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(GeneralSoundPayload.ID, GeneralSoundPayload.CODEC);
 
-        ServerPlayNetworking.registerGlobalReceiver(UpdateConfigPayload.PACKET_ID,
+
+
+    public static void registerCommon() {
+
+        PayloadTypeRegistry.clientboundPlay().register(GeneralSoundPayload.GENERAL_SOUND_TYPE, GeneralSoundPayload.GENERAL_SOUND_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(OpenConfigEditorPayload.OPEN_CONFIG_EDITOR_TYPE, OpenConfigEditorPayload.OPEN_CONFIG_EDITOR_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(UpdateConfigPayload.UPDATE_CONFIG_TYPE, UpdateConfigPayload.UPDATE_CONFIG_CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(GeneralSoundPayload.GENERAL_SOUND_TYPE, GeneralSoundPayload.GENERAL_SOUND_CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(UpdateConfigPayload.UPDATE_CONFIG_TYPE,
                 (payload, context) -> {
-                    ServerPlayerEntity player = context.player();
+                    ServerPlayer player = context.player();
                     context.server().execute(() -> {
                         ConfigManager.updateConfig(player, payload);
                     });
                 });
 
-        ServerPlayNetworking.registerGlobalReceiver(GeneralSoundPayload.ID,
+        ServerPlayNetworking.registerGlobalReceiver(GeneralSoundPayload.GENERAL_SOUND_TYPE,
                 (payload, context) -> {
-                    ServerPlayerEntity player = context.player();
+                    ServerPlayer player = context.player();
                     context.server().execute(() -> {
                         GeneralSoundPayload.handle(payload, context);
                     });
@@ -44,30 +48,30 @@ public final class EZVCNetwork {
     }
 
     public static void registerClient() {
-        ClientPlayNetworking.registerGlobalReceiver(GeneralSoundPayload.ID,
+        ClientPlayNetworking.registerGlobalReceiver(GeneralSoundPayload.GENERAL_SOUND_TYPE,
                 (payload, context) -> {
                     context.client().execute(() -> {
                         handleSoundFromServer(payload);
                     });
                 });
 
-        ClientPlayNetworking.registerGlobalReceiver(OpenConfigEditorPayload.ID,
+        ClientPlayNetworking.registerGlobalReceiver(OpenConfigEditorPayload.OPEN_CONFIG_EDITOR_TYPE,
                 (payload, context) -> {
                     context.client().execute(EZVCNetwork::openConfigEditor);
                 });
     }
 
-    public static void sendSoundToClient(ServerPlayerEntity player, Identifier soundId, float volume, float pitch) {
+    public static void sendSoundToClient(ServerPlayer player, Identifier soundId, float volume, float pitch) {
         ServerPlayNetworking.send(player, new GeneralSoundPayload(
                 soundId, player.getX(), player.getY(), player.getZ(), pitch, volume
         ));
     }
 
-    public static void sendSoundToAllTracking(ServerWorld world, BlockPos pos, Identifier soundId, float volume, float pitch) {
+    public static void sendSoundToAllTracking(ServerLevel world, BlockPos pos, Identifier soundId, float volume, float pitch) {
         GeneralSoundPayload payload = new GeneralSoundPayload(soundId,
                 pos.getX(), pos.getY(), pos.getZ(), pitch, volume);
 
-        for (ServerPlayerEntity player : PlayerLookup.tracking(world, pos)) {
+        for (ServerPlayer player : PlayerLookup.tracking(world, pos)) {
             ServerPlayNetworking.send(player, payload);
         }
     }
@@ -77,7 +81,7 @@ public final class EZVCNetwork {
         ClientPlayNetworking.send(new GeneralSoundPayload(soundId, x, y, z, speedMultiplier, rangeMultiplier));
     }
 
-    public static void sendConfigEditorToClient(ServerPlayerEntity player) {
+    public static void sendConfigEditorToClient(ServerPlayer player) {
         ServerPlayNetworking.send(player, new OpenConfigEditorPayload());
     }
 
@@ -176,9 +180,9 @@ public final class EZVCNetwork {
     }
 
     private static void handleSoundFromServer(GeneralSoundPayload payload) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         client.getSoundManager().play(
-                PositionedSoundInstance.ambient(SoundEvent.of(payload.sound()),
+                SimpleSoundInstance.forLocalAmbience(SoundEvent.createVariableRangeEvent(payload.sound()),
                         (float)payload.speedMultiplier(),
                         (float)payload.rangeMultiplier()
                 )
@@ -186,6 +190,6 @@ public final class EZVCNetwork {
     }
 
     private static void openConfigEditor() {
-        MinecraftClient.getInstance().setScreen(new ConfigEditorScreen());
+        Minecraft.getInstance().setScreen(new ConfigEditorScreen());
     }
 }

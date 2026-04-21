@@ -5,6 +5,8 @@ import com.armilp.ezvcsurvival.events.SoundEventTracker;
 import com.armilp.ezvcsurvival.goals.ReactToGeneralSoundGoal;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -23,25 +25,23 @@ public record GeneralSoundPayload(
         double speedMultiplier,
         double rangeMultiplier
 ) implements CustomPacketPayload {
-    public static final Identifier PAYLOAD_ID = Identifier.fromNamespaceAndPath(MOD_ID, "general_sound");
 
-    public static final CustomPacketPayload.Type<GeneralSoundPayload> ID =
-            new CustomPacketPayload.Type<>(PAYLOAD_ID);
-
-
-//
-//    public static final StreamCodec<FriendlyByteBuf, GeneralSoundPayload> CODEC = PacketCodec.tuple(
-//            Identifier.PACKET_CODEC, GeneralSoundPayload::sound,
-//            Packe.DOUBLE, GeneralSoundPayload::x,
-//            PacketCodecs.DOUBLE, GeneralSoundPayload::y,
-//            PacketCodecs.DOUBLE, GeneralSoundPayload::z,
-//            PacketCodecs.DOUBLE, GeneralSoundPayload::speedMultiplier,
-//            PacketCodecs.DOUBLE, GeneralSoundPayload::rangeMultiplier,
-//            GeneralSoundPayload::new
-//    );
+    public static final Identifier GENERAL_SOUND_PAYLOAD = Identifier.fromNamespaceAndPath(MOD_ID, "general_sound");
+    public static final CustomPacketPayload.Type<GeneralSoundPayload> GENERAL_SOUND_TYPE = new CustomPacketPayload.Type<>(GENERAL_SOUND_PAYLOAD);
 
 
-    // Handler method that can be registered with Fabric's networking
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, GeneralSoundPayload> GENERAL_SOUND_CODEC = StreamCodec.composite(
+            Identifier.STREAM_CODEC, GeneralSoundPayload::sound,
+            ByteBufCodecs.DOUBLE, GeneralSoundPayload::x,
+            ByteBufCodecs.DOUBLE, GeneralSoundPayload::y,
+            ByteBufCodecs.DOUBLE, GeneralSoundPayload::z,
+            ByteBufCodecs.DOUBLE, GeneralSoundPayload::speedMultiplier,
+            ByteBufCodecs.DOUBLE, GeneralSoundPayload::rangeMultiplier,
+            GeneralSoundPayload::new
+    );
+
+
     public static void handle(GeneralSoundPayload payload, ServerPlayNetworking.Context context) {
         ServerPlayer player = context.player();
         if (player == null) return;
@@ -64,9 +64,9 @@ public record GeneralSoundPayload(
             SoundEventTracker.notifyNearbyMobs(
                     level,
                     payload.sound(),
-                    soundPos.getX(),
-                    soundPos.getY(),
-                    soundPos.getZ(),
+                    soundPos.x(),
+                    soundPos.y(),
+                    soundPos.z(),
                     payload.speedMultiplier(),
                     payload.rangeMultiplier()
             );
@@ -81,15 +81,14 @@ public record GeneralSoundPayload(
         });
     }
 
-    // Alternative handler that can be used directly with ServerPlayNetworking.registerGlobalReceiver
     public static void registerHandler() {
-        ServerPlayNetworking.registerGlobalReceiver(ID, (payload, context) -> {
+        ServerPlayNetworking.registerGlobalReceiver(GENERAL_SOUND_TYPE, (payload, context) -> {
             handle(payload, context);
         });
     }
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
-        return ID;
+        return GENERAL_SOUND_TYPE;
     }
 }
