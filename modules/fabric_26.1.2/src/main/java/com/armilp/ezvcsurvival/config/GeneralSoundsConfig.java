@@ -8,9 +8,10 @@ import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.MalformedJsonException;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnGroup;
-import net.minecraft.registry.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -297,10 +298,10 @@ public final class GeneralSoundsConfig {
             ROOT.mobs = new HashMap<>();
         }
 
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnGroup category = type.getSpawnGroup();
-            if (category == SpawnGroup.MISC) continue;
-            String id = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString();
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            MobCategory category = type.getCategory();
+            if (category == MobCategory.MISC) continue;
+            String id = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(type)).toString();
             if (!ROOT.mobs.containsKey(id)) {
                 ROOT.mobs.put(id, Reaction.defaultFor(type));
                 added = true;
@@ -311,8 +312,8 @@ public final class GeneralSoundsConfig {
             ROOT.sounds = new HashMap<>();
         }
 
-        for (var sound : Registries.SOUND_EVENT) {
-            String id = Objects.requireNonNull(Registries.SOUND_EVENT.getKey(sound)).toString();
+        for (var sound : BuiltInRegistries.SOUND_EVENT) {
+            String id = Objects.requireNonNull(BuiltInRegistries.SOUND_EVENT.getKey(sound)).toString();
 
             if (!ROOT.sounds.containsKey(id)) {
                 boolean shouldEnable = shouldEnableByDefault(id);
@@ -350,11 +351,11 @@ public final class GeneralSoundsConfig {
 
         ROOT.mobs.clear();
 
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnGroup category = type.getSpawnGroup();
-            if (category == SpawnGroup.MISC) continue;
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            MobCategory category = type.getCategory();
+            if (category == MobCategory.MISC) continue;
             ROOT.mobs.put(
-                    Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString(),
+                    Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(type)).toString(),
                     Reaction.defaultFor(type)
             );
         }
@@ -432,7 +433,7 @@ public final class GeneralSoundsConfig {
             double baseSpeed = 1.0;
             double baseRange = 50.0;
 
-            if (type.getSpawnGroup() == SpawnGroup.MONSTER) {
+            if (type.getCategory() == MobCategory.MONSTER) {
                 baseRange = 60.0;
             }
             return new Reaction(false, baseSpeed, baseRange);

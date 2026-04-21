@@ -4,15 +4,16 @@ import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static net.minecraft.server.packs.PackType.SERVER_DATA;
 
 public class SoundConfig {
 
@@ -81,16 +82,16 @@ public class SoundConfig {
         onModConfigLoading();
 
         // Register reload listener (equivalent to ModConfigEvent.Reloading)
-        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(
+        ResourceManagerHelper.get(SERVER_DATA).registerReloadListener(
                 new SimpleSynchronousResourceReloadListener() {
                     @Override
-                    public Identifier getFabricId() {
-                        return Identifier.of(EZVCSurvival.MOD_ID, "sound_config");
+                    public void onResourceManagerReload(ResourceManager resourceManager) {
+                        onModConfigReloading();
                     }
 
                     @Override
-                    public void reload(ResourceManager manager) {
-                        onModConfigReloading();
+                    public Identifier getFabricId() {
+                        return Identifier.fromNamespaceAndPath(EZVCSurvival.MOD_ID, "sound_config");
                     }
                 }
         );

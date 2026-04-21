@@ -24,11 +24,11 @@
         "ezvcsurvival.mixins.json"
     ],
   "depends": {
-    "fabricloader": ">=${loader_version}",
-    "fabric": "*",
-    "voicechat": ">=${minecraft_version}-${voicechat_api_version}",
-    "forgeconfigapiport": ">=${forge_config_api_port_version}",
-    "modmenu": ">=${modmenu_version}",
-    "minecraft": "${minecraft_version}"
+    "fabricloader": ">=0.19.2",
+    "minecraft": "~26.1.2",
+    "java": ">=25",
+    "fabric-api": "*",
+    "voicechat_api": ">=2.6.0",
+    "forgeconfigapiport": ">=26.1.3"
   }
 }

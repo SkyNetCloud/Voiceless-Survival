@@ -2,10 +2,12 @@ package com.armilp.ezvcsurvival.events;
 
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.Identifier;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvent;
+
 
 import java.util.Iterator;
 import java.util.Map;
@@ -22,13 +24,13 @@ public class SoundEventHandler {
     private static final int MAX_COOLDOWN_ENTRIES = 150;
 
     public static void onPlaySound(SoundEvent event) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        ClientPlayNetworkHandler networkHandler = mc.getNetworkHandler();
+        Minecraft mc = Minecraft.getInstance();
+        ClientPacketListener networkHandler = mc.getConnection();
         if (networkHandler == null || mc.player == null) {
             return;
         }
 
-        Identifier soundLoc = event.id();
+        Identifier soundLoc = event.location();
 
         var soundMap = GeneralSoundsConfig.getSounds();
         if (soundMap == null) {

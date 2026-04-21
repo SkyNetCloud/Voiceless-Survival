@@ -177,8 +177,8 @@ public class ConfigListScreen extends Screen {
     private void loadGeneralSoundConfigs() {
         items.clear();
         Map<String, GeneralSoundsConfig.SoundEntry> soundConfigs = GeneralSoundsConfig.getSounds();
-        for (SoundEvent sound : Registries.SOUND_EVENT) {
-            String id = Objects.requireNonNull(Registries.SOUND_EVENT.getKey(sound)).toString();
+        for (SoundEvent sound : BuiltInRegistries.SOUND_EVENT) {
+            String id = Objects.requireNonNull(BuiltInRegistries.SOUND_EVENT.getKey(sound)).toString();
             GeneralSoundsConfig.SoundEntry config = soundConfigs.get(id);
             if (config == null) {
                 config = new GeneralSoundsConfig.SoundEntry(false, 1.0, 1.0);
@@ -212,7 +212,7 @@ public class ConfigListScreen extends Screen {
     private void toggleView() {
         if (listType != ListType.GENERAL_SOUNDS_CONFIG) return;
         showingSounds = !showingSounds;
-        toggleViewButton.setMessage(Text.translatable(showingSounds ? "button.ezvcsurvival.show_entities" : "button.ezvcsurvival.show_sounds"));
+        toggleViewButton.setMessage(Component.translatable(showingSounds ? "button.ezvcsurvival.show_entities" : "button.ezvcsurvival.show_sounds"));
         safeRefresh();
     }
 
@@ -323,11 +323,11 @@ public class ConfigListScreen extends Screen {
         int titleWidth = this.font.width(this.title);
         int separatorY = 20;
         graphics.fill(this.width / 2 - titleWidth / 2 - 10, separatorY, this.width / 2 + titleWidth / 2 + 10, separatorY + 1, 0x55FFFFFF);
-        this.list.render(graphics, mouseX, mouseY, partialTick);
-        searchBox.render(graphics, mouseX, mouseY, partialTick);
-        if (searchBox.getText().isEmpty() && !searchBox.isFocused()) {
-            graphics.drawText(
-                    this.textRenderer,
+        this.list.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        searchBox.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        if (searchBox.getValue().isEmpty() && !searchBox.isFocused()) {
+            graphics.text(
+                    this.font,
                     searchBox.getMessage().getString(),
                     searchBox.getX() + 4,
                     searchBox.getY() + 6,
@@ -336,7 +336,7 @@ public class ConfigListScreen extends Screen {
             );
         }
         int searchLabelY = searchBox.getY() - 10;
-        graphics.text(this.textRenderer, Text.translatable("gui.ezvcsurvival.search"),
+        graphics.text(this.font, Component.translatable("gui.ezvcsurvival.search"),
                 searchBox.getX(), searchLabelY, 0xFFCCCCCC, false);
 
         renderTooltips(graphics, mouseX, mouseY);

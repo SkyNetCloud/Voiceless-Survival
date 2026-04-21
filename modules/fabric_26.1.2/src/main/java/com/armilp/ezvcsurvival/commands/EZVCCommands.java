@@ -8,40 +8,35 @@ import com.armilp.ezvcsurvival.goals.MobGoalInjector;
 import com.armilp.ezvcsurvival.network.OpenConfigEditorPayload;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.command.DefaultPermissions;
-import net.minecraft.command.permission.Permission;
-import net.minecraft.command.permission.Permissions;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.lang.reflect.Method;
+
+import static net.minecraft.server.permissions.PermissionLevel.OWNERS;
 
 public class EZVCCommands {
 
 
-    public static void commandInit(CommandDispatcher<ServerCommandSource> dispatcher) {
+    public static void commandInit(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
-                CommandManager.literal("ezvcsurvival").requires(source -> source.getPermissions().hasPermission(DefaultPermissions.OWNERS))
-                        .then(CommandManager.literal("reloadconfig")
+                Commands.literal("ezvcsurvival").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .then(Commands.literal("reloadconfig")
                                 .executes(EZVCCommands::executeReload)
                         )
-                        .then(CommandManager.literal("config")
+                        .then(Commands.literal("config")
                                 .executes(context -> {
-                                    if (context.getSource().getEntity() instanceof ServerPlayerEntity player) {
+                                    if (context.getSource().getEntity() instanceof ServerPlayer player) {
                                         // Send packet to open config editor
                                         OpenConfigEditorPayload.sendToClient(player);
 
-                                        context.getSource().sendFeedback(
-                                                () -> Text.literal("Opening EZVCSurvival config editor..."),
-                                                false
-                                        );
+                                        context.getSource().sendSystemMessage( Component.literal("Opening EZVCSurvival config editor..."));
                                         return 1;
                                     } else {
-                                        context.getSource().sendError(
-                                                Text.literal("This command can only be used by players")
-                                        );
+                                        context.getSource().sendFailure(Component.literal("This command can only be used by players"));
                                         return 0;
                                     }
                                 })
@@ -51,23 +46,17 @@ public class EZVCCommands {
 
 
 
-    private static int executeReload(CommandContext<ServerCommandSource> context) {
-        ServerCommandSource source = context.getSource();
+    private static int executeReload(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
 
         try {
-            source.sendFeedback(
-                    () -> Text.literal("[EZVCSurvival] Reloading configuration files..."),
-                    false
-            );
+            source.sendSystemMessage(Component.literal("[EZVCSurvival] Reloading configuration files..."));
 
             try {
                 reloadEntityVoiceConfig();
-                source.sendFeedback(
-                        () -> Text.literal("[EZVCSurvival] ✓ EntityVoiceConfig reloaded"),
-                        false
-                );
+                source.sendSystemMessage(Component.literal("[EZVCSurvival] ✓ EntityVoiceConfig reloaded"));
             } catch (Exception e) {
-                source.sendError(Text.literal("[EZVCSurvival] ✗ Failed to reload EntityVoiceConfig: " + e.getMessage()));
+                source.sendFailure(Component.literal("[EZVCSurvival] ✗ Failed to reload EntityVoiceConfig: " + e.getMessage()));
                 if (VoiceConfig.DEBUG.get()) {
                     e.printStackTrace();
                 }
@@ -75,12 +64,9 @@ public class EZVCCommands {
 
             try {
                 reloadGeneralSoundsConfig();
-                source.sendFeedback(
-                        () -> Text.literal("[EZVCSurvival] ✓ GeneralSoundConfig reloaded"),
-                        false
-                );
+                source.sendSystemMessage(Component.literal("[EZVCSurvival] ✓ GeneralSoundConfig reloaded"));
             } catch (Exception e) {
-                source.sendError(Text.literal("[EZVCSurvival] ✗ Failed to reload GeneralSoundConfig: " + e.getMessage()));
+                source.sendFailure(Component.literal("[EZVCSurvival] ✗ Failed to reload GeneralSoundConfig: " + e.getMessage()));
                 if (VoiceConfig.DEBUG.get()) {
                     e.printStackTrace();
                 }
@@ -88,12 +74,11 @@ public class EZVCCommands {
 
             try {
                 SoundConfig.loadConfigs();
-                source.sendFeedback(
-                        () -> Text.literal("[EZVCSurvival] ✓ SoundConfig reloaded"),
-                        false
+                source.sendSystemMessage(
+                         Component.literal("[EZVCSurvival] ✓ SoundConfig reloaded")
                 );
             } catch (Exception e) {
-                source.sendError(Text.literal("[EZVCSurvival] ✗ Failed to reload SoundConfig: " + e.getMessage()));
+                source.sendFailure(Component.literal("[EZVCSurvival] ✗ Failed to reload SoundConfig: " + e.getMessage()));
                 if (VoiceConfig.DEBUG.get()) {
                     e.printStackTrace();
                 }
@@ -101,12 +86,11 @@ public class EZVCCommands {
 
             try {
                 // VoiceConfig.reload(); // Uncomment if you have this method
-                source.sendFeedback(
-                        () -> Text.literal("[EZVCSurvival] ✓ VoiceConfig reloaded"),
-                        false
+                source.sendSystemMessage(
+                         Component.literal("[EZVCSurvival] ✓ VoiceConfig reloaded")
                 );
             } catch (Exception e) {
-                source.sendError(Text.literal("[EZVCSurvival] ✗ Failed to reload VoiceConfig: " + e.getMessage()));
+                source.sendFailure(Component.literal("[EZVCSurvival] ✗ Failed to reload VoiceConfig: " + e.getMessage()));
                 if (VoiceConfig.DEBUG.get()) {
                     e.printStackTrace();
                 }
@@ -115,20 +99,19 @@ public class EZVCCommands {
             try {
                 MobGoalInjector.refreshAll();
             } catch (Exception e) {
-                source.sendError(Text.literal("[EZVCSurvival] Failed to refresh mob goals: " + e.getMessage()));
+                source.sendFailure(Component.literal("[EZVCSurvival] Failed to refresh mob goals: " + e.getMessage()));
                 if (VoiceConfig.DEBUG.get()) {
                     e.printStackTrace();
                 }
             }
 
-            source.sendFeedback(
-                    () -> Text.literal("[EZVCSurvival] ✅ All configurations reloaded successfully!"),
-                    false
+            source.sendSystemMessage(
+                     Component.literal("[EZVCSurvival] ✅ All configurations reloaded successfully!")
             );
             return 1;
 
         } catch (Exception e) {
-            source.sendError(Text.literal("[EZVCSurvival] §cAn unexpected error occurred: " + e.getMessage()));
+            source.sendFailure(Component.literal("[EZVCSurvival] §cAn unexpected error occurred: " + e.getMessage()));
             if (VoiceConfig.DEBUG.get()) {
                 e.printStackTrace();
             }

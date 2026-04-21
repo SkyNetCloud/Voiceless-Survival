@@ -42,7 +42,7 @@ public class FollowVoiceGoal extends Goal {
 
         // Only check for sound location periodically to reduce lag
         if (updateCooldown <= 0) {
-            targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = Plugin.getLastSoundLocation(mob.getOnPos(), voiceDetectionRange, threshold);
             updateCooldown = UPDATE_INTERVAL;
         } else {
             updateCooldown--;
@@ -70,7 +70,7 @@ public class FollowVoiceGoal extends Goal {
 
         // Update sound position periodically while continuing
         if (updateCooldown <= 0) {
-            targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = Plugin.getLastSoundLocation(mob.getOnPos(), voiceDetectionRange, threshold);
             updateCooldown = UPDATE_INTERVAL;
         } else {
             updateCooldown--;
@@ -93,7 +93,7 @@ public class FollowVoiceGoal extends Goal {
 
         if (distanceSq <= ARRIVAL_DISTANCE_SQ) {
             // Arrived at sound location, check for new sound
-            targetSoundPosition = Plugin.getLastSoundLocation(mob.g(), voiceDetectionRange, threshold);
+            targetSoundPosition = Plugin.getLastSoundLocation(mob.getOnPos(), voiceDetectionRange, threshold);
             if (targetSoundPosition != null) {
                 moveToSoundPosition();
             } else {

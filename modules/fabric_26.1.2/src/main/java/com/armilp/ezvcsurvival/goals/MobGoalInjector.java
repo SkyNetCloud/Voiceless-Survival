@@ -8,12 +8,15 @@ import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.armilp.ezvcsurvival.mixins.MobEntityAccessor;
 
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.animal.Animal;
 
 import java.util.*;
@@ -32,12 +35,12 @@ public class MobGoalInjector {
             if (!hasActiveGoals(mob)) {
                 injectGoals(mob);
 
-                NbtCompound nbt = new NbtCompound();
+                CompoundTag nbt = new CompoundTag();
                 nbt.putBoolean(TAG, true);
                 TRACKED_MOBS.add(mob);
 
                 if (VoiceConfig.DEBUG.get()) {
-                    Identifier id = Registries.ENTITY_TYPE.identifier();
+                    Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
                     System.out.println(
                             "[EZVCSurvival] Injected goals into: " +
                                     (id != null ? id : "unknown") +
@@ -48,7 +51,7 @@ public class MobGoalInjector {
                 TRACKED_MOBS.add(mob);
 
                 if (VoiceConfig.DEBUG.get()) {
-                    Identifier id = Registries.ENTITY_TYPE.identifier();
+                    Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
                     System.out.println(
                             "[EZVCSurvival] Goals already present for: " +
                                     (id != null ? id : "unknown") +
@@ -73,7 +76,7 @@ public class MobGoalInjector {
     }
 
     private static boolean verifyGoalsInSelector(Mob mob, InjectedGoals injected) {
-        Set<PrioritizedGoal> availableGoals = acc(mob).vs$getGoalSelector().getGoals();
+        Set<WrappedGoal> availableGoals = acc(mob).vs$getGoalSelector().getAvailableGoals();
 
         boolean hasFollowGoal = injected.followGoal == null ||
                 availableGoals.stream().anyMatch(wg -> wg.getGoal() == injected.followGoal);
@@ -114,8 +117,8 @@ public class MobGoalInjector {
             injectGoals(mob);
 
             if (VoiceConfig.DEBUG.get()) {
-                Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
-                System.out.println("[EZVCSurvival] Refreshed goals for: " + (id != null ? id : "unknown") + " (UUID=" + mob.getUuid() + ")");
+                Identifier id = BuiltInRegistries.ENTITY_TYPE.key().identifier();
+                System.out.println("[EZVCSurvival] Refreshed goals for: " + (id != null ? id : "unknown") + " (UUID=" + mob.getUUID() + ")");
             }
         } catch (Exception e) {
             if (VoiceConfig.DEBUG.get()) {

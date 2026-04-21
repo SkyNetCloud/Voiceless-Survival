@@ -2,11 +2,12 @@ package com.armilp.ezvcsurvival.events;
 
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.ArmorEffect;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +38,7 @@ public class ArmorEventHandler  {
 
 
 
-    public static double[] getArmorMultipliers(PlayerEntity player) {
+    public static double[] getArmorMultipliers(Player player) {
         init();
         double speedMultiplier = 1.0;
         double rangeMultiplier = 1.0;
@@ -45,9 +46,9 @@ public class ArmorEventHandler  {
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             if (!slot.getType().equals(EquipmentSlot.Type.HUMANOID_ARMOR)) continue;
 
-            ItemStack stack = player.getEquippedStack(slot);
+            ItemStack stack = player.getItemBySlot(slot);
             if (!stack.isEmpty()) {
-                Identifier id = Registries.ITEM.getId(stack.getItem());
+                Identifier id = BuiltInRegistries.ITEM.key().identifier();
                 if (armorEffectsMap.containsKey(id.toString())) {
                     ArmorEffect effect = armorEffectsMap.get(id.toString());
                     speedMultiplier *= effect.speedMultiplier();
