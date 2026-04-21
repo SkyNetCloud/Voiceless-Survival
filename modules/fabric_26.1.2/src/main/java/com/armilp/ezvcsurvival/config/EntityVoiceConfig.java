@@ -7,9 +7,9 @@ import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.MalformedJsonException;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnGroup;
-import net.minecraft.registry.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -220,10 +220,10 @@ public final class EntityVoiceConfig {
 
     private static boolean ensureAllEntitiesPresent() {
         boolean added = false;
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnGroup category = type.getSpawnGroup();
-            if (category == SpawnGroup.MISC) continue;
-            String id = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString();
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            MobCategory category = type.getCategory();
+            if (category == MobCategory.MISC) continue;
+            String id = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(type)).toString();
 
             // Use clean ID for checking
             String cleanId = cleanEntityId(id);
@@ -246,11 +246,11 @@ public final class EntityVoiceConfig {
     private static void generateDefaults() {
         MONSTER_CONFIGS.clear();
         ANIMAL_CONFIGS.clear();
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnGroup category = type.getSpawnGroup();
-            if (category == SpawnGroup.MISC) continue;
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            MobCategory category = type.getCategory();
+            if (category == MobCategory.MISC) continue;
 
-            String id = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString();
+            String id = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(type)).toString();
             // Store with clean ID
             String cleanId = cleanEntityId(id);
 
@@ -269,15 +269,15 @@ public final class EntityVoiceConfig {
         putIfPresent(ANIMAL_CONFIGS, "minecraft:pig", new EntityConfig(true, 1.0, 15.0, -18.0));
     }
 
-    private static boolean isMonsterCategory(SpawnGroup category) {
-        return category == SpawnGroup.MONSTER;
+    private static boolean isMonsterCategory(MobCategory category) {
+        return category == MobCategory.MONSTER;
     }
 
-    private static boolean isAnimalLikeCategory(SpawnGroup category) {
-        return category == SpawnGroup.CREATURE
-                || category == SpawnGroup.AMBIENT
-                || category == SpawnGroup.WATER_CREATURE
-                || category == SpawnGroup.UNDERGROUND_WATER_CREATURE
+    private static boolean isAnimalLikeCategory(MobCategory category) {
+        return category == MobCategory.CREATURE
+                || category == MobCategory.AMBIENT
+                || category == MobCategory.WATER_CREATURE
+                || category == MobCategory.UNDERGROUND_WATER_CREATURE
                 || category.name().equalsIgnoreCase("AXOLOTLS");
     }
 
@@ -353,7 +353,7 @@ public final class EntityVoiceConfig {
             double baseRange = 50.0;
             double baseThreshold = -20.0;
 
-            if (type != null && type.getSpawnGroup() == SpawnGroup.MONSTER) {
+            if (type != null && type.getCategory() == MobCategory.MONSTER) {
                 baseRange = 60.0;
             }
             return new EntityConfig(false, baseSpeed, baseRange, baseThreshold);

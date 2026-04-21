@@ -2,20 +2,18 @@ package com.armilp.ezvcsurvival.client.gui.edit;
 
 
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.entity.EntityType;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EntityType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,10 +24,10 @@ public class SoundFilterEditScreen extends Screen {
     private final String entityId;
     private final String entityName;
 
-    private TextFieldWidget searchBox;
-    private ButtonWidget saveButton;
-    private ButtonWidget backButton;
-    private ButtonWidget clearButton;
+    private EditBox searchBox;
+    private Button saveButton;
+    private Button backButton;
+    private Button clearButton;
 
     private List<String> blockedSounds;
     private List<SuggestionEntry> suggestions;
@@ -38,7 +36,7 @@ public class SoundFilterEditScreen extends Screen {
     private int dragStartY = 0;
     private int dragStartOffset = 0;
     private boolean showOnlyBlocked = false;
-    private ButtonWidget toggleFilterButton;
+    private Button toggleFilterButton;
 
     private static final int MAX_VISIBLE_SUGGESTIONS = 15;
     private static final int FIELD_WIDTH = 500;
@@ -48,7 +46,7 @@ public class SoundFilterEditScreen extends Screen {
 
 
     public SoundFilterEditScreen(Screen parent, String entityId, String entityName) {
-        super(Text.literal("Sound Filters: " + SoundFilterEditScreen.getEntityDisplayName(entityId)));
+        super(Component.literal("Sound Filters: " + entityName));
         this.parent = parent;
         this.entityId = entityId;
         this.entityName = entityName;
@@ -56,26 +54,6 @@ public class SoundFilterEditScreen extends Screen {
         loadSuggestions();
     }
 
-
-    public static String getEntityDisplayName(String entityId) {
-        try {
-            Identifier identifier = Identifier.tryParse(entityId);
-            if (identifier == null) {
-                return entityId;
-            }
-
-            EntityType<?> type = Registries.ENTITY_TYPE.get(identifier);
-            if (type == null) {
-                return identifier.getPath();
-            }
-
-            String translationKey = type.getTranslationKey();
-            return translationKey != null ? Text.translatable(translationKey).getString() : identifier.getPath() ;
-
-        } catch (Exception e) {
-            return entityId.contains(":") ? entityId.substring(entityId.indexOf(':') + 1) : entityId;
-        }
-    }
 
 
     private void loadCurrentFilters() {
@@ -91,8 +69,8 @@ public class SoundFilterEditScreen extends Screen {
     private void loadSuggestions() {
         suggestions = new ArrayList<>();
 
-        Registries.SOUND_EVENT.forEach(sound -> {
-            Identifier soundId = Registries.SOUND_EVENT.getId(sound);
+        BuiltInRegistries.SOUND_EVENT.forEach(sound -> {
+            Identifier soundId = BuiltInRegistries.SOUND_EVENT.getKey(sound);
             if (soundId != null) {
                 String soundIdString = soundId.toString();
                 String category = categorizeSound(soundIdString);
@@ -131,30 +109,30 @@ public class SoundFilterEditScreen extends Screen {
         int centerX = this.width / 2;
         int startY = 40;
 
-        searchBox = new TextFieldWidget(this.textRenderer, centerX - FIELD_WIDTH / 2, startY, FIELD_WIDTH - 110, FIELD_HEIGHT,
-                Text.literal("Search Sounds"));
-        searchBox.setPlaceholder(Text.literal("Search sounds...").withColor(0x888888));
-        searchBox.setChangedListener(this::onSearchChanged);
+        searchBox = new EditBox(this.font, centerX - FIELD_WIDTH / 2, startY, FIELD_WIDTH - 110, FIELD_HEIGHT,
+                Component.literal("Search Sounds"));
+        searchBox.setHint(Component.literal("Search sounds...").withColor(0x888888));
+        searchBox.setResponder(this::onSearchChanged);
         searchBox.setMaxLength(100);
-        this.addDrawableChild(searchBox);
+        this.addRenderableWidget(searchBox);
 
-        toggleFilterButton = ButtonWidget.builder(Text.literal("Show Blocked"), b -> toggleShowBlocked())
-                .dimensions(centerX + FIELD_WIDTH / 2 - 100, startY, 100, FIELD_HEIGHT).build();
-        this.addDrawableChild(toggleFilterButton);
+        toggleFilterButton = Button.builder(Component.literal("Show Blocked"), b -> toggleShowBlocked())
+                .bounds(centerX + FIELD_WIDTH / 2 - 100, startY, 100, FIELD_HEIGHT).build();
+        this.addRenderableWidget(toggleFilterButton);
 
         int buttonY = this.height - 30;
 
-        clearButton = ButtonWidget.builder(Text.literal("Clear All"), b -> clearFilters())
-                .dimensions(centerX - 210, buttonY, 100, 20).build();
-        this.addDrawableChild(clearButton);
+        clearButton = Button.builder(Component.literal("Clear All"), b -> clearFilters())
+                .bounds(centerX - 210, buttonY, 100, 20).build();
+        this.addRenderableWidget(clearButton);
 
-        saveButton = ButtonWidget.builder(Text.literal("Save"), b -> saveFilters())
-                .dimensions(centerX - 100, buttonY, 100, 20).build();
-        this.addDrawableChild(saveButton);
+        saveButton = Button.builder(Component.literal("Save"), b -> saveFilters())
+                .bounds(centerX - 100, buttonY, 100, 20).build();
+        this.addRenderableWidget(saveButton);
 
-        backButton = ButtonWidget.builder(Text.literal("Cancel"), b -> MinecraftClient.getInstance().setScreen(parent))
-                .dimensions(centerX + 10, buttonY, 100, 20).build();
-        this.addDrawableChild(backButton);
+        backButton = Button.builder(Component.literal("Cancel"), b -> Minecraft.getInstance().setScreen(parent))
+                .bounds(centerX + 10, buttonY, 100, 20).build();
+        this.addRenderableWidget(backButton);
     }
 
     private void onSearchChanged(String query) {
@@ -164,7 +142,7 @@ public class SoundFilterEditScreen extends Screen {
     private void toggleShowBlocked() {
         showOnlyBlocked = !showOnlyBlocked;
         scrollOffset = 0;
-        toggleFilterButton.setMessage(Text.literal(showOnlyBlocked ? "Show All" : "Show Blocked"));
+        toggleFilterButton.setMessage(Component.literal(showOnlyBlocked ? "Show All" : "Show Blocked"));
     }
 
     private void clearFilters() {
@@ -178,28 +156,28 @@ public class SoundFilterEditScreen extends Screen {
             GeneralSoundsConfig.persist();
         }
 
-        MinecraftClient.getInstance().setScreen(parent);
+        Minecraft.getInstance().setScreen(parent);
     }
 
     @Override
-    public void render(DrawContext graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 15, 0xFFFFFFFF);
+        graphics.text(this.font, this.title, this.width / 2, 15, 0xFFFFFFFF);
 
-        graphics.drawTextWithShadow(this.textRenderer, "Search and click to block/unblock sounds:",
+        graphics.text(this.font, "Search and click to block/unblock sounds:",
                 this.width / 2 - FIELD_WIDTH / 2, 25, 0xFFFFFFFF);
 
         renderSuggestions(graphics, mouseX, mouseY);
 
-        graphics.drawCenteredTextWithShadow(this.textRenderer, "§7Blocked: " + blockedSounds.size() + " sounds",
+        graphics.text(this.font, "§7Blocked: " + blockedSounds.size() + " sounds",
                 this.width / 2, this.height - 50, 0xFFAAAAAA);
 
         renderSuggestionTooltip(graphics, mouseX, mouseY);
     }
 
-    private void renderSuggestions(DrawContext graphics, int mouseX, int mouseY) {
-        String query = searchBox.getText().toLowerCase().trim();
+    private void renderSuggestions(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        String query = searchBox.getValue().toLowerCase().trim();
 
         List<SuggestionEntry> filtered = suggestions.stream()
                 .filter(s -> {
@@ -224,7 +202,7 @@ public class SoundFilterEditScreen extends Screen {
 
         if (filtered.isEmpty()) {
             String noResults = query.isEmpty() ? "Start typing to search..." : "No sounds found";
-            graphics.drawTextWithShadow(this.textRenderer, noResults,
+            graphics.text(this.font, noResults,
                     startX + contentWidth / 2, startY + boxHeight / 2 - 4, 0xFF888888);
         } else {
             int maxVisible = boxHeight / SUGGESTION_HEIGHT;
@@ -257,17 +235,17 @@ public class SoundFilterEditScreen extends Screen {
 
                 String displayText = entry.soundId;
                 int maxTextWidth = contentWidth - 50;
-                if (this.textRenderer.getWidth(displayText) > maxTextWidth) {
+                if (this.font.width(displayText) > maxTextWidth) {
                     displayText = truncateText(displayText, maxTextWidth);
                 }
 
                 boolean isBlocked = blockedSounds.contains(entry.soundId);
                 int textColor = isBlocked ? 0xFFFF5555 : 0xFFFFFFFF;
-                graphics.drawTextWithShadow(this.textRenderer, displayText, startX + 10, renderY + 6, textColor);
+                graphics.text(this.font, displayText, startX + 10, renderY + 6, textColor);
 
                 if (isBlocked) {
                     graphics.fill(startX + contentWidth - 25, renderY + 5, startX + contentWidth - 5, renderY + SUGGESTION_HEIGHT - 5, 0xFF555555);
-                    graphics.drawTextWithShadow(this.textRenderer, "✓", startX + contentWidth - 20, renderY + 6, 0xFFFFFFFF);
+                    graphics.text(this.font, "✓", startX + contentWidth - 20, renderY + 6, 0xFFFFFFFF);
                 }
 
                 renderY += SUGGESTION_HEIGHT;
@@ -293,8 +271,9 @@ public class SoundFilterEditScreen extends Screen {
         }
     }
 
-    private void renderSuggestionTooltip(DrawContext graphics, int mouseX, int mouseY) {
-        String query = searchBox.getText().toLowerCase().trim();
+
+    private void renderSuggestionTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        String query = searchBox.getValue().toLowerCase().trim();
         List<SuggestionEntry> filtered = suggestions.stream()
                 .filter(s -> {
                     if (showOnlyBlocked && !blockedSounds.contains(s.soundId)) {
@@ -322,16 +301,16 @@ public class SoundFilterEditScreen extends Screen {
 
             if (index >= 0 && index < filtered.size()) {
                 SuggestionEntry entry = filtered.get(index);
-                List<Text> tooltip = new ArrayList<>();
-                tooltip.add(Text.literal("§6" + entry.category));
+                List<Component> tooltip = new ArrayList<>();
+                tooltip.add(Component.literal("§6" + entry.category));
 
                 if (blockedSounds.contains(entry.soundId)) {
-                    tooltip.add(Text.literal("§cClick to unblock"));
+                    tooltip.add(Component.literal("§cClick to unblock"));
                 } else {
-                    tooltip.add(Text.literal("§aClick to block"));
+                    tooltip.add(Component.literal("§aClick to block"));
                 }
 
-                //graphics.renderTooltip();
+                graphics.setComponentTooltipForNextFrame(this.font,tooltip,startX,startY);
             }
         }
     }
@@ -349,13 +328,13 @@ public class SoundFilterEditScreen extends Screen {
     }
 
     private String truncateText(String text, int maxWidth) {
-        if (this.textRenderer.getWidth(text) <= maxWidth) return text;
+        if (this.font.width(text) <= maxWidth) return text;
 
         String ellipsis = "...";
         StringBuilder truncated = new StringBuilder();
         for (char c : text.toCharArray()) {
             truncated.append(c);
-            if (this.textRenderer.getWidth(truncated + ellipsis) >= maxWidth) {
+            if (this.font.width(truncated + ellipsis) >= maxWidth) {
                 truncated.setLength(truncated.length() - 1);
                 break;
             }
@@ -365,12 +344,10 @@ public class SoundFilterEditScreen extends Screen {
     }
 
 
-
-
     @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (click.button() == 0) {
-            String query = searchBox.getText().toLowerCase().trim();
+            String query = searchBox.getValue().toLowerCase().trim();
             List<SuggestionEntry> filtered = suggestions.stream()
                     .filter(s -> {
                         if (showOnlyBlocked && !blockedSounds.contains(s.soundId)) {
@@ -425,7 +402,7 @@ public class SoundFilterEditScreen extends Screen {
 
 
     @Override
-    public boolean mouseReleased(Click click) {
+    public boolean mouseReleased(MouseButtonEvent click) {
         if (click.button() == 0 && isDraggingScrollbar) {
             isDraggingScrollbar = false;
             return true;
@@ -434,9 +411,9 @@ public class SoundFilterEditScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(Click click, double offsetX, double offsetY) {
+    public boolean mouseDragged(MouseButtonEvent click, double offsetX, double offsetY) {
         if (isDraggingScrollbar) {
-            String query = searchBox.getText().toLowerCase().trim();
+            String query = searchBox.getValue().toLowerCase().trim();
             long filteredCount = suggestions.stream()
                     .filter(s -> {
                         if (showOnlyBlocked && !blockedSounds.contains(s.soundId)) {
@@ -490,7 +467,7 @@ public class SoundFilterEditScreen extends Screen {
 
             scrollOffset -= (int) scrollY;
 
-            String query = searchBox.getText().toLowerCase().trim();
+            String query = searchBox.getValue().toLowerCase().trim();
             long filteredCount = suggestions.stream()
                     .filter(s -> {
                         if (showOnlyBlocked && !blockedSounds.contains(s.soundId)) {
@@ -514,9 +491,9 @@ public class SoundFilterEditScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyInput input) {
+    public boolean keyPressed(KeyEvent input) {
         if (input.key() == 256) { // ESC key
-            MinecraftClient.getInstance().setScreen(parent);
+            Minecraft.getInstance().setScreen(parent);
             return true;
         }
         return super.keyPressed(input);

@@ -121,7 +121,7 @@ public class ReactToGeneralSoundGoal extends Goal {
     }
 
     @Override
-    public boolean canStart() {
+    public boolean canUse() {
         if (mob.getTarget() != null) return false;
 
         long now = System.currentTimeMillis();

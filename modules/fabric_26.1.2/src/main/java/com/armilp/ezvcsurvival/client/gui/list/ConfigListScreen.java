@@ -6,10 +6,19 @@ import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.network.UpdateConfigPayload;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.SpawnGroupData;
+import org.jspecify.annotations.NonNull;
 
 import java.util.*;
 
@@ -79,42 +88,42 @@ public class ConfigListScreen extends Screen {
 
         backButton = Button.builder(Component.translatable("button.ezvcsurvival.back"), b ->
                 Minecraft.getInstance().setScreen(parent != null ? parent : new ConfigEditorScreen())
-        ).dimensions(leftMargin, topRowY, buttonWidth, BUTTON_HEIGHT).build();
-        this.addDrawableChild(backButton);
+        ).bounds(leftMargin, topRowY, buttonWidth, BUTTON_HEIGHT).build();
+        this.addRenderableWidget(backButton);
 
         int currentX = leftMargin + buttonWidth + HORIZONTAL_SPACING;
 
         if (listType == ListType.GENERAL_SOUNDS_CONFIG) {
-            toggleViewButton = ButtonWidget.builder(
-                    Text.translatable(showingSounds ? "button.ezvcsurvival.show_entities" : "button.ezvcsurvival.show_sounds"),
+            toggleViewButton = Button.builder(
+                    Component.translatable(showingSounds ? "button.ezvcsurvival.show_entities" : "button.ezvcsurvival.show_sounds"),
                     b -> toggleView()
-            ).dimensions(currentX, topRowY, buttonWidth, BUTTON_HEIGHT).build();
-            this.addDrawableChild(toggleViewButton);
+            ).bounds(currentX, topRowY, buttonWidth, BUTTON_HEIGHT).build();
+            this.addRenderableWidget(toggleViewButton);
             currentX += buttonWidth + HORIZONTAL_SPACING;
         }
 
         if (listType == ListType.GENERAL_SOUNDS_CONFIG || listType == ListType.ENTITY_CONFIG) {
-            toggleEnabledButton = ButtonWidget.builder(
+            toggleEnabledButton = Button.builder(
                     getToggleEnabledMessage(),
                     b -> toggleEnabled()
-            ).dimensions(currentX, topRowY, buttonWidth, BUTTON_HEIGHT).build();
-            this.addDrawableChild(toggleEnabledButton);
+            ).bounds(currentX, topRowY, buttonWidth, BUTTON_HEIGHT).build();
+            this.addRenderableWidget(toggleEnabledButton);
             currentX += buttonWidth + HORIZONTAL_SPACING;
         }
 
         int searchWidth = Math.min(300, usableWidth - 100);
-        searchBox = new TextFieldWidget(this.textRenderer, leftMargin, searchRowY, searchWidth, SEARCH_HEIGHT,
-                Text.translatable("textbox.ezvcsurvival.search"));
-        searchBox.setChangedListener(this::onSearchChanged);
+        searchBox = new EditBox(this.font, leftMargin, searchRowY, searchWidth, SEARCH_HEIGHT,
+                Component.translatable("textbox.ezvcsurvival.search"));
+        searchBox.setResponder(this::onSearchChanged);
         searchBox.setMaxLength(50);
-        this.addDrawableChild(searchBox);
+        this.addRenderableWidget(searchBox);
 
-        clearSearchButton = ButtonWidget.builder(Text.literal("✕"), b -> searchBox.setText(""))
-                .dimensions(leftMargin + searchWidth + HORIZONTAL_SPACING, searchRowY, 20, SEARCH_HEIGHT).build();
-        this.addDrawableChild(clearSearchButton);
+        clearSearchButton = Button.builder(Component.literal("✕"), b -> searchBox.setValue(""))
+                .bounds(leftMargin + searchWidth + HORIZONTAL_SPACING, searchRowY, 20, SEARCH_HEIGHT).build();
+        this.addRenderableWidget(clearSearchButton);
 
-        this.list = new ConfigListWidget(this, this.client, this.width, this.height, listStartY, 28);
-        this.addDrawableChild(this.list);
+        this.list = new ConfigListWidget(this, this.minecraft, this.width, this.height, listStartY, 28, 20);
+        this.addRenderableWidget(this.list);
 
         if (items == null || items.isEmpty()) {
             loadData();
@@ -151,10 +160,10 @@ public class ConfigListScreen extends Screen {
 
     private void loadEntityConfigs() {
         items.clear();
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnGroup category = type.getSpawnGroup();
-            if (category == SpawnGroup.MISC) continue;
-            String id = Registries.ENTITY_TYPE.getKey(type).toString();
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            MobCategory category = type.getCategory();
+            if (category == MobCategory.MISC) continue;
+            String id = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(type)).toString();
             EntityVoiceConfig.EntityConfig config = EntityVoiceConfig.get(id);
             if (config == null) {
                 config = EntityVoiceConfig.EntityConfig.defaultFor(type);
@@ -162,7 +171,7 @@ public class ConfigListScreen extends Screen {
             }
             items.add(new EntityConfigItem(id, type, config));
         }
-        items.sort(Comparator.comparing(item -> ((EntityConfigItem) item).getDisplayName().getString()));
+        items.sort(Comparator.comparing(item -> ((EntityConfigItem) item).getDisplayName()));
     }
 
     private void loadGeneralSoundConfigs() {
@@ -186,14 +195,14 @@ public class ConfigListScreen extends Screen {
         if (entityConfigs == null) {
             entityConfigs = java.util.Collections.emptyMap();
         }
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnGroup category = type.getSpawnGroup();
-            if (category == SpawnGroup.MISC) continue;
-            String id = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString();
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            MobCategory category = type.getCategory();
+            if (category == MobCategory.MISC) continue;
+            String id = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(type)).toString();
             GeneralSoundsConfig.Reaction reaction = entityConfigs.get(id);
             if (reaction == null) {
-                reaction = new GeneralSoundsConfig.Reaction(true, 1.0, category == SpawnGroup.MONSTER ? 60.0 : 50.0);
-                GeneralSoundsConfig.setMobReaction(id, true, 1.0, category == SpawnGroup.MONSTER ? 60.0 : 50.0);
+                reaction = new GeneralSoundsConfig.Reaction(true, 1.0, category == MobCategory.MONSTER ? 60.0 : 50.0);
+                GeneralSoundsConfig.setMobReaction(id, true, 1.0, category == MobCategory.MONSTER ? 60.0 : 50.0);
             }
             items.add(new EntityReactionItem(id, reaction));
         }
@@ -245,7 +254,7 @@ public class ConfigListScreen extends Screen {
         safeRefresh();
     }
 
-    private Text getToggleEnabledMessage() {
+    private Component getToggleEnabledMessage() {
         boolean isEnabled = false;
         switch (listType) {
             case ENTITY_CONFIG:
@@ -255,7 +264,7 @@ public class ConfigListScreen extends Screen {
                 isEnabled = GeneralSoundsConfig.isEnabled();
                 break;
         }
-        return Text.translatable(isEnabled ? "button.ezvcsurvival.disable_all" : "button.ezvcsurvival.enable_all");
+        return Component.translatable(isEnabled ? "button.ezvcsurvival.disable_all" : "button.ezvcsurvival.enable_all");
     }
 
     public void refreshData() {
@@ -300,16 +309,18 @@ public class ConfigListScreen extends Screen {
         updateList();
     }
 
-    @Override
-    public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 5, 0xFFFFFFFF);
+
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+
+        graphics.text(this.font, this.title, this.width / 2, 5, 0xFFFFFFFF);
 
         // Render count and instructions at the TOP (right after title)
         renderTopInfo(graphics);
 
-        int titleWidth = this.textRenderer.getWidth(this.title);
+        int titleWidth = this.font.width(this.title);
         int separatorY = 20;
         graphics.fill(this.width / 2 - titleWidth / 2 - 10, separatorY, this.width / 2 + titleWidth / 2 + 10, separatorY + 1, 0x55FFFFFF);
         this.list.render(graphics, mouseX, mouseY, partialTick);
@@ -325,53 +336,53 @@ public class ConfigListScreen extends Screen {
             );
         }
         int searchLabelY = searchBox.getY() - 10;
-        graphics.drawText(this.textRenderer, Text.translatable("gui.ezvcsurvival.search"),
+        graphics.text(this.textRenderer, Text.translatable("gui.ezvcsurvival.search"),
                 searchBox.getX(), searchLabelY, 0xFFCCCCCC, false);
 
         renderTooltips(graphics, mouseX, mouseY);
     }
 
-    private void renderTopInfo(DrawContext graphics) {
+    private void renderTopInfo(GuiGraphicsExtractor graphics) {
         int topInfoY = 100; // Position right below the separator line
         int leftMargin = (this.width - Math.max(this.width - 40, MIN_WIDTH)) / 2;
 
         // Get count and instructions components
-        Text count = getCountComponent();
-        Text instructions = getInstructionsComponent();
+        Component count = getCountComponent();
+        Component instructions = getInstructionsComponent();
 
         // Draw count on the right side
-        int countWidth = this.textRenderer.getWidth(count);
+        int countWidth = this.font.width(count);
         int countX = this.width - countWidth - leftMargin;
-        graphics.drawText(this.textRenderer, count, countX, topInfoY, 0xFFAAAAAA, false);
+        graphics.text(this.font, count, countX, topInfoY, 0xFFAAAAAA, false);
 
         // Draw instructions on the left side
-        graphics.drawText(this.textRenderer, instructions, leftMargin, topInfoY, 0xFFCCCCCC, false);
+        graphics.text(this.font, instructions, leftMargin, topInfoY, 0xFFCCCCCC, false);
     }
 
-    private Text getCountComponent() {
+    private Component getCountComponent() {
         if (listType == ListType.ENTITY_CONFIG) {
-            return Text.translatable("gui.ezvcsurvival.entity_count", list.children().size());
+            return Component.translatable("gui.ezvcsurvival.entity_count", list.children().size());
         } else if (listType == ListType.GENERAL_SOUNDS_CONFIG) {
             if (showingSounds) {
-                return Text.translatable("gui.ezvcsurvival.sound_count", list.children().size());
+                return Component.translatable("gui.ezvcsurvival.sound_count", list.children().size());
             } else {
-                return Text.translatable("gui.ezvcsurvival.entity_count", list.children().size());
+                return Component.translatable("gui.ezvcsurvival.entity_count", list.children().size());
             }
         }
-        return Text.translatable("gui.ezvcsurvival.entity_count", list.children().size());
+        return Component.translatable("gui.ezvcsurvival.entity_count", list.children().size());
     }
 
-    private Text getInstructionsComponent() {
+    private Component getInstructionsComponent() {
         if (listType == ListType.ENTITY_CONFIG) {
-            return Text.translatable("gui.ezvcsurvival.click_to_edit_entity");
+            return Component.translatable("gui.ezvcsurvival.click_to_edit_entity");
         } else if (listType == ListType.GENERAL_SOUNDS_CONFIG) {
             if (showingSounds) {
-                return Text.translatable("gui.ezvcsurvival.click_to_edit_sound");
+                return Component.translatable("gui.ezvcsurvival.click_to_edit_sound");
             } else {
-                return Text.translatable("gui.ezvcsurvival.click_to_edit_entity");
+                return Component.translatable("gui.ezvcsurvival.click_to_edit_entity");
             }
         }
-        return Text.translatable("gui.ezvcsurvival.click_to_edit_entity");
+        return Component.translatable("gui.ezvcsurvival.click_to_edit_entity");
     }
 
     @Override
@@ -382,11 +393,12 @@ public class ConfigListScreen extends Screen {
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
+
+
     @Override
-    public boolean keyPressed(KeyInput keyCode) {
+    public boolean keyPressed(@NonNull KeyEvent keyCode) {
         if (keyCode.key() == 256) {
-            assert this.client != null;
-            this.client.setScreen(parent != null ? parent : new ConfigEditorScreen());
+            this.minecraft.setScreen(parent != null ? parent : new ConfigEditorScreen());
             return true;
         }
         return super.keyPressed(keyCode);
@@ -411,7 +423,7 @@ public class ConfigListScreen extends Screen {
     }
 
     public void safeRefresh() {
-        if (this.client != null && this.client.currentScreen == this) {
+        if (this.minecraft != null && this.minecraft.screen == this) {
             loadData();
             updateList();
         }
@@ -436,8 +448,8 @@ public class ConfigListScreen extends Screen {
             return config;
         }
 
-        public Text getDisplayName() {
-            return entry.getName();
+        public String  getDisplayName() {
+            return entry.getDescription().getString();
         }
     }
 
@@ -476,7 +488,7 @@ public class ConfigListScreen extends Screen {
 
 
 
-    private void renderTooltips(DrawContext graphics, int mouseX, int mouseY) {
+    private void renderTooltips(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         if (list == null) return;
         if (!list.isMouseOver(mouseX, mouseY)) {
             return;

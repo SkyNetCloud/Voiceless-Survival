@@ -4,16 +4,16 @@ import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.events.SoundEventTracker;
 import com.armilp.ezvcsurvival.goals.ReactToGeneralSoundGoal;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+
+
+import static com.armilp.ezvcsurvival.EZVCSurvival.MOD_ID;
 
 public record GeneralSoundPayload(
         Identifier sound,
@@ -22,24 +22,24 @@ public record GeneralSoundPayload(
         double z,
         double speedMultiplier,
         double rangeMultiplier
-) implements CustomPayload {
-    public static final CustomPayload.Id<GeneralSoundPayload> ID =
-            new CustomPayload.Id<>(Identifier.of("ezvcsurvival", "general_sound"));
+) implements CustomPacketPayload {
+    public static final Identifier PAYLOAD_ID = Identifier.fromNamespaceAndPath(MOD_ID, "general_sound");
 
-    public static final PacketCodec<RegistryByteBuf, GeneralSoundPayload> CODEC = PacketCodec.tuple(
-            Identifier.PACKET_CODEC, GeneralSoundPayload::sound,
-            PacketCodecs.DOUBLE, GeneralSoundPayload::x,
-            PacketCodecs.DOUBLE, GeneralSoundPayload::y,
-            PacketCodecs.DOUBLE, GeneralSoundPayload::z,
-            PacketCodecs.DOUBLE, GeneralSoundPayload::speedMultiplier,
-            PacketCodecs.DOUBLE, GeneralSoundPayload::rangeMultiplier,
-            GeneralSoundPayload::new
-    );
+    public static final CustomPacketPayload.Type<GeneralSoundPayload> ID =
+            new CustomPacketPayload.Type<>(PAYLOAD_ID);
 
-    @Override
-    public CustomPayload.Id<? extends CustomPayload> getId() {
-        return ID;
-    }
+
+//
+//    public static final StreamCodec<FriendlyByteBuf, GeneralSoundPayload> CODEC = PacketCodec.tuple(
+//            Identifier.PACKET_CODEC, GeneralSoundPayload::sound,
+//            Packe.DOUBLE, GeneralSoundPayload::x,
+//            PacketCodecs.DOUBLE, GeneralSoundPayload::y,
+//            PacketCodecs.DOUBLE, GeneralSoundPayload::z,
+//            PacketCodecs.DOUBLE, GeneralSoundPayload::speedMultiplier,
+//            PacketCodecs.DOUBLE, GeneralSoundPayload::rangeMultiplier,
+//            GeneralSoundPayload::new
+//    );
+
 
     // Handler method that can be registered with Fabric's networking
     public static void handle(GeneralSoundPayload payload, ServerPlayNetworking.Context context) {
@@ -48,14 +48,15 @@ public record GeneralSoundPayload(
 
         // Run on server thread
         context.server().execute(() -> {
-            ServerLevel level = player.getEntityWorld();
+            ServerLevel level = player.level();
             Vec3 soundPos = new Vec3(payload.x(), payload.y(), payload.z());
 
             SoundEventTracker.setLastPlayedPosition(
+
                     payload.sound(),
-                    soundPos.getX(),
-                    soundPos.getY(),
-                    soundPos.getZ(),
+                    soundPos.x(),
+                    soundPos.y(),
+                    soundPos.z(),
                     payload.speedMultiplier(),
                     payload.rangeMultiplier()
             );
@@ -85,5 +86,10 @@ public record GeneralSoundPayload(
         ServerPlayNetworking.registerGlobalReceiver(ID, (payload, context) -> {
             handle(payload, context);
         });
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return ID;
     }
 }

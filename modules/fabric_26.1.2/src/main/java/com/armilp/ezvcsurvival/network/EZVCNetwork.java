@@ -15,6 +15,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 public final class EZVCNetwork {
+    public static final int PROTOCOL_VERSION = 1;
 
 
     public EZVCNetwork() {}
