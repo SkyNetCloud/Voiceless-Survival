@@ -1,10 +1,7 @@
 package com.armilp.ezvcsurvival.network;
 
 
-import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
-import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
-import com.armilp.ezvcsurvival.config.SoundConfig;
-import com.armilp.ezvcsurvival.config.VoiceConfig;
+import com.armilp.ezvcsurvival.config.*;
 import com.armilp.ezvcsurvival.goals.MobGoalInjector;
 import com.armilp.ezvcsurvival.utils.ConfigType;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -13,6 +10,8 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
 import net.minecraft.util.Identifier;
+
+import static com.armilp.ezvcsurvival.client.gui.edit.ConfigEditScreen.EditType.GUNFIRE_ENTITY;
 
 
 public record UpdateConfigPayload(
@@ -83,6 +82,11 @@ public record UpdateConfigPayload(
                     handleSoundPriorityConfig(msg);
                     configChanged = true;
                     break;
+                case GUNFIRE_SOUND:
+                case GUNFIRE_ENTITY:
+                    GunfireConfig.init();
+                    break;
+
             }
         }
         if (configChanged) {
@@ -95,6 +99,10 @@ public record UpdateConfigPayload(
                     case GENERAL_SOUND_ENTITY:
                     case SOUND_PRIORITY:
                         GeneralSoundsConfig.init();
+                        break;
+                    case GUNFIRE_SOUND:
+                    case GUNFIRE_ENTITY:
+                        GunfireConfig.init();
                         break;
                 }
                 SoundConfig.loadConfigs();
@@ -191,25 +199,43 @@ public record UpdateConfigPayload(
     private static void handleGlobalConfigChange(UpdateConfigPayload msg) {
         switch (msg.configType) {
             case ENTITY_VOICE:
-                if (EntityVoiceConfig.ROOT == null) EntityVoiceConfig.ROOT = new EntityVoiceConfig.RootConfig();
+                if (EntityVoiceConfig.ROOT == null) {
+                    EntityVoiceConfig.ROOT = new EntityVoiceConfig.RootConfig();
+                }
                 EntityVoiceConfig.ROOT.enabled = msg.enabled;
                 EntityVoiceConfig.persist();
+
                 if (VoiceConfig.DEBUG.get()) {
-                    System.out.println("[EZVCSurvival] Global EntityVoice enabled=" + msg.enabled);
+                    System.out.println("[EZVCSurvival] Server updated EntityVoice global config: enabled=" + msg.enabled);
                 }
                 break;
             case GENERAL_SOUND:
-                if (GeneralSoundsConfig.ROOT == null) GeneralSoundsConfig.ROOT = new GeneralSoundsConfig.Root();
+                if (GeneralSoundsConfig.ROOT == null) {
+                    GeneralSoundsConfig.ROOT = new GeneralSoundsConfig.Root();
+                }
                 GeneralSoundsConfig.ROOT.enabled = msg.enabled;
                 GeneralSoundsConfig.persist();
+
                 if (VoiceConfig.DEBUG.get()) {
-                    System.out.println("[EZVCSurvival] Global GeneralSound enabled=" + msg.enabled);
+                    System.out.println("[EZVCSurvival] Server updated GeneralSound global config: enabled=" + msg.enabled);
                 }
                 break;
             case SOUND_PRIORITY:
                 GeneralSoundsConfig.enableAllPrioritySounds(msg.enabled);
+
                 if (VoiceConfig.DEBUG.get()) {
-                    System.out.println("[EZVCSurvival] Global Priority enabled=" + msg.enabled);
+                    System.out.println("[EZVCSurvival] Server updated Sound Priority global config: enabled=" + msg.enabled);
+                }
+                break;
+            case GUNFIRE_SOUND:
+                if (GunfireConfig.ROOT == null) {
+                    GunfireConfig.ROOT = new GunfireConfig.Root();
+                }
+                GunfireConfig.ROOT.enabled = msg.enabled;
+                GunfireConfig.persist();
+
+                if (VoiceConfig.DEBUG.get()) {
+                    System.out.println("[EZVCSurvival] Server updated Gunfire global config: enabled=" + msg.enabled);
                 }
                 break;
         }

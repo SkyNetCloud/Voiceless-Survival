@@ -3,9 +3,10 @@ package com.armilp.ezvcsurvival.utils;
 public enum ConfigType {
     ENTITY_VOICE(0),
     GENERAL_SOUND(1),
+    GUNFIRE_SOUND(2),
+    GUNFIRE_ENTITY(3),
     GENERAL_SOUND_ENTITY(4),
-    SOUND_PRIORITY(5),
-    GUNFIRE_SOUND(6);
+    SOUND_PRIORITY(5);
 
     private final int id;
 

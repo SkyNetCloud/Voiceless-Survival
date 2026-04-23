@@ -4,43 +4,53 @@ import com.armilp.ezvcsurvival.client.gui.ConfigEditorScreen;
 import com.armilp.ezvcsurvival.client.gui.list.ConfigListScreen;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
-import com.armilp.ezvcsurvival.data.ConfigManager;
 import com.armilp.ezvcsurvival.utils.ConfigType;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 
 import static com.mojang.text2speech.Narrator.LOGGER;
 
 public final class EZVCNetwork {
 
-
-    public EZVCNetwork() {}
+    public EZVCNetwork() {
+    }
 
     public static void registerCommon() {
         LOGGER.info("[EZVCNetwork] Registering common payloads...");
 
+        // =========================
+        // S2C
+        // =========================
         PayloadTypeRegistry.playS2C().register(GeneralSoundPayload.ID, GeneralSoundPayload.CODEC);
         LOGGER.info("Registered S2C: GeneralSoundPayload");
 
         PayloadTypeRegistry.playS2C().register(UpdateConfigPayload.ID, UpdateConfigPayload.CODEC);
         LOGGER.info("Registered S2C: UpdateConfigPayload");
 
+        PayloadTypeRegistry.playS2C().register(OpenConfigEditorPayload.ID, OpenConfigEditorPayload.CODEC);
+        LOGGER.info("Registered S2C: OpenConfigEditorPayload");
 
+        // =========================
+        // C2S
+        // =========================
         PayloadTypeRegistry.playC2S().register(UpdateConfigPayload.ID, UpdateConfigPayload.CODEC);
         LOGGER.info("Registered C2S: UpdateConfigPayload");
 
         PayloadTypeRegistry.playC2S().register(GeneralSoundPayload.ID, GeneralSoundPayload.CODEC);
         LOGGER.info("Registered C2S: GeneralSoundPayload");
 
+        // =========================
+        // Server Receivers
+        // =========================
         ServerPlayNetworking.registerGlobalReceiver(
                 UpdateConfigPayload.ID,
                 (payload, context) -> {
@@ -56,15 +66,15 @@ public final class EZVCNetwork {
                     GeneralSoundPayload.handle(payload, context);
                 }
         );
-
     }
 
     public static void registerClient() {
 
-
-
         LOGGER.info("[EZVCNetwork] Registering client receivers...");
 
+        // =========================
+        // SOUND
+        // =========================
         ClientPlayNetworking.registerGlobalReceiver(
                 GeneralSoundPayload.ID,
                 (payload, context) -> {
@@ -73,6 +83,9 @@ public final class EZVCNetwork {
                 }
         );
 
+        // =========================
+        // CONFIG SYNC
+        // =========================
         ClientPlayNetworking.registerGlobalReceiver(
                 UpdateConfigPayload.ID,
                 (payload, context) -> {
@@ -115,7 +128,6 @@ public final class EZVCNetwork {
                                 );
                                 GeneralSoundsConfig.persist();
                             }
-
                         }
 
                         if (MinecraftClient.getInstance().currentScreen instanceof ConfigListScreen screen) {
@@ -126,23 +138,22 @@ public final class EZVCNetwork {
                 }
         );
 
+        // =========================
+        // OPEN GUI
+        // =========================
+        ClientPlayNetworking.registerGlobalReceiver(
+                OpenConfigEditorPayload.ID,
+                (payload, context) -> {
+                    LOGGER.info("Client received OpenConfigEditorPayload");
+                    context.client().execute(EZVCNetwork::openConfigEditor);
+                }
+        );
     }
 
+    // =========================
+    // SENDERS
+    // =========================
 
-
-
-    public static void sendGeneralSoundToServer(Identifier soundId, double x, double y, double z,
-                                                double speedMultiplier, double rangeMultiplier) {
-        ClientPlayNetworking.send(new GeneralSoundPayload(soundId, x, y, z, speedMultiplier, rangeMultiplier));
-    }
-
-
-    public static void sendConfigUpdateToServer(ConfigType configType, String targetId,
-                                                boolean enabled, double value1, double value2, double value3, boolean boolValue) {
-        ClientPlayNetworking.send(new UpdateConfigPayload(
-                configType, targetId, enabled, value1, value2, value3, boolValue
-        ));
-    }
 
     public static void sendEntityConfigUpdate(String entityId, boolean enabled, double speed, double range, double threshold) {
         sendConfigUpdateToServer(
@@ -180,56 +191,37 @@ public final class EZVCNetwork {
         );
     }
 
-    public static void sendRefreshRequest(String configType) {
+    public static void sendGunfireSoundConfigUpdate(String soundId, boolean enabled, double speedMult, double rangeMult) {
         sendConfigUpdateToServer(
-                ConfigType.valueOf(configType.toUpperCase()),
-                "refresh",
-                true,
-                1.0,
-                1.0,
-                1.0,
+                ConfigType.GUNFIRE_ENTITY,
+                soundId,
+                enabled,
+                speedMult,
+                rangeMult,
+                0.0,
                 false
         );
     }
 
-    public static void sendSimpleConfigUpdateToServer(String key, String value) {
-        String[] parts = key.split(":");
-        if (parts.length >= 2) {
-            String configTypeStr = parts[0];
-            String targetId = parts[1];
-
-            try {
-                ConfigType configType = ConfigType.valueOf(
-                        configTypeStr.toUpperCase()
-                );
-
-                boolean enabled = value.contains("enabled=true");
-                double speed = 1.0;
-                double range = 1.0;
-                double threshold = 0.0;
-                boolean priority = false;
-
-                String[] params = value.split(",");
-                for (String param : params) {
-                    String[] kv = param.split("=");
-                    if (kv.length == 2) {
-                        switch (kv[0]) {
-                            case "speed": speed = Double.parseDouble(kv[1]); break;
-                            case "range": range = Double.parseDouble(kv[1]); break;
-                            case "threshold": threshold = Double.parseDouble(kv[1]); break;
-                            case "priority": priority = Boolean.parseBoolean(kv[1]); break;
-                        }
-                    }
-                }
-
-                sendConfigUpdateToServer(
-                        configType, targetId, enabled, speed, range, threshold, priority
-                );
-            } catch (IllegalArgumentException e) {
-                System.err.println("Invalid config type: " + configTypeStr);
-            }
-        }
+    public static void openEditor(ServerPlayerEntity player) {
+        ServerPlayNetworking.send(player, new OpenConfigEditorPayload());
     }
+
+    public static void sendGeneralSoundToServer(Identifier soundId, double x, double y, double z,
+                                                double speedMultiplier, double rangeMultiplier) {
+        ClientPlayNetworking.send(new GeneralSoundPayload(soundId, x, y, z, speedMultiplier, rangeMultiplier));
+    }
+
+    public static void sendConfigUpdateToServer(ConfigType configType, String targetId,
+                                                boolean enabled, double value1, double value2, double value3, boolean boolValue) {
+        ClientPlayNetworking.send(new UpdateConfigPayload(
+                configType, targetId, enabled, value1, value2, value3, boolValue
+        ));
+    }
+
+    // =========================
+    // CLIENT HANDLERS
+    // =========================
 
     private static void handleSoundFromServer(GeneralSoundPayload payload) {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -244,4 +236,7 @@ public final class EZVCNetwork {
 
     private static void openConfigEditor() {
         MinecraftClient.getInstance().setScreen(new ConfigEditorScreen());
-    }}
+    }
+
+
+}

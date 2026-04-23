@@ -330,7 +330,7 @@ public final class GeneralSoundsConfig {
 
     private static boolean shouldEnableByDefault(String soundId) {
         if (soundId.startsWith("pointblank:") || soundId.contains("superbwarfare:")) {
-            return false;
+            return true;
         }
 
         return soundId.contains("place") || soundId.contains("break") ||

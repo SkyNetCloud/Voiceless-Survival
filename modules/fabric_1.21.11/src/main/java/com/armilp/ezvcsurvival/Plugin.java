@@ -204,6 +204,6 @@ public class Plugin implements VoicechatPlugin {
             }
         }
 
-        //scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
+        scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
     }
 }

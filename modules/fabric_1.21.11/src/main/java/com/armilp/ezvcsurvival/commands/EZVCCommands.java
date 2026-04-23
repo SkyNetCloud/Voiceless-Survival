@@ -6,6 +6,7 @@ import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.goals.MobGoalInjector;
+import com.armilp.ezvcsurvival.network.OpenConfigEditorPayload;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -17,6 +18,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
 import java.lang.reflect.Method;
+
+import static com.armilp.ezvcsurvival.network.EZVCNetwork.openEditor;
 
 public class EZVCCommands {
 
@@ -30,7 +33,7 @@ public class EZVCCommands {
                         .then(CommandManager.literal("config")
                                 .executes(context -> {
                                     if (context.getSource().getEntity() instanceof ServerPlayerEntity player) {
-                                        MinecraftClient.getInstance().setScreen(new ConfigEditorScreen());
+                                        openEditor(player);
 
                                         context.getSource().sendFeedback(
                                                 () -> Text.literal("Opening EZVCSurvival config editor..."),

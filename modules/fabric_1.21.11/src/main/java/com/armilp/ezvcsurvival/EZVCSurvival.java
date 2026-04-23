@@ -2,10 +2,7 @@ package com.armilp.ezvcsurvival;
 
 
 import com.armilp.ezvcsurvival.commands.EZVCCommands;
-import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
-import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
-import com.armilp.ezvcsurvival.config.SoundConfig;
-import com.armilp.ezvcsurvival.config.VoiceConfig;
+import com.armilp.ezvcsurvival.config.*;
 import com.armilp.ezvcsurvival.goals.MobGoalInjector;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.sculk.ModGameEvent;
@@ -36,6 +33,7 @@ public class EZVCSurvival implements ModInitializer {
 
         EntityVoiceConfig.init();
         GeneralSoundsConfig.init();
+        GunfireConfig.init();
         SoundConfig.loadConfigs();
         ModGameEvent.register();
 
