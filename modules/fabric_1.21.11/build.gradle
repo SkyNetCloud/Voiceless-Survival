@@ -102,6 +102,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
 
     mainFile.addRequirement("simple-voice-chat")
     mainFile.addRequirement("forge-config-api-port")
+    mainFile.addOptional("vics-point-blank")
 
 }
 
@@ -124,6 +125,7 @@ modrinth {
         required.project "fabric-api"
         required.project 'simple-voice-chat'
         required.project 'forge-config-api-port'
+        optional.project 'vics-point-blank'
         //optional.project 'timeless-and-classics-zero'
     }
 }
