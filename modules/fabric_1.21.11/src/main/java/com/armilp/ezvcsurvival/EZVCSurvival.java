@@ -18,8 +18,6 @@ import org.slf4j.Logger;
 public class EZVCSurvival implements ModInitializer {
     public static final String MOD_ID = "ezvcsurvival";
     public static final Logger LOGGER = LogUtils.getLogger();
-    //public static final String MOD_VERSION = "2.0.0";
-    //public static EZVCNetwork voiceNetwork;
 
     @Override
     public void onInitialize() {
