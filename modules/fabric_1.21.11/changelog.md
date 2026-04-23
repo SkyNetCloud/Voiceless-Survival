@@ -3,9 +3,13 @@
 <span style="color:red; font-size:20px;">IMPORTANT</span>  
 <span style="color:orange; font-size:16px;">Before updating to this version, make a backup of your previous configuration.</span>
 
-#### Version **2.0.0-beta-v2** 
+#### Version **2.1.0-beta**
+
+✅ **Updated:**
+- Updated to 1.21.11 fabric.
+- Updated to a better scheduler that should be more efficient on cleaning up old data.
 
 ✅ **Fixed:**
- - Clean up some of the naming in GUI that weren't setup correctly in the previous version.
+- Some features in the config editor should be fixed now.
 
 ### Any issues with this mod should be reported on the [eZApocalypse Mods Discord](https://discord.gg/jqBFMhnJPe)

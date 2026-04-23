@@ -28,6 +28,7 @@ public class Plugin implements VoicechatPlugin {
     private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> lastSculkVibrationTime = new ConcurrentHashMap<>();
     private static final long SCULK_VIBRATION_COOLDOWN_MS = 500;
+    private static final Map<UUID, Long> lastSoundTime = new ConcurrentHashMap<>();
     private static VoicechatApi voicechatApi;
 
     @Override
@@ -170,10 +171,8 @@ public class Plugin implements VoicechatPlugin {
                         (int) Math.floor(senderVec.y),
                         (int) Math.floor(senderVec.z)
                 );
-                playerSoundLocations.put(
-                        playerUUID,
-                        new SoundData(precisePos, audioLevel)
-                );
+                playerSoundLocations.put(playerUUID, new SoundData(precisePos, audioLevel));
+                lastSoundTime.put(playerUUID, System.currentTimeMillis());
                 if (DEBUG) {
                     System.out.println("[DEBUG] " + id + " detects sound! " +
                             "Threshold: " + threshold + " dB | " +
@@ -204,6 +203,13 @@ public class Plugin implements VoicechatPlugin {
             }
         }
 
-        scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(() -> {
+            long now = System.currentTimeMillis();
+            playerSoundLocations.entrySet().removeIf(entry -> {
+                UUID uuid = entry.getKey();
+                Long last = lastSoundTime.get(uuid);
+                return last == null || now - last > 5000;
+            });
+        }, 1, 1, TimeUnit.SECONDS);
     }
 }
