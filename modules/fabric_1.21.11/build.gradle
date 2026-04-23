@@ -102,8 +102,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
 
     mainFile.addRequirement("simple-voice-chat")
     mainFile.addRequirement("forge-config-api-port")
-    mainFile.addRequirement("modmenu")
-    //mainFile.addOptional("sound-physics-remastered")
+
 }
 
 
@@ -125,7 +124,6 @@ modrinth {
         required.project "fabric-api"
         required.project 'simple-voice-chat'
         required.project 'forge-config-api-port'
-        required.project 'modmenu'
         //optional.project 'timeless-and-classics-zero'
     }
 }
