@@ -301,7 +301,7 @@ public final class GeneralSoundsConfig {
         for (EntityType<?> type : Registries.ENTITY_TYPE) {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
-            String id = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString();
+            String id = Registries.ENTITY_TYPE.getId(type).toString();
             if (!ROOT.mobs.containsKey(id)) {
                 ROOT.mobs.put(id, Reaction.defaultFor(type));
                 added = true;
@@ -313,7 +313,12 @@ public final class GeneralSoundsConfig {
         }
 
         for (var sound : Registries.SOUND_EVENT) {
-            String id = Objects.requireNonNull(Registries.SOUND_EVENT.getKey(sound)).toString();
+            var identifier = Registries.SOUND_EVENT.getId(sound);
+            if (identifier == null) {
+                continue; // or log + skip
+            }
+
+            String id = identifier.toString();
 
             if (!ROOT.sounds.containsKey(id)) {
                 boolean shouldEnable = shouldEnableByDefault(id);
@@ -355,7 +360,7 @@ public final class GeneralSoundsConfig {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
             ROOT.mobs.put(
-                    Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString(),
+                    Registries.SOUND_EVENT.getKey().toString(),
                     Reaction.defaultFor(type)
             );
         }
