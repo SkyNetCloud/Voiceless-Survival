@@ -1,12 +1,10 @@
 ### Changelog
 
-<span style="color:red; font-size:20px;">IMPORTANT</span>  
-<span style="color:orange; font-size:16px;">Before updating to this version, make a backup of your previous configuration.</span>
 
-#### Version **2.1.1-beta**
+#### Version **2.1.2-beta**
 
-✅ **Remove:**
-    - Removed unused code from the mod.
+✅ **Fixed:**
+    - GeneralSoundsConfig id were wrong should be fixed inside the generalsounds.json after a reset of the file. but it should automatically fix itself after the first load of the mod.
 
 
 
