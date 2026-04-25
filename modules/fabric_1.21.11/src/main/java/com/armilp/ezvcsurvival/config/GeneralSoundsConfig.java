@@ -1,7 +1,6 @@
 package com.armilp.ezvcsurvival.config;
 
 import com.armilp.ezvcsurvival.EZVCSurvival;
-import com.armilp.ezvcsurvival.compat.vics.PointBlankSoundsConfig;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -20,7 +19,10 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public final class GeneralSoundsConfig {
 
@@ -182,7 +184,7 @@ public final class GeneralSoundsConfig {
         Map<String, SoundEntry> sounds = getSounds();
         if (sounds == null) return;
 
-        priorityGroups.removeIf(group -> group.groupName().startsWith("auto_priority_"));
+        priorityGroups.removeIf(group -> group.groupName.startsWith("auto_priority_"));
 
         for (Map.Entry<String, SoundEntry> entry : sounds.entrySet()) {
             String soundId = entry.getKey();
@@ -328,24 +330,18 @@ public final class GeneralSoundsConfig {
             }
         }
 
-        PointBlankSoundsConfig.apply(ROOT.sounds);
-
         return added;
     }
 
     private static boolean shouldEnableByDefault(String soundId) {
-        if (soundId.startsWith("pointblank:") || soundId.contains("superbwarfare:")) {
-            return true;
-        }
+
 
         return soundId.contains("place") || soundId.contains("break") ||
                 soundId.contains("explode") || soundId.contains("explosion");
     }
 
     private static boolean shouldBePriorityByDefault(String soundId) {
-        if (soundId.startsWith("pointblank:") || soundId.contains("superbwarfare:")) {
-            return false;
-        }
+
 
         return soundId.contains("explode") || soundId.contains("explosion");
     }

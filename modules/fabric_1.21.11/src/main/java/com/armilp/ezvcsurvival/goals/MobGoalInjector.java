@@ -1,6 +1,5 @@
 package com.armilp.ezvcsurvival.goals;
 
-import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
@@ -10,7 +9,6 @@ import com.armilp.ezvcsurvival.mixins.MobEntityAccessor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.PrioritizedGoal;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -110,125 +108,76 @@ public class MobGoalInjector {
     }
 
     private static void refreshMob(MobEntity mob) {
-        if (mob == null || mob.isRemoved()) return;
+        NbtCompound data =  new NbtCompound();
+        data.remove(TAG);
+        removeOldGoals(mob);
         try {
-            cleanupOldGoals(mob);
             injectGoals(mob);
-
-            if (VoiceConfig.DEBUG.get()) {
-                Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
-                System.out.println("[EZVCSurvival] Refreshed goals for: " + (id != null ? id : "unknown") + " (UUID=" + mob.getUuid() + ")");
-            }
+            data.putBoolean(TAG, true);
         } catch (Exception e) {
             if (VoiceConfig.DEBUG.get()) {
                 System.err.println("[EZVCSurvival] Error refreshing goals: " + e.getMessage());
-                e.printStackTrace();
             }
         }
     }
 
     private static void injectGoals(MobEntity mob) {
-
-        if (mob == null || mob.isRemoved()) return;
-
         Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
         if (id == null) return;
+
         String mobId = id.toString();
+        InjectedGoals injected = new InjectedGoals();
 
-        InjectedGoals injectedGoals = new InjectedGoals();
-        boolean isAnimal = mob instanceof AnimalEntity;
 
-        // Voice goals
-        if (EntityVoiceConfig.isEnabled()) {
-            if (!isAnimal) {
-                injectedGoals.followGoal = injectFollowVoiceGoal(mob, mobId);
-            } else {
-                if (mob instanceof AnimalEntity) {
-                    AnimalEntity animal = (AnimalEntity) mob;
-                    injectedGoals.runawayGoal = injectRunawayVoiceGoal(animal, mobId);
-                }
-            }
-        }
+        if (EntityVoiceConfig.isEnabled() && !(mob instanceof AnimalEntity)) {
+            EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.getMonster(mobId);
 
-        // General sound reaction
-        if (GeneralSoundsConfig.isEnabled()) {
-            injectedGoals.generalSoundGoal = injectGeneralSoundGoal(mob, mobId);
-        }
-
-        INJECTED_GOALS.put(mob.getUuid(), injectedGoals);
-    }
-
-    private static Goal injectFollowVoiceGoal(MobEntity mob, String mobId) {
-        try {
-            EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.get(mobId);
             if (cfg != null && cfg.enabled && cfg.speed > 0 && cfg.range > 0) {
-                Goal goal = new FollowVoiceGoal(mob, cfg.speed, (int) cfg.range, cfg.threshold, 10000);
+                FollowVoiceGoal goal =
+                        new FollowVoiceGoal(mob, cfg.speed, (int) cfg.range, cfg.threshold, 10000);
+
                 acc(mob).vs$getGoalSelector().add(0, goal);
-                return goal;
-            }
-        } catch (Exception e) {
-            if (VoiceConfig.DEBUG.get()) {
-                System.err.println("[EZVCSurvival] Failed to inject FollowVoiceGoal for " + mobId + ": " + e.getMessage());
+                injected.followGoal = goal;
             }
         }
-        return null;
-    }
 
-    private static Goal injectRunawayVoiceGoal(AnimalEntity animal, String mobId) {
-        try {
-            EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.get(mobId);
+
+        if (EntityVoiceConfig.isEnabled() && mob instanceof AnimalEntity animal) {
+            EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.getAnimal(mobId);
+
             if (cfg != null && cfg.enabled && cfg.speed > 0 && cfg.range > 0) {
-                Goal goal = new RunawayVoiceGoal(animal, cfg.speed, (int) cfg.range, cfg.threshold);
-                acc(animal).vs$getGoalSelector().add(1, goal);
-                return goal;
-            }
-        } catch (Exception e) {
-            if (VoiceConfig.DEBUG.get()) {
-                System.err.println("[EZVCSurvival] Failed to inject RunawayVoiceGoal for " + mobId + ": " + e.getMessage());
+                RunawayVoiceGoal goal =
+                        new RunawayVoiceGoal(animal, cfg.speed, cfg.range, cfg.threshold);
+
+                acc(animal).vs$getGoalSelector().add(4, goal);
+                injected.runawayGoal = goal;
             }
         }
-        return null;
-    }
 
-    private static Goal injectGeneralSoundGoal(MobEntity mob, String mobId) {
-        try {
-            GeneralSoundsConfig.Reaction r = GeneralSoundsConfig.getMobReactions().get(mobId);
+        if (GeneralSoundsConfig.isEnabled()) {
+            GeneralSoundsConfig.Reaction r =
+                    GeneralSoundsConfig.getMobReactions().get(mobId);
+
             if (r != null && r.enabled && r.speed > 0 && r.range > 0) {
                 List<SoundGroupData> groups = SoundConfig.getEnabledSoundGroups();
+
                 if (!groups.isEmpty()) {
-                    Goal goal = new ReactToGeneralSoundGoal(mob, r.speed, (int) r.range, groups);
+                    ReactToGeneralSoundGoal goal =
+                            new ReactToGeneralSoundGoal(mob, r.speed, r.range, groups);
+
                     acc(mob).vs$getGoalSelector().add(2, goal);
-                    return goal;
+                    injected.generalSoundGoal = goal;
                 }
             }
-        } catch (Exception e) {
-            if (VoiceConfig.DEBUG.get()) {
-                System.err.println("[EZVCSurvival] Failed to inject ReactToGeneralSoundGoal for " + mobId + ": " + e.getMessage());
-            }
         }
-        return null;
+
+        INJECTED_GOALS.put(mob.getUuid(), injected);
     }
 
-    private static void cleanupOldGoals(MobEntity mob) {
-        try {
-            InjectedGoals injected = INJECTED_GOALS.get(mob.getUuid());
-            if (injected != null) {
-                removeGoal(mob, injected.followGoal);
-                removeGoal(mob, injected.runawayGoal);
-                removeGoal(mob, injected.generalSoundGoal);
-                INJECTED_GOALS.remove(mob.getUuid());
-            }
-        } catch (Exception e) {
-            if (VoiceConfig.DEBUG.get()) {
-                System.err.println("[EZVCSurvival] Error removing old goals: " + e.getMessage());
-            }
-        }
-    }
 
-    private static void removeGoal(MobEntity mob, Goal goal) {
-        if (goal != null) {
-            acc(mob).vs$getGoalSelector().remove(goal);
-        }
+    private static void removeOldGoals(MobEntity mob) {
+        acc(mob).vs$getGoalSelector().getGoals().removeIf(w ->
+                w.getGoal().getClass().getName().startsWith("com.armilp.ezvcsurvival.goals"));
     }
 
     private static class InjectedGoals {
@@ -241,7 +190,7 @@ public class MobGoalInjector {
         }
     }
 
-    private static MobEntityAccessor acc(MobEntity mob) {
+    public static MobEntityAccessor acc(MobEntity mob) {
         return (MobEntityAccessor) mob;
     }
 }

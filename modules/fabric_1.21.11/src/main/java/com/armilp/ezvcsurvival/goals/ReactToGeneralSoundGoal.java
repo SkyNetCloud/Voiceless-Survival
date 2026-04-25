@@ -1,9 +1,8 @@
 package com.armilp.ezvcsurvival.goals;
 
-import com.armilp.ezvcsurvival.EZVCSurvival;
+
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
-import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
@@ -14,7 +13,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Heightmap;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,12 +45,6 @@ public class ReactToGeneralSoundGoal extends Goal {
         this.soundGroups = soundGroups;
         this.entityId = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(mob.getType())).toString();
         this.isMonster = mob instanceof Monster;
-        this.setControls(EnumSet.of(Control.MOVE, Control.LOOK));
-
-        if (VoiceConfig.DEBUG.get()) {
-            EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] Created for {} with speed: {}, range: {}",
-                    mob.getType(), speed, range);
-        }
     }
 
     public void onSoundPlayed(Identifier soundLoc, Vec3d soundPos, double speedMult, double rangeMult) {
@@ -62,12 +54,13 @@ public class ReactToGeneralSoundGoal extends Goal {
         if (!GeneralSoundsConfig.canEntityReactToSound(entityId, soundId)) return;
 
         boolean isPriority = false;
-        for (SoundGroupData group : soundGroups) {
-            if (group.groupName().startsWith("auto_priority_")) {
-                if (group.sounds().contains(soundId)) {
+        for (int i = 0, size = soundGroups.size(); i < size; i++) {
+            SoundGroupData group = soundGroups.get(i);
+            if (group.groupName.startsWith("auto_priority_")) {
+                if (group.sounds.contains(soundId)) {
                     isPriority = true;
-                    speedMult = group.speedMultiplier();
-                    rangeMult = group.rangeMultiplier();
+                    speedMult = group.speedMultiplier;
+                    rangeMult = group.rangeMultiplier;
                     break;
                 }
             }
@@ -75,10 +68,11 @@ public class ReactToGeneralSoundGoal extends Goal {
 
         if (!isPriority) {
             boolean found = false;
-            for (SoundGroupData group : soundGroups) {
-                if (group.sounds().contains(soundId)) {
-                    speedMult = group.speedMultiplier();
-                    rangeMult = group.rangeMultiplier();
+            for (int i = 0, size = soundGroups.size(); i < size; i++) {
+                SoundGroupData group = soundGroups.get(i);
+                if (group.sounds.contains(soundId)) {
+                    speedMult = group.speedMultiplier;
+                    rangeMult = group.rangeMultiplier;
                     found = true;
                     break;
                 }
@@ -93,23 +87,12 @@ public class ReactToGeneralSoundGoal extends Goal {
         }
 
         double distSq = mobPos.squaredDistanceTo(soundPos);
-        if (distSq > effectiveRange * effectiveRange) {
-            if (VoiceConfig.DEBUG.get()) {
-                EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] Sound {} too far ({} > {})",
-                        soundId, Math.sqrt(distSq), effectiveRange);
-            }
-            return;
-        }
+        if (distSq > effectiveRange * effectiveRange) return;
 
         this.targetSoundPos = soundPos;
         this.targetSpeedMultiplier = speedMult;
         this.targetRangeMultiplier = rangeMult;
         this.targetSetTime = System.currentTimeMillis();
-
-        if (VoiceConfig.DEBUG.get()) {
-            EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] Reacting to sound {} at {} (distance: {}, priority: {})",
-                    soundId, soundPos, Math.sqrt(distSq), isPriority);
-        }
 
         if (isPriority && lastPrioritySoundPos == null) {
             setPrioritySound(soundPos);
@@ -136,28 +119,17 @@ public class ReactToGeneralSoundGoal extends Goal {
                 targetSoundPos = lastPrioritySoundPos;
                 targetSpeedMultiplier = 1.5;
                 targetRangeMultiplier = 1.5;
-
-                if (VoiceConfig.DEBUG.get()) {
-                    EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] canStart: Reacting to priority sound at {}", lastPrioritySoundPos);
-                }
                 return true;
             }
         }
 
         if (targetSoundPos != null && (now - targetSetTime) < SOUND_REACTION_TIMEOUT) {
-            if (VoiceConfig.DEBUG.get()) {
-                EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] canStart: Reacting to recent sound at {}", targetSoundPos);
-            }
             return true;
-        }
-
-        if (VoiceConfig.DEBUG.get() && targetSoundPos != null) {
-            EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] canStart: Sound expired ({} > {})",
-                    now - targetSetTime, SOUND_REACTION_TIMEOUT);
         }
 
         return false;
     }
+
 
 
     @Override
@@ -171,12 +143,7 @@ public class ReactToGeneralSoundGoal extends Goal {
             return true;
         }
 
-        if ((now - targetSetTime) > SOUND_REACTION_TIMEOUT) {
-            if (VoiceConfig.DEBUG.get()) {
-                EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] shouldContinue: Sound reaction timeout");
-            }
-            return false;
-        }
+        if ((now - targetSetTime) > SOUND_REACTION_TIMEOUT) return false;
 
         Vec3d mobPos = mob.getEntityPos();
         double effectiveRange = range * targetRangeMultiplier;
@@ -184,23 +151,11 @@ public class ReactToGeneralSoundGoal extends Goal {
             effectiveRange *= SoundConfig.THUNDER_RANGE_MULTIPLIER.get();
         }
 
-        boolean inRange = mobPos.squaredDistanceTo(targetSoundPos) <= effectiveRange * effectiveRange;
-
-        if (VoiceConfig.DEBUG.get() && !inRange) {
-            EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] shouldContinue: Out of range ({} > {})",
-                    mobPos.distanceTo(targetSoundPos), effectiveRange);
-        }
-
-        return inRange;
+        return mobPos.squaredDistanceTo(targetSoundPos) <= effectiveRange * effectiveRange;
     }
 
     @Override
     public void start() {
-        if (VoiceConfig.DEBUG.get()) {
-            EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] start() for {} moving to sound at {}",
-                    mob.getType(), targetSoundPos);
-        }
-
         tickCounter = 0;
         if (targetSoundPos != null) {
             updateNavigation();
@@ -217,11 +172,6 @@ public class ReactToGeneralSoundGoal extends Goal {
 
         if (tickCounter % NAVIGATION_UPDATE_INTERVAL != 0) return;
 
-        if (VoiceConfig.DEBUG.get() && tickCounter % 40 == 0) {
-            EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] tick: Updating navigation for {} to {}",
-                    mob.getType(), targetSoundPos);
-        }
-
         updateNavigation();
 
         if (isMonster && targetSoundPos != null && tickCounter % LOOK_UPDATE_INTERVAL == 0) {
@@ -231,9 +181,6 @@ public class ReactToGeneralSoundGoal extends Goal {
 
     @Override
     public void stop() {
-        if (VoiceConfig.DEBUG.get()) {
-            EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] stop() for {}", mob.getType());
-        }
         targetSoundPos = null;
         tickCounter = 0;
     }
@@ -247,7 +194,7 @@ public class ReactToGeneralSoundGoal extends Goal {
         }
 
         Vec3d currentPos = mob.getEntityPos();
-        boolean isPriority = targetSoundPos.equals(lastPrioritySoundPos);
+        boolean isPriority = lastPrioritySoundPos != null && targetSoundPos.equals(lastPrioritySoundPos);
 
         double effectiveRange = range * targetRangeMultiplier;
         double effectiveSpeed = speed * targetSpeedMultiplier;
@@ -263,18 +210,9 @@ public class ReactToGeneralSoundGoal extends Goal {
 
         double distance = currentPos.distanceTo(targetSoundPos);
 
-        if (distance > effectiveRange) {
-            if (VoiceConfig.DEBUG.get()) {
-                EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] updateNavigation: Too far ({} > {})",
-                        distance, effectiveRange);
-            }
-            return;
-        }
+        if (distance > effectiveRange) return;
 
         if (isPriority && distance < 2.0) {
-            if (VoiceConfig.DEBUG.get()) {
-                EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] updateNavigation: Reached priority sound");
-            }
             lastPrioritySoundPos = null;
             targetSoundPos = null;
             return;
@@ -286,12 +224,7 @@ public class ReactToGeneralSoundGoal extends Goal {
                 grounded(targetSoundPos) :
                 grounded(currentPos.add(currentPos.subtract(targetSoundPos).normalize().multiply(effectiveRange)));
 
-        boolean pathStarted = mob.getNavigation().startMovingTo(target.x, target.y, target.z, effectiveSpeed);
-
-        if (VoiceConfig.DEBUG.get()) {
-            EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] updateNavigation: Pathfinding {} to {} with speed {}",
-                    pathStarted ? "succeeded" : "failed", target, effectiveSpeed);
-        }
+        mob.getNavigation().startMovingTo(target.x, target.y, target.z, effectiveSpeed);
     }
 
     private Vec3d grounded(Vec3d desiredXZ) {
@@ -301,10 +234,8 @@ public class ReactToGeneralSoundGoal extends Goal {
     }
 
     public static void setPrioritySound(Vec3d position) {
-        if (VoiceConfig.DEBUG.get()) {
-            EZVCSurvival.LOGGER.debug("[ReactToGeneralSoundGoal] Setting priority sound at {}", position);
-        }
         lastPrioritySoundPos = position;
         lastPrioritySoundTimestamp = System.currentTimeMillis();
     }
+
 }

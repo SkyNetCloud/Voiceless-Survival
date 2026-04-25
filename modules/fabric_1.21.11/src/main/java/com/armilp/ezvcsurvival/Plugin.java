@@ -80,10 +80,10 @@ public class Plugin implements VoicechatPlugin {
     @Nullable
     public static BlockPos getLastSoundLocation(BlockPos mobPosition, double range, double minDb) {
         return playerSoundLocations.values().stream()
-                .filter(data -> data.audioLevelDb() >= minDb)
-                .filter(data -> mobPosition.getSquaredDistance(data.position()) <= range * range)
-                .min(Comparator.comparingDouble(data -> mobPosition.getSquaredDistance(data.position())))
-                .map(SoundData::position)
+                .filter(data -> data.getAudioLevelDb() >= minDb)
+                .filter(data -> mobPosition.getSquaredDistance(data.getPosition()) <= range * range)
+                .min(Comparator.comparingDouble(data -> mobPosition.getSquaredDistance(data.getPosition())))
+                .map(SoundData::getPosition)
                 .orElse(null);
     }
 

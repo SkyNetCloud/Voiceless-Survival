@@ -1,7 +1,6 @@
 package com.armilp.ezvcsurvival.goals;
 
 import com.armilp.ezvcsurvival.Plugin;
-import com.armilp.ezvcsurvival.config.VoiceConfig;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.passive.AnimalEntity;

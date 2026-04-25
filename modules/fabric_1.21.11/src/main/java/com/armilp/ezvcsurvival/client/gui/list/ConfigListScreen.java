@@ -4,21 +4,20 @@ import com.armilp.ezvcsurvival.client.gui.ConfigEditorScreen;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
-import com.armilp.ezvcsurvival.network.UpdateConfigPayload;
-import com.armilp.ezvcsurvival.utils.ConfigType;
+import com.armilp.ezvcsurvival.network.packets.UpdateConfigPacket;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.registry.Registries;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
 
 public class ConfigListScreen extends Screen {
 
@@ -173,12 +172,16 @@ public class ConfigListScreen extends Screen {
             boolean state = !EntityVoiceConfig.isEnabled();
             EntityVoiceConfig.ROOT.enabled = state;
             EntityVoiceConfig.persist();
-            EZVCNetwork.sendConfigUpdateToServer(ConfigType.ENTITY_VOICE, "global", state, 1,1,0,false);
+            EZVCNetwork.ezvcNetworkService.sendToServer(
+                    new UpdateConfigPacket(UpdateConfigPacket.ConfigType.ENTITY_VOICE,
+                            "global", state, 1.0, 1.0));
         } else {
             boolean state = !GeneralSoundsConfig.isEnabled();
             GeneralSoundsConfig.ROOT.enabled = state;
             GeneralSoundsConfig.persist();
-            EZVCNetwork.sendConfigUpdateToServer(ConfigType.GENERAL_SOUND, "global", state,1,1,0,false);
+            EZVCNetwork.ezvcNetworkService.sendToServer(
+                    new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GENERAL_SOUND,
+                            "global", state, 1.0, 1.0));
         }
         toggleEnabledButton.setMessage(getToggleEnabledMessage());
         safeRefresh();

@@ -2,6 +2,7 @@ package com.armilp.ezvcsurvival.events;
 
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
+import com.armilp.ezvcsurvival.network.packets.GeneralSoundPacket;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.sound.SoundEvent;
@@ -70,7 +71,9 @@ public class SoundEventHandler {
         double z = mc.player.getZ();
 
         // Use the EZVCNetwork method to send sound to server
-        EZVCNetwork.sendGeneralSoundToServer(soundLoc, x, y, z, cfg.speed_multiplier, cfg.range_multiplier);
+        EZVCNetwork.ezvcNetworkService.sendToServer(
+                new GeneralSoundPacket(soundLoc, x, y, z, cfg.speed_multiplier, cfg.range_multiplier, null)
+        );
     }
 
     private static boolean shouldApplyCooldown(String soundId, boolean isPriority) {

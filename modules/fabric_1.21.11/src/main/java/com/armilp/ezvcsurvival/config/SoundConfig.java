@@ -2,11 +2,6 @@ package com.armilp.ezvcsurvival.config;
 
 import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.ArrayList;
@@ -16,55 +11,12 @@ import java.util.Map;
 
 public class SoundConfig {
 
-    // Replace ForgeConfigSpec.DoubleValue with a simple wrapper
-    public static class DoubleValue {
-        private double value;
-        private final double defaultValue;
-        private final double min;
-        private final double max;
-
-        public DoubleValue(double defaultValue, double min, double max) {
-            this.defaultValue = defaultValue;
-            this.value = defaultValue;
-            this.min = min;
-            this.max = max;
-        }
-
-        public double get() {
-            return value;
-        }
-
-        public void set(double value) {
-            this.value = Math.max(min, Math.min(max, value));
-        }
-    }
-
-    // Simple Builder class to mimic ForgeConfigSpec.Builder
-    public static class Builder {
-        public Builder push(String path) {
-            return this;
-        }
-
-        public Builder pop() {
-            return this;
-        }
-
-        public DoubleValue defineInRange(String path, double defaultValue, double min, double max) {
-            return new DoubleValue(defaultValue, min, max);
-        }
-
-        public Object build() {
-            return new Object(); // Dummy object
-        }
-    }
-
     public static final ForgeConfigSpec.DoubleValue THUNDER_RANGE_MULTIPLIER;
 
     private static final List<SoundGroupData> priorityGroups = new ArrayList<>();
     private static final List<SoundGroupData> customSoundGroups = new ArrayList<>();
 
     public static final ForgeConfigSpec SPEC;
-
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -76,38 +28,11 @@ public class SoundConfig {
         SPEC = builder.build();
     }
 
-    public static void registerConfigListeners() {
-        // Initial load (equivalent to ModConfigEvent.Loading)
-        onModConfigLoading();
 
-        // Register reload listener (equivalent to ModConfigEvent.Reloading)
-        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(
-                new SimpleSynchronousResourceReloadListener() {
-                    @Override
-                    public Identifier getFabricId() {
-                        return Identifier.of(EZVCSurvival.MOD_ID, "sound_config");
-                    }
-
-                    @Override
-                    public void reload(ResourceManager manager) {
-                        onModConfigReloading();
-                    }
-                }
-        );
-    }
-
-    private static void onModConfigLoading() {
-        EZVCSurvival.LOGGER.info("Loading EZVCSurvival configuration...");
-        loadConfigs();
-    }
-
-    private static void onModConfigReloading() {
-        EZVCSurvival.LOGGER.info("Reloading EZVCSurvival configuration...");
-        loadConfigs();
-    }
 
     public static void loadConfigs() {
         try {
+            // Solo inicializamos configuración de sonidos generales
             GeneralSoundsConfig.init();
             mergeGeneralSoundsFromJson();
             refreshPriorityGroups();
@@ -122,7 +47,7 @@ public class SoundConfig {
     }
 
     private static void mergeGeneralSoundsFromJson() {
-        customSoundGroups.removeIf(g -> g.groupName().startsWith("auto_sound_"));
+        customSoundGroups.removeIf(g -> g.groupName.startsWith("auto_sound_"));
 
         Map<String, GeneralSoundsConfig.SoundEntry> sounds = GeneralSoundsConfig.getSounds();
         if (sounds != null) {
@@ -140,5 +65,9 @@ public class SoundConfig {
 
     public static List<SoundGroupData> getEnabledSoundGroups() {
         return Collections.unmodifiableList(customSoundGroups);
+    }
+
+    public static List<SoundGroupData> getPriorityGroups() {
+        return Collections.unmodifiableList(priorityGroups);
     }
 }

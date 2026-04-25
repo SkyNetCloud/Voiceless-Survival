@@ -1,11 +1,8 @@
 package com.armilp.ezvcsurvival.sculk;
 
 import com.armilp.ezvcsurvival.EZVCSurvival;
-import de.maxhenkel.voicechat.api.ServerLevel;
-import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SculkSensorBlockEntity;
-import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -13,11 +10,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.event.Vibrations;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 
 import static com.armilp.ezvcsurvival.sculk.ModGameEvent.VOICE_TALK;
 

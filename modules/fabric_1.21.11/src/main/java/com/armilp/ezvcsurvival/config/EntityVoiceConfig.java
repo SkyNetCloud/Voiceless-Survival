@@ -18,7 +18,10 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public final class EntityVoiceConfig {
 
@@ -43,10 +46,18 @@ public final class EntityVoiceConfig {
         return all;
     }
 
+    public static EntityConfig getMonster(String entityId) {
+        return MONSTER_CONFIGS.get(entityId);
+    }
+
+    public static EntityConfig getAnimal(String entityId) {
+        return ANIMAL_CONFIGS.get(entityId);
+    }
+
+
     public static EntityConfig get(String entityId) {
-        String cleanId = cleanEntityId(entityId);
-        EntityConfig ec = MONSTER_CONFIGS.get(cleanId);
-        if (ec == null) ec = ANIMAL_CONFIGS.get(cleanId);
+        EntityConfig ec = MONSTER_CONFIGS.get(entityId);
+        if (ec == null) ec = ANIMAL_CONFIGS.get(entityId);
         return ec;
     }
 
@@ -54,35 +65,23 @@ public final class EntityVoiceConfig {
         if (MONSTER_CONFIGS == null) MONSTER_CONFIGS = new HashMap<>();
         if (ANIMAL_CONFIGS == null) ANIMAL_CONFIGS = new HashMap<>();
 
-        String cleanId = cleanEntityId(entityId);
 
-        if (MONSTER_CONFIGS.containsKey(cleanId)) {
-            MONSTER_CONFIGS.put(cleanId, value);
-        } else if (ANIMAL_CONFIGS.containsKey(cleanId)) {
-            ANIMAL_CONFIGS.put(cleanId, value);
+        if (MONSTER_CONFIGS.containsKey(entityId)) {
+            MONSTER_CONFIGS.put(entityId, value);
+        } else if (ANIMAL_CONFIGS.containsKey(entityId)) {
+            ANIMAL_CONFIGS.put(entityId, value);
         } else {
-            MONSTER_CONFIGS.put(cleanId, value);
+            MONSTER_CONFIGS.put(entityId, value);
         }
     }
 
-    private static String cleanEntityId(String entityId) {
-        if (entityId == null) return null;
 
-        if (entityId.startsWith("Optional[ResourceKey[") && entityId.contains(" / ")) {
-            int start = entityId.indexOf(" / ") + 3;
-            int end = entityId.indexOf("]]", start);
-            if (end != -1) {
-                return entityId.substring(start, end);
-            }
-        }
-        return entityId;
-    }
 
     private static Map<String, EntityConfig> cleanConfigMap(Map<String, EntityConfig> map) {
         if (map == null) return new HashMap<>();
         Map<String, EntityConfig> cleaned = new HashMap<>();
         for (Map.Entry<String, EntityConfig> entry : map.entrySet()) {
-            cleaned.put(cleanEntityId(entry.getKey()), entry.getValue());
+            cleaned.put(entry.getKey(), entry.getValue());
         }
         return cleaned;
     }
@@ -159,7 +158,7 @@ public final class EntityVoiceConfig {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
 
-            String id = cleanEntityId(Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString());
+            String id = Registries.ENTITY_TYPE.getId(type).toString();
 
             if (category == SpawnGroup.MONSTER) {
                 if (!MONSTER_CONFIGS.containsKey(id)) {
@@ -182,7 +181,7 @@ public final class EntityVoiceConfig {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
 
-            String id = cleanEntityId(Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString());
+            String id = Registries.ENTITY_TYPE.getId(type).toString();
 
             if (category == SpawnGroup.MONSTER) {
                 MONSTER_CONFIGS.put(id, EntityConfig.defaultFor(type));

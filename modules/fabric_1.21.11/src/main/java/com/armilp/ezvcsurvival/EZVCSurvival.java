@@ -2,7 +2,10 @@ package com.armilp.ezvcsurvival;
 
 
 import com.armilp.ezvcsurvival.commands.EZVCCommands;
-import com.armilp.ezvcsurvival.config.*;
+import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
+import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
+import com.armilp.ezvcsurvival.config.SoundConfig;
+import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.goals.MobGoalInjector;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.sculk.ModGameEvent;
@@ -22,7 +25,7 @@ public class EZVCSurvival implements ModInitializer {
     @Override
     public void onInitialize() {
 
-        EZVCNetwork.registerCommon();
+        EzvcPlatform platform = EzvcPlatform.getInstance();
 
         System.out.println("EZVCSurvival Mod Initialized with ID: " + MOD_ID);
 
@@ -31,14 +34,15 @@ public class EZVCSurvival implements ModInitializer {
 
         EntityVoiceConfig.init();
         GeneralSoundsConfig.init();
-        GunfireConfig.init();
         SoundConfig.loadConfigs();
         ModGameEvent.register();
 
         ServerEntityEvents.ENTITY_LOAD.register(MobGoalInjector::onEntityJoin);
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> EZVCCommands.commandInit(dispatcher));
+        EZVCNetwork.registerPackets();
 
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> EZVCCommands.commandInit(dispatcher));
+        platform.onRegistrationCompleted();
     }
 
     public static Identifier id(String path) {
