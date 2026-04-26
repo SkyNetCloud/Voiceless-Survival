@@ -159,12 +159,9 @@ public class ConfigEditScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-
         int centerX = this.width / 2;
         int startY = TOP_MARGIN + 40;
-
         clearWidgets();
-
         initFields(centerX, startY);
         initActionButtons(centerX, startY);
         updateSaveButtonState();

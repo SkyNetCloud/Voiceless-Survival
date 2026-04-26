@@ -1,6 +1,7 @@
 package com.armilp.ezvcsurvival.client.gui.list;
 
 import com.armilp.ezvcsurvival.client.gui.ConfigEditorScreen;
+import com.armilp.ezvcsurvival.client.gui.list.interfaces.RenderableConfigItem;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
@@ -81,10 +82,9 @@ public class ConfigListScreen extends Screen {
         int topRowY = 25;
         int searchRowY = topRowY + BUTTON_HEIGHT + VERTICAL_SPACING * 2;
         int listStartY = searchRowY + SEARCH_HEIGHT + VERTICAL_SPACING * 3;
-        int availableButtonWidth = usableWidth;
         int buttonCount = getButtonCount();
-        int buttonWidth = Math.min(MAX_BUTTON_WIDTH, Math.max(MIN_BUTTON_WIDTH,
-                (availableButtonWidth - (buttonCount - 1) * HORIZONTAL_SPACING) / buttonCount));
+        int buttonWidth = Math.clamp(
+                (usableWidth - (long) (buttonCount - 1) * HORIZONTAL_SPACING) / buttonCount, MIN_BUTTON_WIDTH, MAX_BUTTON_WIDTH);
 
         backButton = Button.builder(Component.translatable("button.ezvcsurvival.back"), b ->
                 Minecraft.getInstance().setScreen(parent != null ? parent : new ConfigEditorScreen())
@@ -171,7 +171,7 @@ public class ConfigListScreen extends Screen {
             }
             items.add(new EntityConfigItem(id, type, config));
         }
-        items.sort(Comparator.comparing(item -> ((EntityConfigItem) item).getDisplayName()));
+        items.sort(Comparator.comparing(item -> ((EntityConfigItem) item).getDisplayName().getString()));
     }
 
     private void loadGeneralSoundConfigs() {
@@ -206,7 +206,7 @@ public class ConfigListScreen extends Screen {
             }
             items.add(new EntityReactionItem(id, reaction));
         }
-        items.sort(Comparator.comparing(item -> ((EntityReactionItem) item).id()));
+        items.sort(Comparator.comparing(item -> ((EntityReactionItem) item).getId()));
     }
 
     private void toggleView() {
@@ -299,7 +299,7 @@ public class ConfigListScreen extends Screen {
         } else if (item instanceof SoundConfigItem) {
             return ((SoundConfigItem) item).getId();
         } else if (item instanceof EntityReactionItem) {
-            return ((EntityReactionItem) item).id();
+            return ((EntityReactionItem) item).getId();
         }
         return "";
     }
@@ -429,7 +429,7 @@ public class ConfigListScreen extends Screen {
         }
     }
 
-    public static class EntityConfigItem {
+    public static class EntityConfigItem implements RenderableConfigItem {
         private final String id;
         private final EntityType<?> entry;
         private final EntityVoiceConfig.EntityConfig config;
@@ -448,14 +448,24 @@ public class ConfigListScreen extends Screen {
             return config;
         }
 
-        public String  getDisplayName() {
-            return entry.getDescription().getString();
+        public Component  getDisplayName() {
+            return entry.getDescription();
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return config.enabled;
+        }
+
+        @Override
+        public boolean shouldTruncate() {
+            return false;
         }
     }
 
 
 
-    public static class SoundConfigItem {
+    public static class SoundConfigItem implements RenderableConfigItem {
         private final String id;
         private final SoundEvent sound;
         private final GeneralSoundsConfig.SoundEntry config;
@@ -479,10 +489,51 @@ public class ConfigListScreen extends Screen {
         public GeneralSoundsConfig.SoundEntry getConfig() {
             return config;
         }
+
+        @Override
+        public Component getDisplayName() {
+            return Component.literal(id);
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return config.enabled;
+        }
+
+        @Override
+        public boolean shouldTruncate() {
+            return false;
+        }
     }
 
 
-    public record EntityReactionItem(String id, GeneralSoundsConfig.Reaction reaction) {
+
+    public static class EntityReactionItem implements RenderableConfigItem {
+        private final String id;
+        private final GeneralSoundsConfig.Reaction reaction;
+
+        public EntityReactionItem(String id, GeneralSoundsConfig.Reaction reaction) {
+            this.id = id;
+            this.reaction = reaction;
+        }
+
+        public String getId() { return id; }
+        public GeneralSoundsConfig.Reaction getReaction() { return reaction; }
+
+        @Override
+        public Component getDisplayName() {
+            return Component.literal(id);
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return reaction.enabled;
+        }
+
+        @Override
+        public boolean shouldTruncate() {
+            return true;
+        }
     }
 
 

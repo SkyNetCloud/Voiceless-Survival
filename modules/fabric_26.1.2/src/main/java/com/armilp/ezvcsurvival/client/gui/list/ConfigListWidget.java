@@ -1,6 +1,7 @@
 package com.armilp.ezvcsurvival.client.gui.list;
 
 import com.armilp.ezvcsurvival.client.gui.edit.ConfigEditScreen;
+import com.armilp.ezvcsurvival.client.gui.list.interfaces.RenderableConfigItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ObjectSelectionList;
@@ -80,117 +81,81 @@ public class ConfigListWidget extends ObjectSelectionList<ConfigListWidget.Entry
             this.item = item;
         }
 
-        @Override
+
         public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float a) {
+            int left = ConfigListWidget.this.getRowLeft();
+            int width = ConfigListWidget.this.getRowWidth();
 
-            int actualLeft = ConfigListWidget.this.getRowLeft();
-            int actualWidth = ConfigListWidget.this.getRowWidth();
+            int top = getY();
+            int height = getHeight();
 
-            boolean validHover = hovered && mouseX >= actualLeft && mouseX <= actualLeft + actualWidth;
+            int right = left + width;
+            int bottom = top + height;
+
+            boolean validHover = hovered && isMouseOver(mouseX, mouseY);
+
+            if (((int) a % 2) == 0) {
+                graphics.fill(left, top, right, bottom, 0x10000000);
+            }
+
+            int centerY = top + height / 2;
+
+            int fontHeight = Minecraft.getInstance().font.lineHeight;
+            int boxTop = centerY - fontHeight / 2 - 2;
+            int boxBottom = centerY + fontHeight / 2 + 2;
 
             if (validHover) {
-                graphics.fill(actualLeft, mouseY, actualLeft + actualWidth, mouseY + height, 0x30FFFFFF);
-                graphics.fill(actualLeft, mouseY, actualLeft + actualWidth, mouseY + 1, 0x60FFFFFF);
-                graphics.fill(actualLeft, mouseY + height - 1, actualLeft + actualWidth, mouseY + height, 0x60FFFFFF);
+                graphics.fill(left, boxTop, right, boxBottom, 0x30FFFFFF);
+                graphics.fill(left, boxTop, right, boxTop + 1, 0x60FFFFFF);
+                graphics.fill(left, boxBottom - 1, right, boxBottom, 0x60FFFFFF);
             }
 
-            if (a % 2 == 0) {
-                graphics.fill(actualLeft, mouseY, actualLeft + actualWidth, mouseY + height, 0x10000000);
-            }
+            int textLeft = left + PADDING;
+            int statusRight = right - PADDING;
 
-            int centerY = mouseY + height / 2;
-            int textLeft = actualLeft + PADDING;
-            int statusRight = actualLeft + actualWidth - PADDING;
-
-            if (item instanceof ConfigListScreen.EntityConfigItem) {
-                renderEntityConfig(graphics, textLeft, mouseY, actualWidth, height, centerY, statusRight);
-            } else if (item instanceof ConfigListScreen.SoundConfigItem) {
-                renderSoundConfig(graphics, textLeft, mouseY, actualWidth, height, centerY, statusRight);
-            } else if (item instanceof ConfigListScreen.EntityReactionItem) {
-                renderEntityReaction(graphics, textLeft, mouseY, actualWidth, height, centerY, statusRight);
+            if (item instanceof ConfigListScreen.EntityConfigItem s) {
+                renderSystem(graphics, s, textLeft, centerY, width, height, centerY, statusRight);
+            } else if (item instanceof ConfigListScreen.SoundConfigItem s) {
+                renderSystem(graphics, s, textLeft, centerY, width, height, centerY, statusRight);
+            } else if (item instanceof ConfigListScreen.EntityReactionItem s) {
+                renderSystem(graphics, s, textLeft, centerY, width, height, centerY, statusRight);
             }
         }
-
-        private void renderEntityConfig(GuiGraphicsExtractor graphics, int textLeft, int top, int width, int height,
-                                        int centerY, int statusRight) {
-            ConfigListScreen.EntityConfigItem entityItem = (ConfigListScreen.EntityConfigItem) item;
-            String entityName = entityItem.getDisplayName();
-
+        public void renderSystem(GuiGraphicsExtractor graphics, RenderableConfigItem item, int textLeft, int top, int  width, int height, int centerY, int statusRight) {
+            var font = Minecraft.getInstance().font;
             int maxTextWidth = width - STATUS_AREA_WIDTH - PADDING * 2;
-            String displayName = truncateText(entityName, maxTextWidth);
 
-            graphics.text(Minecraft.getInstance().font, displayName, textLeft, centerY - 4, 0xFFFFFF, false);
+            Component name = item.getDisplayName();
+            if (item.shouldTruncate()) {
+                name = Component.nullToEmpty(truncateText(name, maxTextWidth));
+            }
 
-            Component statusText = entityItem.getConfig().enabled
+
+
+            graphics.text(font, name, textLeft, centerY - 4, 0xFFFFFFFF, false);
+
+            Component statusText = item.isEnabled()
                     ? Component.translatable("gui.ezvcsurvival.enabled")
                     : Component.translatable("gui.ezvcsurvival.disabled");
 
-            int statusColor = entityItem.getConfig().enabled ? 0x55FF55 : 0xFF5555;
-            int statusWidth = Minecraft.getInstance().font.width(statusText);
+            int statusColor = item.isEnabled() ? 0xFF55FF55 : 0xFFFF5555;
+            int statusWidth = font.width(statusText);
 
-            graphics.fill(statusRight - statusWidth - 6, centerY - 8, statusRight, centerY + 8,
-                    entityItem.getConfig().enabled ? 0x2055FF55 : 0x20FF5555);
 
-            graphics.text(Minecraft.getInstance().font, statusText,
-                    statusRight - statusWidth - 3, centerY - 4, statusColor, false);
+            graphics.fill(statusRight - statusWidth - 6, centerY - 8, statusRight, centerY + 8, item.isEnabled() ? 0x2055FF55 : 0x20FF5555);
+
+            int statusX = Math.max(textLeft, statusRight - statusWidth - 3);
+
+            graphics.text(font, statusText, statusX, centerY - 4, statusColor, false);
         }
 
-        private void renderSoundConfig(GuiGraphicsExtractor graphics, int textLeft, int top, int width, int height,
-                                       int centerY, int statusRight) {
-            ConfigListScreen.SoundConfigItem soundItem = (ConfigListScreen.SoundConfigItem) item;
-            String soundName = soundItem.getId();
 
-            int maxTextWidth = width - STATUS_AREA_WIDTH - PADDING * 2;
-            String displayName = truncateText(soundName, maxTextWidth);
-
-            graphics.text(Minecraft.getInstance().font, displayName, textLeft, centerY - 4, 0xFFFFFF, false);
-
-            Component statusText = soundItem.getConfig().enabled
-                    ? Component.translatable("gui.ezvcsurvival.enabled")
-                    : Component.translatable("gui.ezvcsurvival.disabled");
-
-            int statusColor = soundItem.getConfig().enabled ? 0x55FF55 : 0xFF5555;
-            int statusWidth = Minecraft.getInstance().font.width(statusText);
-
-            graphics.fill(statusRight - statusWidth - 6, centerY - 8, statusRight, centerY + 8,
-                    soundItem.getConfig().enabled ? 0x2055FF55 : 0x20FF5555);
-
-            graphics.text(Minecraft.getInstance().font, statusText,
-                    statusRight - statusWidth - 3, centerY - 4, statusColor, false);
-        }
-
-        private void renderEntityReaction(GuiGraphicsExtractor graphics, int textLeft, int top, int width, int height,
-                                          int centerY, int statusRight) {
-            ConfigListScreen.EntityReactionItem entityItem = (ConfigListScreen.EntityReactionItem) item;
-            String entityId = entityItem.id();
-
-            String entityName = getEntityDisplayName(entityId);
-
-            int maxTextWidth = width - STATUS_AREA_WIDTH - PADDING * 2;
-            String displayName = truncateText(entityName, maxTextWidth);
-
-            graphics.text(Minecraft.getInstance().font, displayName, textLeft, centerY - 4, 0xFFFFFF, false);
-
-            Component statusText = entityItem.reaction().enabled
-                    ? Component.translatable("gui.ezvcsurvival.enabled")
-                    : Component.translatable("gui.ezvcsurvival.disabled");
-
-            int statusColor = entityItem.reaction().enabled ? 0x55FF55 : 0xFF5555;
-            int statusWidth = Minecraft.getInstance().font.width(statusText);
-
-            graphics.fill(statusRight - statusWidth - 6, centerY - 8, statusRight, centerY + 8,
-                    entityItem.reaction().enabled ? 0x2055FF55 : 0x20FF5555);
-
-            graphics.text(Minecraft.getInstance().font, statusText,
-                    statusRight - statusWidth - 3, centerY - 4, statusColor, false);
-        }
-
-        private String truncateText(String text, int maxWidth) {
-            if (maxWidth <= 0) return text;
+        private String truncateText(Component text, int maxWidth) {
+            if (maxWidth <= 0) return text.getString();
 
             int textWidth = Minecraft.getInstance().font.width(text);
             if (textWidth <= maxWidth) {
-                return text;
+                return text.getString();
             }
 
             String ellipsis = "...";
@@ -200,11 +165,11 @@ public class ConfigListWidget extends ObjectSelectionList<ConfigListWidget.Entry
             if (availableWidth <= 0) return ellipsis;
 
             int left = 0;
-            int right = text.length();
+            int right = text.getString().length();
 
             while (left < right) {
                 int mid = (left + right + 1) / 2;
-                String truncated = text.substring(0, mid);
+                String truncated = text.getString().substring(0, mid);
 
                 if (Minecraft.getInstance().font.width(truncated) <= availableWidth) {
                     left = mid;
@@ -213,7 +178,7 @@ public class ConfigListWidget extends ObjectSelectionList<ConfigListWidget.Entry
                 }
             }
 
-            return text.substring(0, left) + ellipsis;
+            return text.getString().substring(0, left) + ellipsis;
         }
 
         private String getEntityDisplayName(String entityId) {
@@ -307,19 +272,18 @@ public class ConfigListWidget extends ObjectSelectionList<ConfigListWidget.Entry
                 tooltip.add(Component.translatable("tooltip.ezvcsurvival.speed_multiplier", Component.literal("§e" + config.speed_multiplier)));
                 tooltip.add(Component.translatable("tooltip.ezvcsurvival.range_multiplier", Component.literal("§e" + config.range_multiplier)));
 
-            } else if (item instanceof ConfigListScreen.EntityReactionItem(
-                    String id, com.armilp.ezvcsurvival.config.GeneralSoundsConfig.Reaction reaction
-            )) {
-                String entityName = getEntityDisplayName(id);
+            } else if (item instanceof ConfigListScreen.EntityReactionItem entityItem) {
+                var getReaction = entityItem.getReaction();
+                String entityName = getEntityDisplayName(entityItem.getId());
 
                 tooltip.add(Component.literal("§6§l" + entityName));
-                tooltip.add(Component.literal("§7ID: §f" + id));
+                tooltip.add(Component.literal("§7ID: §f" + entityItem.getId()));
                 tooltip.add(Component.literal(""));
                 tooltip.add(Component.translatable("tooltip.ezvcsurvival.sound_reaction"));
                 tooltip.add(Component.translatable("tooltip.ezvcsurvival.enabled",
-                        reaction.enabled ? Component.translatable("gui.ezvcsurvival.enabled") : Component.translatable("gui.ezvcsurvival.disabled")));
-                tooltip.add(Component.translatable("tooltip.ezvcsurvival.speed", Component.literal("§e" + reaction.speed)));
-                tooltip.add(Component.translatable("tooltip.ezvcsurvival.range", Component.literal("§e" + reaction.range)));
+                        getReaction.enabled ? Component.translatable("gui.ezvcsurvival.enabled") : Component.translatable("gui.ezvcsurvival.disabled")));
+                tooltip.add(Component.translatable("tooltip.ezvcsurvival.speed", Component.literal("§e" + getReaction.speed)));
+                tooltip.add(Component.translatable("tooltip.ezvcsurvival.range", Component.literal("§e" + getReaction.range)));
             }
 
             return tooltip;
@@ -331,13 +295,13 @@ public class ConfigListWidget extends ObjectSelectionList<ConfigListWidget.Entry
 
             if (item instanceof ConfigListScreen.EntityConfigItem) {
                 editType = ConfigEditScreen.EditType.ENTITY_CONFIG;
-                elementName = ((ConfigListScreen.EntityConfigItem) item).getDisplayName();
+                elementName = ((ConfigListScreen.EntityConfigItem) item).getDisplayName().getString();
             } else if (item instanceof ConfigListScreen.SoundConfigItem) {
                 editType = ConfigEditScreen.EditType.GENERAL_SOUND_CONFIG;
                 elementName = ((ConfigListScreen.SoundConfigItem) item).getId();
             } else if (item instanceof ConfigListScreen.EntityReactionItem) {
                 editType = ConfigEditScreen.EditType.GENERAL_SOUND_ENTITY;
-                elementName = getEntityDisplayName(((ConfigListScreen.EntityReactionItem) item).id());
+                elementName = getEntityDisplayName(((ConfigListScreen.EntityReactionItem) item).getId());
             }
 
             if (editType != null) {
@@ -352,7 +316,7 @@ public class ConfigListWidget extends ObjectSelectionList<ConfigListWidget.Entry
             } else if (item instanceof ConfigListScreen.SoundConfigItem) {
                 return ((ConfigListScreen.SoundConfigItem) item).getId();
             } else if (item instanceof ConfigListScreen.EntityReactionItem) {
-                return ((ConfigListScreen.EntityReactionItem) item).id();
+                return ((ConfigListScreen.EntityReactionItem) item).getId();
             }
             return "";
         }
@@ -360,13 +324,15 @@ public class ConfigListWidget extends ObjectSelectionList<ConfigListWidget.Entry
         @Override
         public @NotNull Component getNarration() {
             if (item instanceof ConfigListScreen.EntityConfigItem entityItem) {
-                return Component.literal(entityItem.getDisplayName());
+                return Component.literal(entityItem.getDisplayName().getString());
             } else if (item instanceof ConfigListScreen.SoundConfigItem soundItem) {
                 return Component.literal("Sound: " + soundItem.getId());
             } else if (item instanceof ConfigListScreen.EntityReactionItem entityItem) {
-                return Component.literal(getEntityDisplayName(entityItem.id()));
+                return Component.literal(getEntityDisplayName(entityItem.getId()));
             }
             return Component.literal("Unknown Item");
         }
+
+
     }
 }

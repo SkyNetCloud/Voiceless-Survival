@@ -7,7 +7,7 @@ plugins {
     id 'net.darkhax.curseforgegradle'
 }
 
-version = mod_version
+version = project.mod_version
 group = mod_group_id
 base {
     archivesName = mod_id
@@ -23,16 +23,9 @@ repositories {
 }
 
 
-//loom {
-//    runs {
-//        client {
-//            client()
-//            setConfigName('Fabric Client 1.21.11')
-//            ideConfigGenerated(true)
-//            runDir('runs/client')
-//        }
-//    }
-//}
+loom {
+
+}
 
 
 dependencies {
@@ -44,13 +37,12 @@ dependencies {
     // Fabric API. This is technically optional, but you probably want it anyway.
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-    // Mods (REMAPPED correctly)
-//    implementation  "curse.maven:vics-point-blank-961053:7881990"
-    // modImplementation "curse.maven:sound-physics-remastered-535489:6809526"
+
 
     // Voice Chat
-    //runtime "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
-    implementation  "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}"
+    implementation "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}"
+    runtimeOnly "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}:fabric-stub"
+    runtimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_mod_version}"
 
     // Config
     compileOnly "com.electronwill.night-config:toml:3.6.0"
@@ -61,28 +53,20 @@ dependencies {
 
 processResources {
     inputs.property "version", project.version
-    inputs.property "minecraft_version", project.minecraft_version
-    inputs.property "loader_version", project.loader_version
-    inputs.property "voicechat_api_version", project.voicechat_api_version
-    inputs.property "forge_config_api_port_version", project.forge_config_api_port_version
-
-    filteringCharset "UTF-8"
 
     filesMatching("fabric.mod.json") {
-        expand(
-                "version": project.version,
-                "minecraft_version": project.minecraft_version,
-                "loader_version": project.loader_version,
-                "voicechat_api_version": project.voicechat_api_version,
-                "modmenu_version": project.modmenu_version,
-                "forge_config_api_port_version": project.forge_config_api_port_version
-        )
+        expand "version": inputs.properties.version
     }
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+    // if it is present.
+    // If you remove this line, sources will not be generated.
+    withSourcesJar()
+
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 jar {
