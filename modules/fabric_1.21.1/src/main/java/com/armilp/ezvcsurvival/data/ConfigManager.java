@@ -3,14 +3,13 @@ package com.armilp.ezvcsurvival.data;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.network.UpdateConfigPayload;
-import net.minecraft.command.DefaultPermissions;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 public class ConfigManager {
 
     public static void updateConfig(ServerPlayerEntity player, UpdateConfigPayload payload) {
         // Check player permissions if needed
-        if (!player.getPermissions().hasPermission(DefaultPermissions.GAMEMASTERS)) { // OP level 2
+        if (!player.hasPermissionLevel(2)) { // OP level 2
             System.out.println("Player " + player.getName().getString() + " lacks permission to update config");
             return;
         }

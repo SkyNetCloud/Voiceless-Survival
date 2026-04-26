@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "com.armilp.ezvcsurvival.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MobEntityAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

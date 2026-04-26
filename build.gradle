@@ -1,5 +1,6 @@
 plugins {
-    id 'fabric-loom' version '1.15-SNAPSHOT' apply false
+    id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT' apply false
+    id 'maven-publish'
     id "com.modrinth.minotaur" version "2.+" apply false
     id 'net.darkhax.curseforgegradle' version '1.1.+' apply false
 }
