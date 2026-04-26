@@ -1,6 +1,5 @@
 package com.armilp.ezvcsurvival.client.gui.edit;
 
-
 import com.armilp.ezvcsurvival.client.gui.list.ConfigListScreen;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
@@ -69,10 +68,8 @@ public class ConfigEditScreen extends Screen {
         this.editType = editType;
         this.elementId = cleanElementId(elementId);
         this.elementName = cleanElementId(elementName);
-
         loadCurrentValues();
     }
-
 
     private static String getTitleKey(EditType editType) {
         return switch (editType) {
@@ -92,46 +89,34 @@ public class ConfigEditScreen extends Screen {
                     this.speed = entityConfig.speed;
                     this.range = entityConfig.range;
                     this.threshold = entityConfig.threshold;
-
-                    this.originalEnabled = entityConfig.enabled;
-                    this.originalSpeed = entityConfig.speed;
-                    this.originalRange = entityConfig.range;
-                    this.originalThreshold = entityConfig.threshold;
                 } else {
                     this.enabled = true;
                     this.speed = 1.0;
                     this.range = 50.0;
                     this.threshold = 0.0;
-
-                    this.originalEnabled = this.enabled;
-                    this.originalSpeed = this.speed;
-                    this.originalRange = this.range;
-                    this.originalThreshold = this.threshold;
                 }
+                this.originalEnabled = this.enabled;
+                this.originalSpeed = this.speed;
+                this.originalRange = this.range;
+                this.originalThreshold = this.threshold;
             }
             case GENERAL_SOUND_CONFIG -> {
-                GeneralSoundsConfig.SoundEntry soundConfig = GeneralSoundsConfig.getSounds().get(elementId);;
+                GeneralSoundsConfig.SoundEntry soundConfig = GeneralSoundsConfig.getSounds().get(elementId);
                 if (soundConfig != null) {
                     this.enabled = soundConfig.enabled;
                     this.speed = soundConfig.speed_multiplier;
                     this.range = soundConfig.range_multiplier;
                     this.isPriority = soundConfig.is_priority;
-
-                    this.originalEnabled = soundConfig.enabled;
-                    this.originalSpeed = soundConfig.speed_multiplier;
-                    this.originalRange = soundConfig.range_multiplier;
-                    this.originalIsPriority = soundConfig.is_priority;
                 } else {
                     this.enabled = false;
                     this.speed = 1.0;
                     this.range = 1.0;
                     this.isPriority = false;
-
-                    this.originalEnabled = this.enabled;
-                    this.originalSpeed = this.speed;
-                    this.originalRange = this.range;
-                    this.originalIsPriority = this.isPriority;
                 }
+                this.originalEnabled = this.enabled;
+                this.originalSpeed = this.speed;
+                this.originalRange = this.range;
+                this.originalIsPriority = this.isPriority;
             }
             case GENERAL_SOUND_ENTITY -> {
                 var reactions = GeneralSoundsConfig.getMobReactions();
@@ -140,19 +125,14 @@ public class ConfigEditScreen extends Screen {
                     this.enabled = generalReaction.enabled;
                     this.speed = generalReaction.speed;
                     this.range = generalReaction.range;
-
-                    this.originalEnabled = generalReaction.enabled;
-                    this.originalSpeed = generalReaction.speed;
-                    this.originalRange = generalReaction.range;
                 } else {
                     this.enabled = true;
                     this.speed = 1.0;
                     this.range = 50.0;
-
-                    this.originalEnabled = this.enabled;
-                    this.originalSpeed = this.speed;
-                    this.originalRange = this.range;
                 }
+                this.originalEnabled = this.enabled;
+                this.originalSpeed = this.speed;
+                this.originalRange = this.range;
             }
         }
     }
@@ -160,12 +140,9 @@ public class ConfigEditScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-
         int centerX = this.width / 2;
         int startY = TOP_MARGIN + 40;
-
         clearChildren();
-
         initFields(centerX, startY);
         initActionButtons(centerX, startY);
         updateSaveButtonState();
@@ -185,11 +162,8 @@ public class ConfigEditScreen extends Screen {
         speedBox.setText(String.valueOf(speed));
         speedBox.setMaxLength(20);
         speedBox.setChangedListener(s -> {
-            try {
-                speed = Double.parseDouble(s);
-                updateSaveButtonState();
-            } catch (NumberFormatException ignored) {
-            }
+            try { speed = Double.parseDouble(s); updateSaveButtonState(); }
+            catch (NumberFormatException ignored) {}
         });
         this.addDrawableChild(speedBox);
         currentY += FIELD_SPACING + 20;
@@ -198,11 +172,8 @@ public class ConfigEditScreen extends Screen {
         rangeBox.setText(String.valueOf(range));
         rangeBox.setMaxLength(20);
         rangeBox.setChangedListener(s -> {
-            try {
-                range = Double.parseDouble(s);
-                updateSaveButtonState();
-            } catch (NumberFormatException ignored) {
-            }
+            try { range = Double.parseDouble(s); updateSaveButtonState(); }
+            catch (NumberFormatException ignored) {}
         });
         this.addDrawableChild(rangeBox);
         currentY += FIELD_SPACING + 20;
@@ -212,11 +183,8 @@ public class ConfigEditScreen extends Screen {
             thresholdBox.setText(String.valueOf(threshold));
             thresholdBox.setMaxLength(20);
             thresholdBox.setChangedListener(s -> {
-                try {
-                    threshold = Double.parseDouble(s);
-                    updateSaveButtonState();
-                } catch (NumberFormatException ignored) {
-                }
+                try { threshold = Double.parseDouble(s); updateSaveButtonState(); }
+                catch (NumberFormatException ignored) {}
             });
             this.addDrawableChild(thresholdBox);
             currentY += FIELD_SPACING + 20;
@@ -252,7 +220,7 @@ public class ConfigEditScreen extends Screen {
 
         ButtonWidget cancelButton = ButtonWidget.builder(
                 Text.translatable("button.ezvcsurvival.cancel"),
-                b -> MinecraftClient.getInstance().setScreen(parent)
+                b -> close()
         ).dimensions(centerX + CENTER_X_OFFSET, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
         this.addDrawableChild(cancelButton);
 
@@ -264,16 +232,7 @@ public class ConfigEditScreen extends Screen {
     }
 
     private int getFieldCount() {
-        switch (editType) {
-            case ENTITY_CONFIG:
-                return 4;
-            case GENERAL_SOUND_CONFIG:
-                return 4;
-            case GENERAL_SOUND_ENTITY:
-                return 4;
-            default:
-                return 4;
-        }
+        return 4;
     }
 
     private void toggleEnabled() {
@@ -312,7 +271,6 @@ public class ConfigEditScreen extends Screen {
                 case GENERAL_SOUND_CONFIG -> {
                     GeneralSoundsConfig.setSoundEntry(elementId, enabled, speed, range, isPriority);
                     GeneralSoundsConfig.persist();
-
                     GeneralSoundsConfig.SoundEntry updated = GeneralSoundsConfig.getSounds().get(elementId);
                     yield (updated != null &&
                             updated.enabled == enabled &&
@@ -324,25 +282,14 @@ public class ConfigEditScreen extends Screen {
                     GeneralSoundsConfig.setMobReaction(elementId, enabled, speed, range);
                     GeneralSoundsConfig.persist();
                     yield true;
-
                 }
             };
 
             if (localSuccess) {
-                try {
-                   SoundConfig.loadConfigs();
-                } catch (Exception e) {
-                    // Ignore reload errors
-                }
-
+                try { SoundConfig.loadConfigs(); } catch (Exception ignored) {}
                 sendUpdate();
                 updateOriginalValues();
-
-                if (parent instanceof ConfigListScreen configList) {
-                    configList.updateList();
-                }
-
-                MinecraftClient.getInstance().setScreen(parent);
+                close();
             } else {
                 showError();
             }
@@ -350,6 +297,15 @@ public class ConfigEditScreen extends Screen {
         } catch (Exception e) {
             showError();
         }
+    }
+
+    @Override
+    public void close() {
+        // Refresh the list behind us before closing so enabled states update immediately
+        if (parent instanceof ConfigListScreen configList) {
+            configList.safeRefresh();
+        }
+        MinecraftClient.getInstance().setScreen(parent);
     }
 
     private void resetToDefaults() {
@@ -368,7 +324,9 @@ public class ConfigEditScreen extends Screen {
                 range = 1.0;
                 isPriority = false;
                 if (priorityButton != null) {
-                    priorityButton.setMessage(Text.translatable(isPriority ? "button.ezvcsurvival.priority_on" : "button.ezvcsurvival.priority_off"));
+                    priorityButton.setMessage(Text.translatable(isPriority
+                            ? "button.ezvcsurvival.priority_on"
+                            : "button.ezvcsurvival.priority_off"));
                 }
             }
             case GENERAL_SOUND_ENTITY -> {
@@ -379,7 +337,9 @@ public class ConfigEditScreen extends Screen {
         }
 
         if (enabledButton != null) {
-            enabledButton.setMessage(Text.translatable(enabled ? "button.ezvcsurvival.enabled" : "button.ezvcsurvival.disabled"));
+            enabledButton.setMessage(Text.translatable(enabled
+                    ? "button.ezvcsurvival.enabled"
+                    : "button.ezvcsurvival.disabled"));
         }
         if (speedBox != null) speedBox.setText(String.valueOf(speed));
         if (rangeBox != null) rangeBox.setText(String.valueOf(range));
@@ -392,17 +352,20 @@ public class ConfigEditScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int titleY = TOP_MARGIN;
+
+        // Centered title
         graphics.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, titleY, 0xFFFFFFFF);
 
-
-
+        // Centered element ID info
         String elementInfo = "ID: " + elementId;
-        int elementInfoY = titleY + 15;
+        int elementInfoY = titleY + 18;
         graphics.drawCenteredTextWithShadow(this.textRenderer, elementInfo, this.width / 2, elementInfoY, 0xFFAAAAAA);
 
-        int lineY = elementInfoY + 10;
+        // Separator line
+        int lineY = elementInfoY + 12;
         int lineWidth = Math.min(180, this.width - 100);
-        graphics.fill(this.width / 2 - lineWidth / 2, lineY, this.width / 2 + lineWidth / 2, lineY + 1, 0x44FFFFFF);
+        graphics.fill(this.width / 2 - lineWidth / 2, lineY,
+                this.width / 2 + lineWidth / 2, lineY + 1, 0x44FFFFFF);
 
         renderFieldLabels(graphics);
     }
@@ -435,11 +398,10 @@ public class ConfigEditScreen extends Screen {
         }
     }
 
-
     @Override
     public boolean keyPressed(KeyInput keyCode) {
-        if (keyCode.key() == 256) { // ESC key
-            MinecraftClient.getInstance().setScreen(parent);
+        if (keyCode.key() == 256) { // ESC
+            close();
             return true;
         }
         return super.keyPressed(keyCode);
@@ -448,54 +410,42 @@ public class ConfigEditScreen extends Screen {
     private void sendUpdate() {
         try {
             switch (editType) {
-                case ENTITY_CONFIG:
-                    EZVCNetwork.ezvcNetworkService.sendToServer(new UpdateConfigPacket(elementId, enabled, speed, range, threshold));
-                    break;
-
-                case GENERAL_SOUND_CONFIG:
-                    EZVCNetwork.ezvcNetworkService.sendToServer(new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GENERAL_SOUND, elementId, enabled, speed, range, isPriority));
-                    break;
-
-                case GENERAL_SOUND_ENTITY:
-                    EZVCNetwork.ezvcNetworkService.sendToServer(new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GENERAL_SOUND_ENTITY, elementId, enabled, speed, range));
-                    break;
+                case ENTITY_CONFIG ->
+                        EZVCNetwork.ezvcNetworkService.sendToServer(
+                                new UpdateConfigPacket(elementId, enabled, speed, range, threshold));
+                case GENERAL_SOUND_CONFIG ->
+                        EZVCNetwork.ezvcNetworkService.sendToServer(
+                                new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GENERAL_SOUND,
+                                        elementId, enabled, speed, range, isPriority));
+                case GENERAL_SOUND_ENTITY ->
+                        EZVCNetwork.ezvcNetworkService.sendToServer(
+                                new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GENERAL_SOUND_ENTITY,
+                                        elementId, enabled, speed, range));
             }
         } catch (Exception e) {
             System.err.println("[EZVCSurvival] Error sending configuration: " + e.getMessage());
         }
     }
 
-
     private boolean hasChanges() {
-        switch (editType) {
-            case ENTITY_CONFIG:
-                return enabled != originalEnabled ||
-                        speed != originalSpeed ||
-                        range != originalRange ||
-                        threshold != originalThreshold;
-
-            case GENERAL_SOUND_CONFIG:
-                return enabled != originalEnabled ||
-                        speed != originalSpeed ||
-                        range != originalRange ||
-                        isPriority != originalIsPriority;
-
-            case GENERAL_SOUND_ENTITY:
-            default:
-                return false;
-        }
+        return switch (editType) {
+            case ENTITY_CONFIG -> enabled != originalEnabled || speed != originalSpeed
+                    || range != originalRange || threshold != originalThreshold;
+            case GENERAL_SOUND_CONFIG -> enabled != originalEnabled || speed != originalSpeed
+                    || range != originalRange || isPriority != originalIsPriority;
+            case GENERAL_SOUND_ENTITY -> enabled != originalEnabled || speed != originalSpeed
+                    || range != originalRange;
+            default -> false;
+        };
     }
 
     private void updateSaveButtonState() {
         if (saveButton != null) {
             boolean hasChanges = hasChanges();
             saveButton.active = hasChanges;
-
-            if (hasChanges) {
-                saveButton.setMessage(Text.translatable("button.ezvcsurvival.save"));
-            } else {
-                saveButton.setMessage(Text.translatable("button.ezvcsurvival.no_changes"));
-            }
+            saveButton.setMessage(Text.translatable(hasChanges
+                    ? "button.ezvcsurvival.save"
+                    : "button.ezvcsurvival.no_changes"));
         }
     }
 

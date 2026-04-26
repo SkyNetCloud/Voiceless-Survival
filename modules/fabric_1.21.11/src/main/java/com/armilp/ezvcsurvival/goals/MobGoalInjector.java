@@ -6,6 +6,7 @@ import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.armilp.ezvcsurvival.mixins.MobEntityAccessor;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.PrioritizedGoal;
@@ -21,8 +22,12 @@ import java.util.*;
 public class MobGoalInjector {
 
     private static final String TAG = "ezvcsurvival:goals_added";
-    private static final Set<MobEntity> TRACKED_MOBS = Collections.newSetFromMap(new WeakHashMap<>());
-    private static final Map<UUID, InjectedGoals> INJECTED_GOALS = new WeakHashMap<>();
+
+    private static final Set<MobEntity> TRACKED_MOBS =
+            Collections.newSetFromMap(new WeakHashMap<>());
+
+    private static final Map<UUID, InjectedGoals> INJECTED_GOALS =
+            new WeakHashMap<>();
 
     public static void onEntityJoin(Entity entity, ServerWorld world) {
         if (!(entity instanceof MobEntity mob)) return;
@@ -32,8 +37,6 @@ public class MobGoalInjector {
             if (!hasActiveGoals(mob)) {
                 injectGoals(mob);
 
-                NbtCompound nbt = new NbtCompound();
-                nbt.putBoolean(TAG, true);
                 TRACKED_MOBS.add(mob);
 
                 if (VoiceConfig.DEBUG.get()) {
@@ -64,8 +67,8 @@ public class MobGoalInjector {
         }
     }
 
-    private static boolean hasActiveGoals( MobEntity mob) {
-        InjectedGoals injected = MobGoalInjector.INJECTED_GOALS.get(mob.getUuid());
+    private static boolean hasActiveGoals(MobEntity mob) {
+        InjectedGoals injected = INJECTED_GOALS.get(mob.getUuid());
         if (injected != null && injected.hasAnyGoal()) {
             return verifyGoalsInSelector(mob, injected);
         }
@@ -77,8 +80,10 @@ public class MobGoalInjector {
 
         boolean hasFollowGoal = injected.followGoal == null ||
                 availableGoals.stream().anyMatch(wg -> wg.getGoal() == injected.followGoal);
+
         boolean hasRunawayGoal = injected.runawayGoal == null ||
                 availableGoals.stream().anyMatch(wg -> wg.getGoal() == injected.runawayGoal);
+
         boolean hasGeneralSoundGoal = injected.generalSoundGoal == null ||
                 availableGoals.stream().anyMatch(wg -> wg.getGoal() == injected.generalSoundGoal);
 
@@ -89,10 +94,12 @@ public class MobGoalInjector {
         Iterator<MobEntity> it = TRACKED_MOBS.iterator();
         while (it.hasNext()) {
             MobEntity mob = it.next();
+
             if (mob == null || mob.isRemoved()) {
                 it.remove();
                 continue;
             }
+
             refreshMob(mob);
         }
     }
@@ -100,6 +107,7 @@ public class MobGoalInjector {
     public static void refreshEntityId(String entityId) {
         for (MobEntity mob : new ArrayList<>(TRACKED_MOBS)) {
             if (mob == null || mob.isRemoved()) continue;
+
             Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
             if (id != null && id.toString().equals(entityId)) {
                 refreshMob(mob);
@@ -108,9 +116,11 @@ public class MobGoalInjector {
     }
 
     private static void refreshMob(MobEntity mob) {
-        NbtCompound data =  new NbtCompound();
+        NbtCompound data = new NbtCompound();
         data.remove(TAG);
+
         removeOldGoals(mob);
+
         try {
             injectGoals(mob);
             data.putBoolean(TAG, true);
@@ -128,7 +138,6 @@ public class MobGoalInjector {
         String mobId = id.toString();
         InjectedGoals injected = new InjectedGoals();
 
-
         if (EntityVoiceConfig.isEnabled() && !(mob instanceof AnimalEntity)) {
             EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.getMonster(mobId);
 
@@ -140,7 +149,6 @@ public class MobGoalInjector {
                 injected.followGoal = goal;
             }
         }
-
 
         if (EntityVoiceConfig.isEnabled() && mob instanceof AnimalEntity animal) {
             EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.getAnimal(mobId);
@@ -166,6 +174,8 @@ public class MobGoalInjector {
                             new ReactToGeneralSoundGoal(mob, r.speed, r.range, groups);
 
                     acc(mob).vs$getGoalSelector().add(2, goal);
+
+
                     injected.generalSoundGoal = goal;
                 }
             }
@@ -173,7 +183,6 @@ public class MobGoalInjector {
 
         INJECTED_GOALS.put(mob.getUuid(), injected);
     }
-
 
     private static void removeOldGoals(MobEntity mob) {
         acc(mob).vs$getGoalSelector().getGoals().removeIf(w ->

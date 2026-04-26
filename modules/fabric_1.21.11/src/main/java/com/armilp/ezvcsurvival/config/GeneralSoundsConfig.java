@@ -12,6 +12,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.registry.Registries;
 
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -19,10 +20,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public final class GeneralSoundsConfig {
 
@@ -64,19 +62,6 @@ public final class GeneralSoundsConfig {
     public static Map<String, Reaction> getMobReactions() {
         if (ROOT == null) ROOT = new Root();
         if (ROOT.mobs == null) ROOT.mobs = new HashMap<>();
-
-        Map<String, Reaction> cleaned = new HashMap<>();
-        for (Map.Entry<String, Reaction> entry : ROOT.mobs.entrySet()) {
-            String cleanKey = cleanEntityId(entry.getKey());
-            cleaned.put(cleanKey, entry.getValue());
-        }
-
-        if (!cleaned.equals(ROOT.mobs)) {
-            ROOT.mobs.clear();
-            ROOT.mobs.putAll(cleaned);
-            persist(); // Save changes
-        }
-
         return ROOT.mobs;
     }
 
@@ -84,29 +69,14 @@ public final class GeneralSoundsConfig {
         if (ROOT == null) ROOT = new Root();
         if (ROOT.mobs == null) ROOT.mobs = new HashMap<>();
 
-        String cleanEntityId = cleanEntityId(entityId);
-
-        Reaction existing = ROOT.mobs.get(cleanEntityId);
+        Reaction existing = ROOT.mobs.get(entityId);
         if (existing != null) {
             existing.enabled = enabled;
             existing.speed = speed;
             existing.range = range;
         } else {
-            ROOT.mobs.put(cleanEntityId, new Reaction(enabled, speed, range));
+            ROOT.mobs.put(entityId, new Reaction(enabled, speed, range));
         }
-    }
-
-    private static String cleanEntityId(String entityId) {
-        if (entityId == null) return null;
-
-        if (entityId.startsWith("Optional[ResourceKey[") && entityId.contains(" / ")) {
-            int start = entityId.indexOf(" / ") + 3;
-            int end = entityId.indexOf("]]", start);
-            if (end != -1) {
-                return entityId.substring(start, end);
-            }
-        }
-        return entityId;
     }
 
     public static boolean canEntityReactToSound(String entityId, String soundId) {
@@ -315,12 +285,7 @@ public final class GeneralSoundsConfig {
         }
 
         for (var sound : Registries.SOUND_EVENT) {
-            var identifier = Registries.SOUND_EVENT.getId(sound);
-            if (identifier == null) {
-                continue; // or log + skip
-            }
-
-            String id = identifier.toString();
+            String id = Registries.SOUND_EVENT.getId(sound).toString();
 
             if (!ROOT.sounds.containsKey(id)) {
                 boolean shouldEnable = shouldEnableByDefault(id);
@@ -330,18 +295,24 @@ public final class GeneralSoundsConfig {
             }
         }
 
+
+
         return added;
     }
 
     private static boolean shouldEnableByDefault(String soundId) {
-
+        if (soundId.startsWith("pointblank:")) {
+            return false;
+        }
 
         return soundId.contains("place") || soundId.contains("break") ||
                 soundId.contains("explode") || soundId.contains("explosion");
     }
 
     private static boolean shouldBePriorityByDefault(String soundId) {
-
+        if (soundId.startsWith("pointblank:")) {
+            return false;
+        }
 
         return soundId.contains("explode") || soundId.contains("explosion");
     }
@@ -352,11 +323,11 @@ public final class GeneralSoundsConfig {
 
         ROOT.mobs.clear();
 
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
+        for (EntityType<?> type :  Registries.ENTITY_TYPE) {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
             ROOT.mobs.put(
-                    Registries.SOUND_EVENT.getKey().toString(),
+                    Registries.ENTITY_TYPE.getId(type).toString(),
                     Reaction.defaultFor(type)
             );
         }

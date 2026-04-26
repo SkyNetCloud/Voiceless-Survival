@@ -4,6 +4,7 @@ import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.events.SoundEventTracker;
 import com.armilp.ezvcsurvival.goals.ReactToGeneralSoundGoal;
 import com.armilp.ezvcsurvival.network.EZVCNetworkService;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -21,9 +22,10 @@ public class GeneralSoundPacket {
     private final double z;
     private final double speedMultiplier;
     private final double rangeMultiplier;
+    private PacketByteBuf buf;
 
     public GeneralSoundPacket(Identifier sound, double x, double y, double z,
-                              double speedMultiplier, double rangeMultiplier, PacketByteBuf buf) {
+                              double speedMultiplier, double rangeMultiplier) {
         this.sound = sound;
         this.x = x;
         this.y = y;
@@ -48,7 +50,7 @@ public class GeneralSoundPacket {
         double z = buf.readDouble();
         double speedMultiplier = buf.readDouble();
         double rangeMultiplier = buf.readDouble();
-        return new GeneralSoundPacket(sound, x, y, z, speedMultiplier, rangeMultiplier, buf);
+        return new GeneralSoundPacket(sound, x, y, z, speedMultiplier, rangeMultiplier);
     }
 
     public static void handle(GeneralSoundPacket packet, EZVCNetworkService.MessageContext ctx) {

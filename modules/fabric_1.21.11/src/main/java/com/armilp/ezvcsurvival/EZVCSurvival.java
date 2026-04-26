@@ -6,6 +6,7 @@ import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
+import com.armilp.ezvcsurvival.events.SoundEventHandler;
 import com.armilp.ezvcsurvival.goals.MobGoalInjector;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.sculk.ModGameEvent;
@@ -14,6 +15,10 @@ import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.sound.SoundInstance;
+import net.minecraft.client.sound.SoundInstanceListener;
+import net.minecraft.client.sound.WeightedSoundSet;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 
@@ -40,6 +45,15 @@ public class EZVCSurvival implements ModInitializer {
         ServerEntityEvents.ENTITY_LOAD.register(MobGoalInjector::onEntityJoin);
 
         EZVCNetwork.registerPackets();
+
+//        MinecraftClient.getInstance().getSoundManager().registerListener(new SoundInstanceListener() {
+//            @Override
+//            public void onSoundPlayed(SoundInstance sound, WeightedSoundSet soundSet, float range) {
+//                SoundEventHandler.onPlaySound(sound, soundSet, range);
+//            }
+//
+//
+//        });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> EZVCCommands.commandInit(dispatcher));
         platform.onRegistrationCompleted();

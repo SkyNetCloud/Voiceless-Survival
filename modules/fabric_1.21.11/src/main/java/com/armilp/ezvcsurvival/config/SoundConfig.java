@@ -1,13 +1,11 @@
 package com.armilp.ezvcsurvival.config;
 
 import com.armilp.ezvcsurvival.EZVCSurvival;
+import com.armilp.ezvcsurvival.compat.guns.PointBlankSoundsConfig;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import net.minecraftforge.common.ForgeConfigSpec;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SoundConfig {
 
@@ -28,14 +26,15 @@ public class SoundConfig {
         SPEC = builder.build();
     }
 
-
-
     public static void loadConfigs() {
         try {
-            // Solo inicializamos configuración de sonidos generales
             GeneralSoundsConfig.init();
+
             mergeGeneralSoundsFromJson();
             refreshPriorityGroups();
+
+            EZVCSurvival.LOGGER.info("[EZVC] Loaded {} sound groups", customSoundGroups.size());
+
         } catch (Exception e) {
             EZVCSurvival.LOGGER.warn("Error loading JSON sound configs: {}", e.getMessage());
         }
@@ -47,24 +46,24 @@ public class SoundConfig {
     }
 
     private static void mergeGeneralSoundsFromJson() {
-        customSoundGroups.removeIf(g -> g.groupName.startsWith("auto_sound_"));
+        customSoundGroups.clear();
 
         Map<String, GeneralSoundsConfig.SoundEntry> sounds = GeneralSoundsConfig.getSounds();
-        if (sounds != null) {
-            for (Map.Entry<String, GeneralSoundsConfig.SoundEntry> e : sounds.entrySet()) {
-                GeneralSoundsConfig.SoundEntry se = e.getValue();
-                customSoundGroups.add(new SoundGroupData(
-                        "auto_sound_" + e.getKey().replace(':', '_').replace('.', '_'),
-                        List.of(e.getKey()),
-                        se.speed_multiplier,
-                        se.range_multiplier
-                ));
-            }
+        if (sounds == null) return;
+
+        customSoundGroups.addAll(PointBlankSoundsConfig.getGroups(sounds));
+
+        for (Map.Entry<String, GeneralSoundsConfig.SoundEntry> e : sounds.entrySet()) {
+            GeneralSoundsConfig.SoundEntry se = e.getValue();
+            if (se == null || !se.enabled) continue;
+            customSoundGroups.add(new SoundGroupData("auto_sound_" + e.getKey().replace(':', '_').replace('.', '_'), List.of(e.getKey()), se.speed_multiplier, se.range_multiplier));
         }
     }
 
     public static List<SoundGroupData> getEnabledSoundGroups() {
-        return Collections.unmodifiableList(customSoundGroups);
+        List<SoundGroupData> all = new ArrayList<>(customSoundGroups);
+        all.addAll(priorityGroups);
+        return all;
     }
 
     public static List<SoundGroupData> getPriorityGroups() {

@@ -148,63 +148,39 @@ public class EZVCCommands {
         ServerCommandSource source = context.getSource();
 
         try {
-            source.sendFeedback(
-                    () -> Text.literal("[EZVCSurvival] Reloading configuration files..."),
-                    false
-            );
+            source.sendFeedback(() -> Text.literal("[EZVCSurvival] Reloading configuration files..."), false);
 
+            // Entity Voice Config
             try {
                 reloadEntityVoiceConfig();
-                source.sendFeedback(
-                        () -> Text.literal("[EZVCSurvival] ✓ EntityVoiceConfig reloaded"),
-                        false
-                );
             } catch (Exception e) {
-                source.sendError(Text.literal("[EZVCSurvival] ✗ Failed to reload EntityVoiceConfig: " + e.getMessage()));
+                source.sendError(Text.literal("[EZVCSurvival] Failed to reload EntityVoiceConfig: " + e.getMessage()));
                 if (VoiceConfig.DEBUG.get()) {
                     e.printStackTrace();
                 }
             }
 
+            // General Sound Config
             try {
                 reloadGeneralSoundsConfig();
-                source.sendFeedback(
-                        () -> Text.literal("[EZVCSurvival] ✓ GeneralSoundConfig reloaded"),
-                        false
-                );
             } catch (Exception e) {
-                source.sendError(Text.literal("[EZVCSurvival] ✗ Failed to reload GeneralSoundConfig: " + e.getMessage()));
+                source.sendError(Text.literal("[EZVCSurvival] Failed to reload GeneralSoundConfig: " + e.getMessage()));
                 if (VoiceConfig.DEBUG.get()) {
                     e.printStackTrace();
                 }
             }
 
+            // Sound Config
             try {
                 SoundConfig.loadConfigs();
-                source.sendFeedback(
-                        () -> Text.literal("[EZVCSurvival] ✓ SoundConfig reloaded"),
-                        false
-                );
             } catch (Exception e) {
-                source.sendError(Text.literal("[EZVCSurvival] ✗ Failed to reload SoundConfig: " + e.getMessage()));
+                source.sendError(Text.literal("[EZVCSurvival] Failed to reload SoundConfig: " + e.getMessage()));
                 if (VoiceConfig.DEBUG.get()) {
                     e.printStackTrace();
                 }
             }
 
-            try {
-                // VoiceConfig.reload(); // Uncomment if you have this method
-                source.sendFeedback(
-                        () -> Text.literal("[EZVCSurvival] ✓ VoiceConfig reloaded"),
-                        false
-                );
-            } catch (Exception e) {
-                source.sendError(Text.literal("[EZVCSurvival] ✗ Failed to reload VoiceConfig: " + e.getMessage()));
-                if (VoiceConfig.DEBUG.get()) {
-                    e.printStackTrace();
-                }
-            }
-
+            // Refresh Mob Goals
             try {
                 MobGoalInjector.refreshAll();
             } catch (Exception e) {
@@ -214,10 +190,7 @@ public class EZVCCommands {
                 }
             }
 
-            source.sendFeedback(
-                    () -> Text.literal("[EZVCSurvival] ✅ All configurations reloaded successfully!"),
-                    false
-            );
+            source.sendFeedback(() -> Text.literal("[EZVCSurvival] All configurations reloaded successfully!"), false);
             return 1;
 
         } catch (Exception e) {

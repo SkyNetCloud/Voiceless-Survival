@@ -44,9 +44,8 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-   //modImplementation"curse.maven:sound-physics-remastered-535489:6809526"
-   modImplementation"curse.maven:vics-point-blank-961053:7881990"
-
+    // Optional dependency for point-blank
+    modImplementation"curse.maven:vics-point-blank-961053:7881990"
 
     // Voice Chat API dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
@@ -126,7 +125,6 @@ modrinth {
         required.project 'simple-voice-chat'
         required.project 'forge-config-api-port'
         optional.project 'vics-point-blank'
-        //optional.project 'timeless-and-classics-zero'
     }
 }
 
