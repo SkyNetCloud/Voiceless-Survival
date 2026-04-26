@@ -2,7 +2,7 @@
 
 #### ✅ Fixed
 - Pointblank sounds should now be properly picked by mobs.
-- Fix Config Menu packets.
+- Fix Config Editor packets.
 - Fix some GUI misplacement of layouts and buttons.
 
 ### Any issues with this mod should be reported on the [eZApocalypse Mods Discord](https://discord.gg/jqBFMhnJPe)
