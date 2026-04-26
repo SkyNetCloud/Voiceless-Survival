@@ -154,7 +154,7 @@ public class ConfigEditScreen extends Screen {
         enabledButton = ButtonWidget.builder(
                 Text.translatable(enabled ? "button.ezvcsurvival.enabled" : "button.ezvcsurvival.disabled"),
                 b -> toggleEnabled()
-        ).dimensions(centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT).build();
+        ).dimensions(centerX - CENTER_X_OFFSET, currentY + 9, FIELD_WIDTH, FIELD_HEIGHT).build();
         this.addDrawableChild(enabledButton);
         currentY += FIELD_SPACING + 20;
 
@@ -221,7 +221,7 @@ public class ConfigEditScreen extends Screen {
         ButtonWidget cancelButton = ButtonWidget.builder(
                 Text.translatable("button.ezvcsurvival.cancel"),
                 b -> close()
-        ).dimensions(centerX + CENTER_X_OFFSET, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
+        ).dimensions(centerX + CENTER_X_OFFSET + 11, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
         this.addDrawableChild(cancelButton);
 
         ButtonWidget resetButton = ButtonWidget.builder(
@@ -375,7 +375,7 @@ public class ConfigEditScreen extends Screen {
         int startY = TOP_MARGIN + 40;
         int currentY = startY;
 
-        graphics.drawTextWithShadow(this.textRenderer, "Enabled", centerX - CENTER_X_OFFSET, currentY - 12, 0xFFFFFFFF);
+        graphics.drawTextWithShadow(this.textRenderer, "Enabled", centerX - CENTER_X_OFFSET, currentY - 4, 0xFFFFFFFF);
         currentY += FIELD_SPACING + 20;
 
         graphics.drawTextWithShadow(this.textRenderer, "Speed", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
@@ -470,6 +470,7 @@ public class ConfigEditScreen extends Screen {
             }
         }
     }
+
 
     private void showError() {
         System.err.println("[EZVCSurvival] Error: Values must be valid numbers.");

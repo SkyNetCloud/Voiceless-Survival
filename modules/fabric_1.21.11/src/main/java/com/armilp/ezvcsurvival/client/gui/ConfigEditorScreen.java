@@ -50,33 +50,33 @@ public class ConfigEditorScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        // Renderizar los widgets (botones) primero
+        // Render widgets (buttons) first
         super.render(context, mouseX, mouseY, deltaTicks);
 
-        // Renderizar textos directamente sin manipular pose
+        // Render texts directly without manipulating pose
         int titleY = Math.max(30, this.height / 10);
 
-        // Título - PRIMERO el texto, LUEGO el fondo para que el fondo no tape el texto
+        // Title - FIRST the text, THEN the background so that the background does not cover the text
         context.drawCenteredTextWithShadow(getTextRenderer(), this.title, centerX, titleY, 0xFFFFFFFF);
 
-        // Subtítulo
+        // Caption
         Text subtitle = Text.translatable("screen.ezvcsurvival.config_editor.subtitle");
         int subtitleY = titleY + 15;
         context.drawCenteredTextWithShadow(getTextRenderer(), subtitle, centerX, subtitleY, 0xFFCCCCCC);
 
-        // Línea decorativa
+        // decorative line
         int subtitleWidth = getTextRenderer().getWidth(subtitle);
         int lineY = subtitleY + 10;
         int lineWidth = Math.min(subtitleWidth + 40, this.width - 80);
         context.fill(centerX - lineWidth / 2, lineY,
                 centerX + lineWidth / 2, lineY + 1, 0x88FFFFFF);
 
-        // Información adicional
+        // Additional information
         Text info = Text.translatable("screen.ezvcsurvival.config_editor.info");
         int infoY = lineY + 12;
         context.drawCenteredTextWithShadow(getTextRenderer(), info, centerX, infoY, 0xFFAAAAAA);
 
-        // Versión en la esquina
+        // Corner version
         Text version = ModInfo.getVersion();
         int versionWidth = getTextRenderer().getWidth(version);
         context.drawText(getTextRenderer(), version, this.width - versionWidth - 5, 5, 0xFFAAAAAA, true);
