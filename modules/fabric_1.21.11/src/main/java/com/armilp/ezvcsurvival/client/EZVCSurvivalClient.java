@@ -3,6 +3,7 @@ package com.armilp.ezvcsurvival.client;
 
 import com.armilp.ezvcsurvival.EzvcPlatform;
 import com.armilp.ezvcsurvival.events.SoundEventHandler;
+import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.platform.fabric.FabricEzvcPlatform;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -23,7 +24,7 @@ public class EZVCSurvivalClient implements ClientModInitializer {
     public void onInitializeClient() {
         FabricEzvcPlatform platform = (FabricEzvcPlatform) EzvcPlatform.getInstance();
         platform.onRegistrationCompleted();
-
+        EZVCNetwork.clientRegisterPackets();
         platform.getNetworkService().onRegisteringClientPacketsCompleted();
 
     }

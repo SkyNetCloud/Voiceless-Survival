@@ -1,6 +1,5 @@
 package com.armilp.ezvcsurvival;
 
-
 import com.armilp.ezvcsurvival.commands.EZVCCommands;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
@@ -15,13 +14,8 @@ import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.SoundInstance;
-import net.minecraft.client.sound.SoundInstanceListener;
-import net.minecraft.client.sound.WeightedSoundSet;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
-
 
 public class EZVCSurvival implements ModInitializer {
     public static final String MOD_ID = "ezvcsurvival";

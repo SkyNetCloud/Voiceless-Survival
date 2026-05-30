@@ -26,9 +26,7 @@ public class OpenConfigEditorPacket {
     public void handle(EZVCNetworkService.MessageContext ctx) {
         ctx.enqueueWork(() -> {
             DistExecutor.unsafeCallWhenOn(EnvType.CLIENT, () -> () -> {
-                MinecraftClient.getInstance().execute(() -> {
-                    MinecraftClient.getInstance().setScreen(new ConfigEditorScreen());
-                });
+                MinecraftClient.getInstance().execute(OpenConfigEditorPacketClient::openScreen);
                 return null;
             });
         });
