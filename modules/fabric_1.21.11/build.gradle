@@ -40,6 +40,8 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 
+
+
     // Fabric Loader and API
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
@@ -53,6 +55,8 @@ dependencies {
 
     // Configuration handling
     compileOnly "com.electronwill.night-config:toml:3.6.0"
+    compileOnly("su.plo.voice.api:client:${plasmovoice_api_version}")
+    compileOnly("su.plo.voice.api:server:${plasmovoice_api_version}")
 
     // Forge Config API Port
     modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${project.forge_config_api_port_version}"
@@ -64,6 +68,7 @@ processResources {
     inputs.property "minecraft_version", project.minecraft_version
     inputs.property "loader_version", project.loader_version
     inputs.property "voicechat_api_version", project.voicechat_api_version
+    inputs.property "plasmovoice_api_version", project.plasmovoice_api_version
     inputs.property "forge_config_api_port_version", project.forge_config_api_port_version
 
     filteringCharset "UTF-8"
@@ -74,6 +79,7 @@ processResources {
                 "minecraft_version": project.minecraft_version,
                 "loader_version": project.loader_version,
                 "voicechat_api_version": project.voicechat_api_version,
+                "plasmovoice_api_version": project.plasmovoice_api_version,
                 "forge_config_api_port_version": project.forge_config_api_port_version
         )
     }

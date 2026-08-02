@@ -1,4 +1,4 @@
-### Version 2.1.4-beta
+### Version 2.1.5-beta
 
 #### ✅ Fixed
 - Fixed a bug where the mod would crash on server side because of some packet handling mix-ups.

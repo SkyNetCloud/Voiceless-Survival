@@ -48,6 +48,10 @@ subprojects {
     repositories {
         maven { url = "https://maven.maxhenkel.de/repository/public" }
         maven { url = "https://api.modrinth.com/maven" }
+        maven {
+            name = 'plasmoverse-releases'
+            url = 'https://repo.plasmoverse.com/releases'
+        }
         mavenCentral()
         maven {
             // Add curse maven to repositories

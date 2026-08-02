@@ -1,6 +1,6 @@
 package com.armilp.ezvcsurvival.goals;
 
-import com.armilp.ezvcsurvival.Plugin;
+import com.armilp.ezvcsurvival.utils.VoiceModDetection;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
@@ -38,7 +38,7 @@ public class FollowVoiceGoal extends Goal {
 
         // Only check for sound location periodically to reduce lag
         if (updateCooldown <= 0) {
-            targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = VoiceModDetection.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
             updateCooldown = UPDATE_INTERVAL;
         } else {
             updateCooldown--;
@@ -64,7 +64,7 @@ public class FollowVoiceGoal extends Goal {
 
         // Update sound position periodically while continuing
         if (updateCooldown <= 0) {
-            targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = VoiceModDetection.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
             updateCooldown = UPDATE_INTERVAL;
         } else {
             updateCooldown--;
@@ -87,7 +87,7 @@ public class FollowVoiceGoal extends Goal {
 
         if (distanceSq <= ARRIVAL_DISTANCE_SQ) {
             // Arrived at sound location, check for new sound
-            targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = VoiceModDetection.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
             if (targetSoundPosition != null) {
                 moveToSoundPosition();
             } else {

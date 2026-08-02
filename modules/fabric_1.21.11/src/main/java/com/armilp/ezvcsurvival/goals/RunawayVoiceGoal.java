@@ -1,6 +1,6 @@
 package com.armilp.ezvcsurvival.goals;
 
-import com.armilp.ezvcsurvival.Plugin;
+import com.armilp.ezvcsurvival.utils.VoiceModDetection;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.passive.AnimalEntity;
@@ -32,7 +32,7 @@ public class RunawayVoiceGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+        targetSoundPosition = VoiceModDetection.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
         boolean canStart = targetSoundPosition != null;
 
         return targetSoundPosition != null;
@@ -88,7 +88,7 @@ public class RunawayVoiceGoal extends Goal {
         double distanceSq2D = dx * dx + dz * dz;
 
         if (targetSoundPosition == null || distanceSq2D > threshold * threshold) {
-            targetSoundPosition = Plugin.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = VoiceModDetection.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
         } else {
             fleeFrom(new Vec3d(gx, groundedPos.getY(), gz));
         }

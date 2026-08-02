@@ -14,8 +14,10 @@ import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
+import su.plo.voice.api.server.PlasmoVoiceServer;
 
 public class EZVCSurvival implements ModInitializer {
     public static final String MOD_ID = "ezvcsurvival";
@@ -25,6 +27,10 @@ public class EZVCSurvival implements ModInitializer {
     public void onInitialize() {
 
         EzvcPlatform platform = EzvcPlatform.getInstance();
+
+        if (FabricLoader.getInstance().isModLoaded("plasmovoice")) {
+            PlasmoAddon.register();
+        }
 
         System.out.println("EZVCSurvival Mod Initialized with ID: " + MOD_ID);
 
