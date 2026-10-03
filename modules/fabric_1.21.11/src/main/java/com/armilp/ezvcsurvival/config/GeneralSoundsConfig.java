@@ -2,7 +2,6 @@ package com.armilp.ezvcsurvival.config;
 
 import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.compat.guns.PointBlankSoundsConfig;
-import com.armilp.ezvcsurvival.compat.guns.SBWarfareSoundsConfig;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -314,7 +313,6 @@ public final class GeneralSoundsConfig {
         }
 
         PointBlankSoundsConfig.apply(ROOT.sounds);
-        SBWarfareSoundsConfig.apply(ROOT.sounds);
 
         return added;
     }

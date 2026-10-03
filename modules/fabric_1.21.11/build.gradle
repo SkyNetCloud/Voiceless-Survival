@@ -59,7 +59,6 @@ dependencies {
     compileOnly("su.plo.voice.api:server:${plasmovoice_api_version}")
     modImplementation "curse.maven:plasmo-voice-467028:8890200"
     modImplementation "curse.maven:unofficial-tacz-refabricated-1627909:8873045"
-    modImplementation "maven.modrinth:XU8zWdjt:OsEZFHcH"
 
     // Forge Config API Port
     modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${project.forge_config_api_port_version}"

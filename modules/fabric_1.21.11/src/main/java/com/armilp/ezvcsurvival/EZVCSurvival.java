@@ -1,6 +1,7 @@
 package com.armilp.ezvcsurvival;
 
 import com.armilp.ezvcsurvival.commands.EZVCCommands;
+import com.armilp.ezvcsurvival.compat.guns.GunFireListener;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
@@ -11,6 +12,7 @@ import com.armilp.ezvcsurvival.sculk.ModGameEvent;
 import com.armilp.ezvcsurvival.voicechat.VoiceModCheck;
 import com.armilp.ezvcsurvival.voicechat.plasmo.PlasmoVoiceCompat;
 import com.mojang.logging.LogUtils;
+import com.tacz.guns.api.event.common.GunFireEvent;
 import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -46,6 +48,7 @@ public class EZVCSurvival implements ModInitializer {
         loadConfigs();
         ModGameEvent.register();
 
+        GunFireEvent.CALLBACK.register(GunFireListener::onGunFire);
         ServerEntityEvents.ENTITY_LOAD.register(MobGoalInjector::onEntityJoin);
 
         EZVCNetwork.registerPackets();
