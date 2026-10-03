@@ -5,10 +5,11 @@ import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
-import com.armilp.ezvcsurvival.events.SoundEventHandler;
 import com.armilp.ezvcsurvival.goals.MobGoalInjector;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.sculk.ModGameEvent;
+import com.armilp.ezvcsurvival.voicechat.VoiceModCheck;
+import com.armilp.ezvcsurvival.voicechat.plasmo.PlasmoVoiceCompat;
 import com.mojang.logging.LogUtils;
 import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import net.fabricmc.api.ModInitializer;
@@ -17,7 +18,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
-import su.plo.voice.api.server.PlasmoVoiceServer;
+
+import static com.armilp.ezvcsurvival.config.SoundConfig.*;
 
 public class EZVCSurvival implements ModInitializer {
     public static final String MOD_ID = "ezvcsurvival";
@@ -27,19 +29,21 @@ public class EZVCSurvival implements ModInitializer {
     public void onInitialize() {
 
         EzvcPlatform platform = EzvcPlatform.getInstance();
+        VoiceModCheck.verify();
 
         if (FabricLoader.getInstance().isModLoaded("plasmovoice")) {
-            PlasmoAddon.register();
+            PlasmoVoiceCompat.register();
         }
 
-        System.out.println("EZVCSurvival Mod Initialized with ID: " + MOD_ID);
-
         ConfigRegistry.INSTANCE.register(MOD_ID, net.neoforged.fml.config.ModConfig.Type.COMMON, VoiceConfig.CONFIG, "ezvcsurvival/voices.toml");
-        ConfigRegistry.INSTANCE.register(MOD_ID, net.neoforged.fml.config.ModConfig.Type.COMMON, SoundConfig.SPEC, "ezvcsurvival/sounds.toml");
+        ConfigRegistry.INSTANCE.register(MOD_ID, net.neoforged.fml.config.ModConfig.Type.COMMON, SPEC, "ezvcsurvival/sounds.toml");
+
+        onModConfigLoading();
+        onModConfigReloading();
 
         EntityVoiceConfig.init();
         GeneralSoundsConfig.init();
-        SoundConfig.loadConfigs();
+        loadConfigs();
         ModGameEvent.register();
 
         ServerEntityEvents.ENTITY_LOAD.register(MobGoalInjector::onEntityJoin);

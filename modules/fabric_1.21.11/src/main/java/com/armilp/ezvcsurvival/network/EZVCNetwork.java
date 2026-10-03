@@ -4,6 +4,7 @@ import com.armilp.ezvcsurvival.EzvcPlatform;
 import com.armilp.ezvcsurvival.network.packets.GeneralSoundPacket;
 import com.armilp.ezvcsurvival.network.packets.OpenConfigEditorPacket;
 import com.armilp.ezvcsurvival.network.packets.UpdateConfigPacket;
+import com.armilp.ezvcsurvival.network.packets.VoiceLevelPacket;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
@@ -16,6 +17,8 @@ public final class EZVCNetwork {
         ezvcNetworkService.registerPacket(GeneralSoundPacket.class, EZVCNetworkService.Direction.CLIENT_TO_SERVER, GeneralSoundPacket::encode, GeneralSoundPacket::decode, GeneralSoundPacket::handle);
         ezvcNetworkService.registerPacket(UpdateConfigPacket.class, EZVCNetworkService.Direction.CLIENT_TO_SERVER, UpdateConfigPacket::encode, UpdateConfigPacket::decode, UpdateConfigPacket::handle);
         // Register S2C packet with no-op handler — handler is set on client side
+        ezvcNetworkService.registerPacket(VoiceLevelPacket.class, EZVCNetworkService.Direction.SERVER_TO_CLIENT,
+                VoiceLevelPacket::encode, VoiceLevelPacket::decode, VoiceLevelPacket::handle);
         ezvcNetworkService.registerPacket(OpenConfigEditorPacket.class, EZVCNetworkService.Direction.SERVER_TO_CLIENT, OpenConfigEditorPacket::encode, OpenConfigEditorPacket::decode, (msg, ctx) -> {});
         ezvcNetworkService.onRegisteringPacketsCompleted();
     }

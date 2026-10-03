@@ -1,6 +1,8 @@
 package com.armilp.ezvcsurvival.config;
 
 import com.armilp.ezvcsurvival.EZVCSurvival;
+import com.armilp.ezvcsurvival.compat.guns.PointBlankSoundsConfig;
+import com.armilp.ezvcsurvival.compat.guns.SBWarfareSoundsConfig;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -25,8 +27,7 @@ import java.util.*;
 public final class GeneralSoundsConfig {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Type ROOT_TYPE = new TypeToken<Root>() {
-    }.getType();
+    private static final Type ROOT_TYPE = new TypeToken<Root>() {}.getType();
 
     public static Root ROOT = new Root();
     private static boolean isInitialized = false;
@@ -52,6 +53,11 @@ public final class GeneralSoundsConfig {
                     ROOT = loaded;
                     if (ROOT.mobs == null) ROOT.mobs = new HashMap<>();
                     if (ROOT.sounds == null) ROOT.sounds = new HashMap<>();
+
+                    if (SoundConfig.isDebugEnabled()) {
+                        EZVCSurvival.LOGGER.info("[GeneralSoundsConfig] Reloaded {} mobs, {} sounds",
+                                ROOT.mobs.size(), ROOT.sounds.size());
+                    }
                 }
             } catch (Exception e) {
                 EZVCSurvival.LOGGER.warn("Error reloading generalsounds.json: {}", e.getMessage());
@@ -154,7 +160,7 @@ public final class GeneralSoundsConfig {
         Map<String, SoundEntry> sounds = getSounds();
         if (sounds == null) return;
 
-        priorityGroups.removeIf(group -> group.groupName.startsWith("auto_priority_"));
+        priorityGroups.removeIf(group -> group.groupName().startsWith("auto_priority_"));
 
         for (Map.Entry<String, SoundEntry> entry : sounds.entrySet()) {
             String soundId = entry.getKey();
@@ -166,7 +172,6 @@ public final class GeneralSoundsConfig {
                 SoundGroupData priorityGroup = createPriorityGroup(groupName, soundId, soundEntry);
                 if (priorityGroup != null) {
                     priorityGroups.add(priorityGroup);
-                    EZVCSurvival.LOGGER.debug("Added active priority group: {} for sound: {}", groupName, soundId);
                 }
             }
         }
@@ -193,13 +198,11 @@ public final class GeneralSoundsConfig {
             if (sound.is_priority) {
                 sound.enabled = enabled;
                 changed = true;
-                EZVCSurvival.LOGGER.debug("Set priority sound '{}' enabled to: {}", entry.getKey(), enabled);
             }
         }
 
         if (changed) {
             persist();
-            EZVCSurvival.LOGGER.info("Updated all priority sounds to enabled={}", enabled);
         }
     }
 
@@ -235,13 +238,18 @@ public final class GeneralSoundsConfig {
                     ROOT = loaded;
                     if (ROOT.mobs == null) ROOT.mobs = new HashMap<>();
                     if (ROOT.sounds == null) ROOT.sounds = new HashMap<>();
+
+                    if (SoundConfig.isDebugEnabled()) {
+                        EZVCSurvival.LOGGER.info("[GeneralSoundsConfig] Loaded {} mobs, {} sounds from file",
+                                ROOT.mobs.size(), ROOT.sounds.size());
+                    }
                 } else {
                     ROOT = new Root();
                     generateDefaults();
                     save(path);
                 }
             } catch (JsonParseException | MalformedJsonException e) {
-                EZVCSurvival.LOGGER.warn("Malformed JSON in generalsounds.json, using defaults (no backup): {}", e.getMessage());
+                EZVCSurvival.LOGGER.warn("Malformed JSON in generalsounds.json, using defaults: {}", e.getMessage());
                 ROOT = new Root();
                 generateDefaults();
                 save(path);
@@ -257,9 +265,19 @@ public final class GeneralSoundsConfig {
             save(path);
         }
 
-        boolean addedNew = ensureNewEntitiesOnly();
-        if (addedNew) {
-            save(path);
+        // Only add new entities/sounds if generation is enabled
+        if (SoundConfig.ENABLE_GENERAL_SOUNDS.get()) {
+            boolean addedNew = ensureNewEntitiesOnly();
+            if (addedNew) {
+                save(path);
+                if (SoundConfig.isDebugEnabled()) {
+                    EZVCSurvival.LOGGER.info("[GeneralSoundsConfig] Auto-generation enabled: added new entries");
+                }
+            }
+        } else {
+            if (SoundConfig.isDebugEnabled()) {
+                EZVCSurvival.LOGGER.info("[GeneralSoundsConfig] Auto-generation disabled: using existing entries only");
+            }
         }
     }
 
@@ -273,7 +291,7 @@ public final class GeneralSoundsConfig {
         for (EntityType<?> type : Registries.ENTITY_TYPE) {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
-            String id = Registries.ENTITY_TYPE.getId(type).toString();
+            String id = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString();
             if (!ROOT.mobs.containsKey(id)) {
                 ROOT.mobs.put(id, Reaction.defaultFor(type));
                 added = true;
@@ -285,7 +303,7 @@ public final class GeneralSoundsConfig {
         }
 
         for (var sound : Registries.SOUND_EVENT) {
-            String id = Registries.SOUND_EVENT.getId(sound).toString();
+            String id = Objects.requireNonNull(Registries.SOUND_EVENT.getKey(sound)).toString();
 
             if (!ROOT.sounds.containsKey(id)) {
                 boolean shouldEnable = shouldEnableByDefault(id);
@@ -295,26 +313,32 @@ public final class GeneralSoundsConfig {
             }
         }
 
-
+        PointBlankSoundsConfig.apply(ROOT.sounds);
+        SBWarfareSoundsConfig.apply(ROOT.sounds);
 
         return added;
     }
 
     private static boolean shouldEnableByDefault(String soundId) {
-        if (soundId.startsWith("pointblank:")) {
+        String lower = soundId.toLowerCase();
+
+        if (!lower.startsWith("minecraft:")) {
             return false;
         }
 
-        return soundId.contains("place") || soundId.contains("break") ||
-                soundId.contains("explode") || soundId.contains("explosion");
+        return lower.contains("place") || lower.contains("break") ||
+                lower.contains("explode") || lower.contains("explosion") ||
+                lower.equals("minecraft:block.sculk_sensor.clicking");
     }
 
     private static boolean shouldBePriorityByDefault(String soundId) {
-        if (soundId.startsWith("pointblank:")) {
+        String lower = soundId.toLowerCase();
+
+        if (!lower.startsWith("minecraft:")) {
             return false;
         }
 
-        return soundId.contains("explode") || soundId.contains("explosion");
+        return lower.contains("explode") || lower.contains("explosion");
     }
 
     private static void generateDefaults() {
@@ -323,20 +347,20 @@ public final class GeneralSoundsConfig {
 
         ROOT.mobs.clear();
 
-        for (EntityType<?> type :  Registries.ENTITY_TYPE) {
+        for (EntityType<?> type : Registries.ENTITY_TYPE) {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
             ROOT.mobs.put(
-                    Registries.ENTITY_TYPE.getId(type).toString(),
+                    Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString(),
                     Reaction.defaultFor(type)
             );
         }
 
-        putIfPresent(ROOT.mobs, "minecraft:zombie", new Reaction(true, 1.7, 60.0));
-        putIfPresent(ROOT.mobs, "minecraft:skeleton", new Reaction(true, 1.2, 40.0));
-        putIfPresent(ROOT.mobs, "quiet_place:death_angel", new Reaction(true, 1.2, 50.0));
-        putIfPresent(ROOT.mobs, "minecraft:cow", new Reaction(true, 1.5, 25.0));
-        putIfPresent(ROOT.mobs, "minecraft:pig", new Reaction(true, 1.2, 15.0));
+        putIfPresent(ROOT.mobs, "minecraft:zombie", new Reaction(true, 1.0, 60.0));
+        putIfPresent(ROOT.mobs, "minecraft:skeleton", new Reaction(true, 1.0, 40.0));
+        putIfPresent(ROOT.mobs, "quiet_place:death_angel", new Reaction(true, 1.0, 50.0));
+        putIfPresent(ROOT.mobs, "minecraft:cow", new Reaction(true, 1.0, 25.0));
+        putIfPresent(ROOT.mobs, "minecraft:pig", new Reaction(true, 1.0, 15.0));
 
         activateEntitiesFromMod(ROOT.mobs, "zombie_extreme", new Reaction(true, 1.0, 40.0));
         activateEntitiesFromMod(ROOT.mobs, "apocalypsenow", new Reaction(true, 1.0, 40.0));
@@ -371,6 +395,12 @@ public final class GeneralSoundsConfig {
                     java.nio.file.StandardOpenOption.TRUNCATE_EXISTING)) {
                 GSON.toJson(ROOT, ROOT_TYPE, writer);
                 writer.flush();
+            }
+
+            if (SoundConfig.isDebugEnabled()) {
+                EZVCSurvival.LOGGER.info("[GeneralSoundsConfig] Saved config with {} mobs, {} sounds",
+                        ROOT.mobs != null ? ROOT.mobs.size() : 0,
+                        ROOT.sounds != null ? ROOT.sounds.size() : 0);
             }
 
         } catch (IOException e) {

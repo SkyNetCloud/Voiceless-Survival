@@ -17,7 +17,7 @@
       "com.armilp.ezvcsurvival.client.EZVCSurvivalClient"
     ],
     "voicechat": [
-      "com.armilp.ezvcsurvival.Plugin"
+      "com.armilp.ezvcsurvival.voicechat.simplevc.SVoiceChatPlugin"
     ]
   },
     "mixins": [

@@ -12,12 +12,18 @@ import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.command.DefaultPermissions;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.goal.PrioritizedGoal;
+import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
@@ -214,5 +220,37 @@ public class EZVCCommands {
         loadOrCreateMethod.invoke(null);
     }
 
-}
+    public static void applySoundEffect(ServerPlayerEntity player) {
+        Identifier effectId = Identifier.of("death_angels", "sound_effect");
+        RegistryEntry<StatusEffect> effectEntry = Registries.STATUS_EFFECT.getEntry(effectId).orElse(null);
+        if (effectEntry == null) {
+            return;
+        }
 
+        StatusEffectInstance instance = new StatusEffectInstance(effectEntry, 40, 1, false, false);
+        player.addStatusEffect(instance);
+    }
+
+    public static void applyAggroVoiceEffect(ServerPlayerEntity player) {
+        Identifier effectId = Identifier.of("quiet_place", "agrovoiceeffect");
+        RegistryEntry<StatusEffect> effectEntry = Registries.STATUS_EFFECT.getEntry(effectId).orElse(null);
+        if (effectEntry == null) {
+            return;
+        }
+
+        StatusEffectInstance instance = new StatusEffectInstance(effectEntry, 40, 1, false, false);
+        player.addStatusEffect(instance);
+    }
+
+    public static void applyEffect(ServerPlayerEntity player) {
+        Identifier effectId = Identifier.of("death_angels", "sound_effect");
+        RegistryEntry<StatusEffect> effectEntry = Registries.STATUS_EFFECT.getEntry(effectId).orElse(null);
+        if (effectEntry == null) {
+            return;
+        }
+
+        StatusEffectInstance instance = new StatusEffectInstance(effectEntry, 40, 1, false, false);
+        player.addStatusEffect(instance);
+    }
+
+}

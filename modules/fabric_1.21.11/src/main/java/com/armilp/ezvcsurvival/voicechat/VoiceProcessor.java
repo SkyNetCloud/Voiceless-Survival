@@ -1,88 +1,46 @@
-package com.armilp.ezvcsurvival;
+package com.armilp.ezvcsurvival.voicechat;
 
+import com.armilp.ezvcsurvival.EZVCSurvival;
+import com.armilp.ezvcsurvival.commands.EZVCCommands;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.SoundData;
 import com.armilp.ezvcsurvival.events.ArmorEventHandler;
+import com.armilp.ezvcsurvival.network.EZVCNetwork;
+import com.armilp.ezvcsurvival.network.packets.VoiceLevelPacket;
 import com.armilp.ezvcsurvival.sculk.SculkVibrationHelper;
-
-import su.plo.voice.api.addon.AddonInitializer;
-import su.plo.voice.api.addon.InjectPlasmoVoice;
-import su.plo.voice.api.addon.annotation.Addon;
-import su.plo.voice.api.audio.codec.AudioDecoder;
-import su.plo.voice.api.encryption.Encryption;
-import su.plo.voice.api.server.PlasmoVoiceServer;
-import su.plo.voice.api.server.audio.capture.ServerActivation;
-import su.plo.voice.api.server.player.VoiceServerPlayer;
-import su.plo.voice.proto.packets.udp.serverbound.PlayerAudioPacket;
-
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.Nullable;
+
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
-@Addon(
-        id = "pv-addon-ezvcsurvival",
-        name = "Voiceless Survival",
-        version = "1.0.0",
-        authors = {"armilp", "skynetcloud"}
-)
-public final class PlasmoAddon implements AddonInitializer {
+public final class VoiceProcessor {
 
-    @InjectPlasmoVoice
-    private PlasmoVoiceServer voiceServer;
-
-    private boolean DEBUG;
-    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
-    private static final Map<UUID, Long> lastSculkVibrationTime = new ConcurrentHashMap<>();
-    private static final long SCULK_VIBRATION_COOLDOWN_MS = 500;
-    private static final Map<UUID, Long> lastSoundTime = new ConcurrentHashMap<>();
-
-    private final Map<UUID, AudioDecoder> decoders = new ConcurrentHashMap<>();
-
-    @Override
-    public void onAddonInitialize() {
-        this.DEBUG = VoiceConfig.DEBUG.get();
-        if (DEBUG) System.out.println("[DEBUG] Plasmo Voice addon initialized");
-
-        ServerActivation proximity = voiceServer.getActivationManager()
-                .getActivationByName("proximity")
-                .orElseThrow(() -> new IllegalStateException("Proximity activation not found"));
-
-        proximity.onPlayerActivation((player, packet) -> {
-            onVoicePacket((VoiceServerPlayer) player, packet);
-            return ServerActivation.Result.HANDLED;
-        });
-
-        // clear stale sound-location entries periodically, same as before
-        scheduler.scheduleAtFixedRate(() -> {
-            long now = System.currentTimeMillis();
-            playerSoundLocations.entrySet().removeIf(entry -> {
-                UUID uuid = entry.getKey();
-                Long last = lastSoundTime.get(uuid);
-                return last == null || now - last > 5000;
+    private static final ScheduledExecutorService scheduler =
+            Executors.newScheduledThreadPool(1, r -> {
+                Thread t = Executors.defaultThreadFactory().newThread(r);
+                t.setDaemon(true);
+                return t;
             });
-        }, 1, 1, TimeUnit.SECONDS);
-    }
+    private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> lastVoiceEffectTime = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> lastSculkVibrationTime = new ConcurrentHashMap<>();
+    private static final long DEATH_ANGELS_EFFECT_COOLDOWN_MS = 3000;
+    private static final long SCULK_VIBRATION_COOLDOWN_MS = 500;
 
-    @Override
-    public void onAddonShutdown() {
-        decoders.values().forEach(AudioDecoder::close);
-        decoders.clear();
-        scheduler.shutdownNow();
+    private VoiceProcessor() {
     }
 
     public static double getMaxAudioLevel(short[] samples) {
         double rms = 0D;
 
-        for (short value : samples) {
-            double sample = (double) value / (double) Short.MAX_VALUE;
+        for (int i = 0; i < samples.length; i++) {
+            double sample = (double) samples[i] / (double) Short.MAX_VALUE;
             rms += sample * sample;
         }
 
@@ -99,6 +57,7 @@ public final class PlasmoAddon implements AddonInitializer {
         return db;
     }
 
+    @Nullable
     public static BlockPos getLastSoundLocation(BlockPos mobPosition, double range, double minDb) {
         return playerSoundLocations.values().stream()
                 .filter(data -> data.getAudioLevelDb() >= minDb)
@@ -108,39 +67,22 @@ public final class PlasmoAddon implements AddonInitializer {
                 .orElse(null);
     }
 
-    private void onVoicePacket(VoiceServerPlayer voicePlayer, PlayerAudioPacket packet) {
+    public static void processAudio(ServerPlayerEntity player, Vec3d senderVec, double audioLevel, boolean isWhispering) {
+        final boolean debug = VoiceConfig.DEBUG.get();
 
-        Object nativeInstance = voicePlayer.getInstance();
-        if (!(nativeInstance instanceof ServerPlayerEntity player)) return;
-
-        if (player.isCreative() || player.isSpectator()) return;
-
-        AudioDecoder decoder = decoders.computeIfAbsent(
-                voicePlayer.getInstance().hashCode() >= 0 ? player.getUuid() : player.getUuid(),
-                id -> voiceServer.createOpusDecoder(false)
-        );
-
-        short[] decoded;
         try {
-            Encryption encryption = voiceServer.getDefaultEncryption();
-            byte[] decrypted = encryption.decrypt(packet.getData());
-            decoded = decoder.decode(decrypted);
-        } catch (Exception e) {
-            return;
+            EZVCNetwork.ezvcNetworkService.sendToClient(new VoiceLevelPacket(audioLevel), player);
+        } catch (Throwable t) {
+            EZVCSurvival.LOGGER.error("[ezvc] failed to send voice level", t);
         }
-
-        double audioLevel = getMaxAudioLevel(decoded);
 
         UUID playerUUID = player.getUuid();
 
-        Vec3d senderVec = player.getEntityPos();
         BlockPos playerPosition = new BlockPos(
                 (int) Math.floor(senderVec.x),
                 (int) Math.floor(senderVec.y),
                 (int) Math.floor(senderVec.z)
         );
-
-        boolean isWhispering = false;
 
         double whisperRangeMultiplier = VoiceConfig.WHISPER_RANGE_MULTIPLIER.get();
         double whisperSpeedMultiplier = VoiceConfig.WHISPER_SPEED_MULTIPLIER.get();
@@ -148,12 +90,13 @@ public final class PlasmoAddon implements AddonInitializer {
         double sneakingRangeMultiplier = VoiceConfig.SNEAKING_RANGE_MULTIPLIER.get();
 
         List<String> allIds = new ArrayList<>(EntityVoiceConfig.getAllEntityIds());
+
         long currentTime = System.currentTimeMillis();
 
         for (String id : allIds) {
-            EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.get(id);
+            EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.getMonster(id);
+            if (cfg == null) cfg = EntityVoiceConfig.getAnimal(id);
             if (cfg == null || !cfg.enabled) continue;
-
             double threshold = cfg.threshold;
             double detectionRange = cfg.range;
             double speed = cfg.speed;
@@ -166,12 +109,12 @@ public final class PlasmoAddon implements AddonInitializer {
             if (player.isSneaking()) detectionRange *= sneakingRangeMultiplier;
             if (player.getEntityWorld().isRaining() || player.getEntityWorld().isThundering())
                 detectionRange *= thunderRangeMultiplier;
-
             double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
             detectionRange *= armorMult[1];
             speed *= armorMult[0];
 
             double modifiedRange = detectionRange;
+
             double distance = senderVec.distanceTo(new Vec3d(playerPosition.getX(), playerPosition.getY(), playerPosition.getZ()));
             double distanceVolume = 1.0 - Math.min(distance, modifiedRange) / modifiedRange;
 
@@ -181,10 +124,11 @@ public final class PlasmoAddon implements AddonInitializer {
                         (int) Math.floor(senderVec.y),
                         (int) Math.floor(senderVec.z)
                 );
-                playerSoundLocations.put(playerUUID, new SoundData(precisePos, audioLevel));
-                lastSoundTime.put(playerUUID, currentTime);
-
-                if (DEBUG) {
+                playerSoundLocations.put(
+                        playerUUID,
+                        new SoundData(precisePos, audioLevel)
+                );
+                if (debug) {
                     System.out.println("[DEBUG] " + id + " detects sound! " +
                             "Threshold: " + threshold + " dB | " +
                             "AudioLevel: " + audioLevel + " dB | " +
@@ -192,25 +136,53 @@ public final class PlasmoAddon implements AddonInitializer {
                             "Speed: " + speed + " | " +
                             "Position: " + precisePos);
                 }
+//
+                if (id.equals("death_angels:death_angel") &&
+                        (audioLevel >= VoiceConfig.DEATH_ANGELS_THRESHOLD.get()) &&
+                        (!lastVoiceEffectTime.containsKey(playerUUID)
+                                || currentTime - lastVoiceEffectTime.get(playerUUID) > DEATH_ANGELS_EFFECT_COOLDOWN_MS)) {
+                    EZVCCommands.applyEffect(player);
+                    lastVoiceEffectTime.put(playerUUID, currentTime);
+                    if (debug) {
+                        System.out.println("[DEBUG] Effect applied to the player " + playerUUID);
+                    }
+                }
+
+                if (id.equals("quiet_place:death_angel") &&
+                        (audioLevel >= VoiceConfig.QUIET_PLACE_OVERMAN_THRESHOLD.get()) &&
+                        (!lastVoiceEffectTime.containsKey(playerUUID)
+                                || currentTime - lastVoiceEffectTime.get(playerUUID) > DEATH_ANGELS_EFFECT_COOLDOWN_MS)) {
+                    EZVCCommands.applyAggroVoiceEffect(player);
+                    lastVoiceEffectTime.put(playerUUID, currentTime);
+                    if (debug) {
+                        System.out.println("[DEBUG] Effect applied to the player " + playerUUID);
+                    }
+                }
+            } else {
+                if (debug) {
+                    System.out.println("[DEBUG] Intensity/range too low for " + id + ": "
+                            + audioLevel + " dB | " + distanceVolume);
+                }
             }
         }
 
-        // Sculk Sensor Voice Detection
         if (VoiceConfig.SCULK_SENSOR_ENABLED.get()) {
-            Long last = lastSculkVibrationTime.get(playerUUID);
-            if (last == null || currentTime - last > SCULK_VIBRATION_COOLDOWN_MS) {
+            if (!lastSculkVibrationTime.containsKey(playerUUID)
+                    || currentTime - lastSculkVibrationTime.get(playerUUID) > SCULK_VIBRATION_COOLDOWN_MS) {
                 if (audioLevel >= VoiceConfig.SCULK_SENSOR_THRESHOLD.get()) {
                     SculkVibrationHelper.generateVibration(player, VoiceConfig.SCULK_SENSOR_RANGE.get(), audioLevel);
                     lastSculkVibrationTime.put(playerUUID, currentTime);
-                    if (DEBUG) {
+                    if (debug) {
                         System.out.println("[DEBUG] Sculk vibration generated for player " + playerUUID +
                                 " | AudioLevel: " + audioLevel + " dB");
                     }
                 }
             }
         }
-    }
-    public static void register() {
-        PlasmoVoiceServer.getAddonsLoader().load(new PlasmoAddon());
+
+        try {
+            scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
+        } catch (RejectedExecutionException ignored) {
+        }
     }
 }

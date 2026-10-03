@@ -56,11 +56,11 @@ public class ReactToGeneralSoundGoal extends Goal {
 
         boolean isPriority = false;
         for (SoundGroupData group : soundGroups) {
-            if (group.groupName.startsWith("auto_priority_")) {
-                if (group.sounds.contains(soundId)) {
+            if (group.groupName().startsWith("auto_priority_")) {
+                if (group.sounds().contains(soundId)) {
                     isPriority = true;
-                    speedMult = group.speedMultiplier;
-                    rangeMult = group.rangeMultiplier;
+                    speedMult = group.speedMultiplier();
+                    rangeMult = group.rangeMultiplier();
                     break;
                 }
             }
@@ -69,9 +69,9 @@ public class ReactToGeneralSoundGoal extends Goal {
         if (!isPriority) {
             boolean found = false;
             for (SoundGroupData group : soundGroups) {
-                if (group.sounds.contains(soundId)) {
-                    speedMult = group.speedMultiplier;
-                    rangeMult = group.rangeMultiplier;
+                if (group.sounds().contains(soundId)) {
+                    speedMult = group.speedMultiplier();
+                    rangeMult = group.rangeMultiplier();
                     found = true;
                     break;
                 }
