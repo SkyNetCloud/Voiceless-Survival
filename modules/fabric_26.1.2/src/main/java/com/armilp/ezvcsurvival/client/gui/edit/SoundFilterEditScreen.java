@@ -9,11 +9,13 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +48,7 @@ public class SoundFilterEditScreen extends Screen {
 
 
     public SoundFilterEditScreen(Screen parent, String entityId, String entityName) {
-        super(Component.literal("Sound Filters: " + entityName));
+        super(Component.literal("Sound Filters: " + SoundFilterEditScreen.getEntityDisplayName(entityId)));
         this.parent = parent;
         this.entityId = entityId;
         this.entityName = entityName;
@@ -54,6 +56,28 @@ public class SoundFilterEditScreen extends Screen {
         loadSuggestions();
     }
 
+
+    public static String getEntityDisplayName(String entityId) {
+        try {
+            Identifier identifier = Identifier.tryParse(entityId);
+            if (identifier == null) {
+                return entityId;
+            }
+
+            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(identifier)
+                    .map(Holder::value)
+                    .orElse(null);
+            if (type == null) {
+                return identifier.getPath();
+            }
+
+            String translationKey = type.getDescriptionId();
+            return Component.translatable(translationKey).getString();
+
+        } catch (Exception e) {
+            return entityId.contains(":") ? entityId.substring(entityId.indexOf(':') + 1) : entityId;
+        }
+    }
 
 
     private void loadCurrentFilters() {
@@ -159,9 +183,11 @@ public class SoundFilterEditScreen extends Screen {
         Minecraft.getInstance().setScreen(parent);
     }
 
+
+
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+        super.extractRenderState(graphics, mouseX, mouseY, a);
 
         graphics.text(this.font, this.title, this.width / 2, 15, 0xFFFFFFFF);
 
@@ -170,7 +196,7 @@ public class SoundFilterEditScreen extends Screen {
 
         renderSuggestions(graphics, mouseX, mouseY);
 
-        graphics.text(this.font, "§7Blocked: " + blockedSounds.size() + " sounds",
+        graphics.centeredText(this.font, "§7Blocked: " + blockedSounds.size() + " sounds",
                 this.width / 2, this.height - 50, 0xFFAAAAAA);
 
         renderSuggestionTooltip(graphics, mouseX, mouseY);
@@ -272,6 +298,7 @@ public class SoundFilterEditScreen extends Screen {
     }
 
 
+
     private void renderSuggestionTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         String query = searchBox.getValue().toLowerCase().trim();
         List<SuggestionEntry> filtered = suggestions.stream()
@@ -310,7 +337,7 @@ public class SoundFilterEditScreen extends Screen {
                     tooltip.add(Component.literal("§aClick to block"));
                 }
 
-                graphics.setComponentTooltipForNextFrame(this.font,tooltip,startX,startY);
+                //graphics.renderTooltip();
             }
         }
     }
@@ -344,9 +371,11 @@ public class SoundFilterEditScreen extends Screen {
     }
 
 
+
+
     @Override
-    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-        if (click.button() == 0) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0) {
             String query = searchBox.getValue().toLowerCase().trim();
             List<SuggestionEntry> filtered = suggestions.stream()
                     .filter(s -> {
@@ -374,19 +403,19 @@ public class SoundFilterEditScreen extends Screen {
                 int scrollbarThumbY = startY + (scrollOffset * (scrollbarTrackHeight - scrollbarThumbHeight)) /
                         Math.max(1, filtered.size() - maxVisible);
 
-                if (click.x() >= scrollbarX && click.y() <= scrollbarX + SCROLLBAR_WIDTH &&
-                        click.y() >= scrollbarThumbY && click.y() <= scrollbarThumbY + scrollbarThumbHeight) {
+                if (event.x() >= scrollbarX && event.y() <= scrollbarX + SCROLLBAR_WIDTH &&
+                        event.y() >= scrollbarThumbY && event.y() <= scrollbarThumbY + scrollbarThumbHeight) {
                     isDraggingScrollbar = true;
-                    dragStartY = (int) click.y();
+                    dragStartY = (int) event.y();
                     dragStartOffset = scrollOffset;
                     return true;
                 }
             }
 
-            if (click.x() >= startX && click.x() <= startX + contentWidth &&
-                    click.y() >= startY && click.y() < endY) {
+            if (event.x() >= startX && event.x() <= startX + contentWidth &&
+                    event.y() >= startY && event.y() < endY) {
 
-                int relativeY = (int) click.y() - startY;
+                int relativeY = (int) event.y() - startY;
                 int index = (relativeY / SUGGESTION_HEIGHT) + scrollOffset;
 
                 if (index >= 0 && index < filtered.size()) {
@@ -397,21 +426,22 @@ public class SoundFilterEditScreen extends Screen {
             }
         }
 
-        return super.mouseClicked(click, doubled);
+        return super.mouseClicked(event, doubleClick);
     }
 
 
+
     @Override
-    public boolean mouseReleased(MouseButtonEvent click) {
-        if (click.button() == 0 && isDraggingScrollbar) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0 && isDraggingScrollbar) {
             isDraggingScrollbar = false;
             return true;
         }
-        return super.mouseReleased(click);
+        return super.mouseReleased(event);
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent click, double offsetX, double offsetY) {
+    public boolean mouseDragged(MouseButtonEvent event, double offsetX, double offsetY) {
         if (isDraggingScrollbar) {
             String query = searchBox.getValue().toLowerCase().trim();
             long filteredCount = suggestions.stream()
@@ -445,7 +475,7 @@ public class SoundFilterEditScreen extends Screen {
             return true;
         }
 
-        return super.mouseDragged(click, offsetX, offsetY);
+        return super.mouseDragged(event, offsetX, offsetY);
     }
 
     private void toggleBlockedSound(String soundId) {

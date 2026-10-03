@@ -1,66 +1,45 @@
-package com.armilp.ezvcsurvival;
+package com.armilp.ezvcsurvival.voicechat;
 
+import com.armilp.ezvcsurvival.EZVCSurvival;
+import com.armilp.ezvcsurvival.commands.EZVCCommands;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.SoundData;
 import com.armilp.ezvcsurvival.events.ArmorEventHandler;
+import com.armilp.ezvcsurvival.network.EZVCNetwork;
+import com.armilp.ezvcsurvival.network.packets.VoiceLevelPacket;
 import com.armilp.ezvcsurvival.sculk.SculkVibrationHelper;
-import de.maxhenkel.voicechat.api.*;
-import de.maxhenkel.voicechat.api.events.EventRegistration;
-import de.maxhenkel.voicechat.api.events.MicrophonePacketEvent;
-import de.maxhenkel.voicechat.api.opus.OpusDecoder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Vec3i;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
-@ForgeVoicechatPlugin
-public class Plugin implements VoicechatPlugin {
+public final class VoiceProcessor {
 
-    private boolean DEBUG;
-    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private static final ScheduledExecutorService scheduler =
+            Executors.newScheduledThreadPool(1, r -> {
+                Thread t = Executors.defaultThreadFactory().newThread(r);
+                t.setDaemon(true);
+                return t;
+            });
     private static final Map<UUID, SoundData> playerSoundLocations = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> lastVoiceEffectTime = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> lastSculkVibrationTime = new ConcurrentHashMap<>();
+    private static final long DEATH_ANGELS_EFFECT_COOLDOWN_MS = 3000;
     private static final long SCULK_VIBRATION_COOLDOWN_MS = 500;
-    private static VoicechatApi voicechatApi;
 
-    @Override
-    public String getPluginId() {
-        return "ezvcsurvival";
-    }
-
-    @Nullable
-    private OpusDecoder decoder;
-
-    @Override
-    public void initialize(VoicechatApi api) {
-        voicechatApi = api;
-        this.DEBUG = VoiceConfig.DEBUG.get();
-        if (DEBUG) {
-            System.out.println("[DEBUG] VoiceChat Plugin initialized");
-        }
-    }
-
-    @Override
-    public void registerEvents(EventRegistration registration) {
-        registration.registerEvent(MicrophonePacketEvent.class, this::onMicrophonePacket);
-        if (DEBUG) {
-            System.out.println("[DEBUG] Registered MicrophonePacketEvent");
-        }
+    private VoiceProcessor() {
     }
 
     public static double getMaxAudioLevel(short[] samples) {
         double rms = 0D;
 
-        for (short value : samples) {
-            double sample = (double) value / (double) Short.MAX_VALUE;
+        for (int i = 0; i < samples.length; i++) {
+            double sample = (double) samples[i] / (double) Short.MAX_VALUE;
             rms += sample * sample;
         }
 
@@ -80,48 +59,23 @@ public class Plugin implements VoicechatPlugin {
     @Nullable
     public static BlockPos getLastSoundLocation(BlockPos mobPosition, double range, double minDb) {
         return playerSoundLocations.values().stream()
-                .filter(data -> data.audioLevelDb() >= minDb)
-                .filter(data -> mobPosition.distSqr(data.position()) <= range * range)
-                .min(Comparator.comparingDouble(data -> mobPosition.distSqr(data.position())))
-                .map(SoundData::position)
+                .filter(data -> data.getAudioLevelDb() >= minDb)
+                .filter(data -> mobPosition.distSqr(data.getPosition()) <= range * range)
+                .min(Comparator.comparingDouble(data -> mobPosition.distSqr(data.getPosition())))
+                .map(SoundData::getPosition)
                 .orElse(null);
     }
 
-    public void onMicrophonePacket(MicrophonePacketEvent event) {
-        VoicechatConnection sender = event.getSenderConnection();
-        if (sender == null || sender.getPlayer() == null) return;
+    public static void processAudio(ServerPlayer player, Vec3 senderVec, double audioLevel, boolean isWhispering) {
+        final boolean debug = VoiceConfig.DEBUG.get();
 
-        if (sender.getPlayer().getPlayer() instanceof ServerPlayer player
-                && (player.isCreative() || player.isSpectator())) return;
-
-        OpusDecoder localDecoder = decoder;
-        if (localDecoder == null || localDecoder.isClosed()) {
-            localDecoder = voicechatApi.createDecoder();
-            decoder = localDecoder;
-        }
-        if (localDecoder == null) {
-            return;
-        }
-        localDecoder.resetState();
-
-        byte[] opusEncodedData = event.getPacket().getOpusEncodedData();
-        short[] decoded;
         try {
-            decoded = localDecoder.decode(opusEncodedData);
-        } catch (Exception e) {
-            return;
+            EZVCNetwork.ezvcNetworkService.sendToClient(new VoiceLevelPacket(audioLevel), player);
+        } catch (Throwable t) {
+            EZVCSurvival.LOGGER.error("[ezvc] failed to send voice level", t);
         }
 
-        double audioLevel = getMaxAudioLevel(decoded);
-
-        UUID playerUUID = sender.getPlayer().getUuid();
-        Position voicechatPosition = sender.getPlayer().getPosition();
-
-        Vec3 senderVec = new Vec3(
-                voicechatPosition.getX(),
-                voicechatPosition.getY(),
-                voicechatPosition.getZ()
-        );
+        UUID playerUUID = player.getUUID();
 
         BlockPos playerPosition = new BlockPos(
                 (int) Math.floor(senderVec.x),
@@ -129,7 +83,6 @@ public class Plugin implements VoicechatPlugin {
                 (int) Math.floor(senderVec.z)
         );
 
-        boolean isWhispering = event.getPacket().isWhispering();
         double whisperRangeMultiplier = VoiceConfig.WHISPER_RANGE_MULTIPLIER.get();
         double whisperSpeedMultiplier = VoiceConfig.WHISPER_SPEED_MULTIPLIER.get();
         double thunderRangeMultiplier = VoiceConfig.THUNDER_RANGE_MULTIPLIER.get();
@@ -152,14 +105,12 @@ public class Plugin implements VoicechatPlugin {
                 speed *= whisperSpeedMultiplier;
             }
 
-            if (sender.getPlayer().getPlayer() instanceof ServerPlayer p) {
-                if (p.isCrouching()) detectionRange *= sneakingRangeMultiplier;
-                if (p.level().isRaining() || p.level().isThundering())
-                    detectionRange *= thunderRangeMultiplier;
-                double[] armorMult = ArmorEventHandler.getArmorMultipliers(p);
-                detectionRange *= armorMult[1];
-                speed *= armorMult[0];
-            }
+            if (player.isCrouching()) detectionRange *= sneakingRangeMultiplier;
+            if (player.level().isRaining() || player.level().isThundering())
+                detectionRange *= thunderRangeMultiplier;
+            double[] armorMult = ArmorEventHandler.getArmorMultipliers(player);
+            detectionRange *= armorMult[1];
+            speed *= armorMult[0];
 
             double modifiedRange = detectionRange;
 
@@ -176,7 +127,7 @@ public class Plugin implements VoicechatPlugin {
                         playerUUID,
                         new SoundData(precisePos, audioLevel)
                 );
-                if (DEBUG) {
+                if (debug) {
                     System.out.println("[DEBUG] " + id + " detects sound! " +
                             "Threshold: " + threshold + " dB | " +
                             "AudioLevel: " + audioLevel + " dB | " +
@@ -184,21 +135,43 @@ public class Plugin implements VoicechatPlugin {
                             "Speed: " + speed + " | " +
                             "Position: " + precisePos);
                 }
-                if (DEBUG) {
+//
+                if (id.equals("death_angels:death_angel") &&
+                        (audioLevel >= VoiceConfig.DEATH_ANGELS_THRESHOLD.get()) &&
+                        (!lastVoiceEffectTime.containsKey(playerUUID)
+                                || currentTime - lastVoiceEffectTime.get(playerUUID) > DEATH_ANGELS_EFFECT_COOLDOWN_MS)) {
+                    EZVCCommands.applyEffect(player);
+                    lastVoiceEffectTime.put(playerUUID, currentTime);
+                    if (debug) {
+                        System.out.println("[DEBUG] Effect applied to the player " + playerUUID);
+                    }
+                }
+
+                if (id.equals("quiet_place:death_angel") &&
+                        (audioLevel >= VoiceConfig.QUIET_PLACE_OVERMAN_THRESHOLD.get()) &&
+                        (!lastVoiceEffectTime.containsKey(playerUUID)
+                                || currentTime - lastVoiceEffectTime.get(playerUUID) > DEATH_ANGELS_EFFECT_COOLDOWN_MS)) {
+                    EZVCCommands.applyAggroVoiceEffect(player);
+                    lastVoiceEffectTime.put(playerUUID, currentTime);
+                    if (debug) {
+                        System.out.println("[DEBUG] Effect applied to the player " + playerUUID);
+                    }
+                }
+            } else {
+                if (debug) {
                     System.out.println("[DEBUG] Intensity/range too low for " + id + ": "
                             + audioLevel + " dB | " + distanceVolume);
                 }
             }
         }
 
-        // Sculk Sensor Voice Detection
-        if (VoiceConfig.SCULK_SENSOR_ENABLED.get() && sender.getPlayer().getPlayer() instanceof ServerPlayer serverPlayer) {
+        if (VoiceConfig.SCULK_SENSOR_ENABLED.get()) {
             if (!lastSculkVibrationTime.containsKey(playerUUID)
                     || currentTime - lastSculkVibrationTime.get(playerUUID) > SCULK_VIBRATION_COOLDOWN_MS) {
                 if (audioLevel >= VoiceConfig.SCULK_SENSOR_THRESHOLD.get()) {
-                    SculkVibrationHelper.generateVibration(serverPlayer, VoiceConfig.SCULK_SENSOR_RANGE.get(), audioLevel);
+                    SculkVibrationHelper.generateVibration(player, VoiceConfig.SCULK_SENSOR_RANGE.get(), audioLevel);
                     lastSculkVibrationTime.put(playerUUID, currentTime);
-                    if (DEBUG) {
+                    if (debug) {
                         System.out.println("[DEBUG] Sculk vibration generated for player " + playerUUID +
                                 " | AudioLevel: " + audioLevel + " dB");
                     }
@@ -206,6 +179,9 @@ public class Plugin implements VoicechatPlugin {
             }
         }
 
-        //scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
+        try {
+            scheduler.schedule(() -> playerSoundLocations.remove(playerUUID), 5, TimeUnit.SECONDS);
+        } catch (RejectedExecutionException ignored) {
+        }
     }
 }

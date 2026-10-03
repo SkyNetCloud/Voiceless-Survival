@@ -16,6 +16,10 @@ public class VoiceConfig {
     public static final ForgeConfigSpec.DoubleValue THUNDER_RANGE_MULTIPLIER;
     public static final ForgeConfigSpec.DoubleValue SNEAKING_RANGE_MULTIPLIER;
 
+    public static final ForgeConfigSpec.DoubleValue DEATH_ANGELS_THRESHOLD;
+
+    public static final ForgeConfigSpec.DoubleValue QUIET_PLACE_OVERMAN_THRESHOLD;
+
     public static final ForgeConfigSpec.BooleanValue MOB_SPEED_BOOST_ENABLED;
 
     // Sculk Sensor Config
@@ -24,12 +28,24 @@ public class VoiceConfig {
     public static final ForgeConfigSpec.IntValue SCULK_SENSOR_RANGE;
     public static final ForgeConfigSpec.IntValue SCULK_SENSOR_FREQUENCY;
 
-    // Sound Tracking Config
-    public static final ForgeConfigSpec.IntValue SOUND_TIMEOUT_SECONDS;
-
     public static final ForgeConfigSpec.BooleanValue DEBUG;
 
+    // Auto-generation toggle for entities_voices.json
+    public static final ForgeConfigSpec.BooleanValue ENABLE_ENTITY_VOICE;
+
     static {
+        BUILDER.comment("Debug Config")
+                .push("debugging");
+        DEBUG = BUILDER.define("debug", false);
+        BUILDER.pop();
+
+        BUILDER.comment("Entity Voice Config Generation",
+                        "If true, automatically adds new entities to entities_voices.json when detected",
+                        "If false, only uses entities already in the file (allows manual control)")
+                .push("entity_voice_generation");
+        ENABLE_ENTITY_VOICE = BUILDER.define("enable_generation", true);
+        BUILDER.pop();
+
         BUILDER.comment("Whisper Config",
                         "Multipliers that affect the detection range and movement speed when the player is whispering.")
                 .push("whisper_configs");
@@ -74,18 +90,18 @@ public class VoiceConfig {
         );
         BUILDER.pop();
 
-        // ADDED THIS SECTION
-        BUILDER.comment("Sound Tracking Config",
-                        "How long sounds remain detectable by mobs after being made",
-                        "Higher values = sounds persist longer, mobs have more time to react",
-                        "Lower values = sounds disappear faster, less lag potential")
-                .push("sound_tracking");
-        SOUND_TIMEOUT_SECONDS = BUILDER.defineInRange("sound_timeout_seconds", 15, 5, 60);
+        BUILDER.comment("Death Angels Mod Config",
+                        "Defines the threshold detection (how hard the player must speak)",
+                        "You need this mod for this parameter: https://www.curseforge.com/minecraft/mc-mods/death-angels")
+                .push("death_angels_config");
+        DEATH_ANGELS_THRESHOLD = BUILDER.defineInRange("death_angels_threshold", -20.0, -127.0, 0.0);
         BUILDER.pop();
 
-        BUILDER.comment("Debugging Config")
-                .push("debugging");
-        DEBUG = BUILDER.define("debug", false);
+        BUILDER.comment("OverMan's Quiet place Mod Config",
+                        "Defines the threshold detection (how hard the player must speak)",
+                        "You need this mod for this parameter: https://www.curseforge.com/minecraft/mc-mods/overmans-quiet-place")
+                .push("quiet_place_overman_config");
+        QUIET_PLACE_OVERMAN_THRESHOLD = BUILDER.defineInRange("quiet_place_overman_threshold", -30.0, -127.0, 0.0);
         BUILDER.pop();
 
         CONFIG = BUILDER.build();

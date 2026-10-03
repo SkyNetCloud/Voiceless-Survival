@@ -7,9 +7,10 @@ import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.MalformedJsonException;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobCategory;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnGroup;
+import net.minecraft.registry.Registries;
+
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -18,7 +19,9 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public final class EntityVoiceConfig {
 
@@ -37,8 +40,6 @@ public final class EntityVoiceConfig {
     public static void init() {
         if (!isInitialized) {
             loadOrCreate();
-            // Run migration after loading
-            migrateOldKeys();
             isInitialized = true;
         } else {
             reloadFromDisk();
@@ -52,14 +53,8 @@ public final class EntityVoiceConfig {
                 RootConfig loaded = GSON.fromJson(reader, ROOT_TYPE);
                 if (loaded != null) {
                     ROOT = loaded;
-
-                    // Clean up the keys when loading
-                    MONSTER_CONFIGS = cleanConfigMap(loaded.monsters);
-                    ANIMAL_CONFIGS = cleanConfigMap(loaded.animals);
-
-                    // Update ROOT with cleaned maps
-                    ROOT.monsters = MONSTER_CONFIGS;
-                    ROOT.animals = ANIMAL_CONFIGS;
+                    MONSTER_CONFIGS = loaded.monsters != null ? new HashMap<>(loaded.monsters) : new HashMap<>();
+                    ANIMAL_CONFIGS = loaded.animals != null ? new HashMap<>(loaded.animals) : new HashMap<>();
                 }
             } catch (Exception e) {
                 EZVCSurvival.LOGGER.warn("Error reloading entities_voices.json: {}", e.getMessage());
@@ -68,98 +63,45 @@ public final class EntityVoiceConfig {
     }
 
     public static Set<String> getAllEntityIds() {
-        HashSet<String> all = new HashSet<>();
+        java.util.HashSet<String> all = new java.util.HashSet<>();
         all.addAll(MONSTER_CONFIGS.keySet());
         all.addAll(ANIMAL_CONFIGS.keySet());
         return all;
     }
 
     public static EntityConfig getMonster(String entityId) {
-        String cleanId = cleanEntityId(entityId);
-        return MONSTER_CONFIGS.get(cleanId);
+        return MONSTER_CONFIGS.get(entityId);
     }
 
     public static EntityConfig getAnimal(String entityId) {
-        String cleanId = cleanEntityId(entityId);
-        return ANIMAL_CONFIGS.get(cleanId);
+        return ANIMAL_CONFIGS.get(entityId);
     }
 
     public static EntityConfig get(String entityId) {
-        String cleanId = cleanEntityId(entityId);
-        EntityConfig ec = MONSTER_CONFIGS.get(cleanId);
-        if (ec == null) ec = ANIMAL_CONFIGS.get(cleanId);
-        return ec;
+        // 🔥 unified lookup (no stale priority issues)
+        if (MONSTER_CONFIGS.containsKey(entityId)) return MONSTER_CONFIGS.get(entityId);
+        return ANIMAL_CONFIGS.get(entityId);
     }
+
 
     public static void set(String entityId, EntityConfig value) {
-        String cleanId = cleanEntityId(entityId);
-        if (MONSTER_CONFIGS.containsKey(cleanId)) {
-            MONSTER_CONFIGS.put(cleanId, value);
-        } else if (ANIMAL_CONFIGS.containsKey(cleanId)) {
-            ANIMAL_CONFIGS.put(cleanId, value);
+        MONSTER_CONFIGS.remove(entityId);
+        ANIMAL_CONFIGS.remove(entityId);
+
+        EntityType<?> type = Registries.ENTITY_TYPE.get(net.minecraft.util.Identifier.of(entityId));
+
+        if (type.getSpawnGroup() == SpawnGroup.MONSTER) {
+            MONSTER_CONFIGS.put(entityId, value);
         } else {
-            // Default to monsters if not found
-            MONSTER_CONFIGS.put(cleanId, value);
+            ANIMAL_CONFIGS.put(entityId, value);
         }
     }
 
-    // Helper method to clean entity IDs
-    private static String cleanEntityId(String entityId) {
-        if (entityId == null) return null;
-
-        // Remove Optional[ResourceKey[...]] wrapper
-        if (entityId.startsWith("Optional[ResourceKey[") && entityId.contains(" / ")) {
-            // Extract the part after " / "
-            int start = entityId.indexOf(" / ") + 3;
-            int end = entityId.indexOf("]]", start);
-            if (end != -1) {
-                return entityId.substring(start, end);
-            }
-        }
-        return entityId;
-    }
-
-    // Helper method to clean a config map
-    private static Map<String, EntityConfig> cleanConfigMap(Map<String, EntityConfig> map) {
-        if (map == null) return new HashMap<>();
-
-        Map<String, EntityConfig> cleaned = new HashMap<>();
-        for (Map.Entry<String, EntityConfig> entry : map.entrySet()) {
-            String cleanKey = cleanEntityId(entry.getKey());
-            cleaned.put(cleanKey, entry.getValue());
-        }
-        return cleaned;
-    }
-
-    // Migration method to clean up existing files
-    public static void migrateOldKeys() {
-        boolean needsMigration = false;
-
-        // Check monsters
-        Map<String, EntityConfig> cleanedMonsters = cleanConfigMap(MONSTER_CONFIGS);
-        if (!cleanedMonsters.equals(MONSTER_CONFIGS)) {
-            needsMigration = true;
-            MONSTER_CONFIGS = cleanedMonsters;
-        }
-
-        // Check animals
-        Map<String, EntityConfig> cleanedAnimals = cleanConfigMap(ANIMAL_CONFIGS);
-        if (!cleanedAnimals.equals(ANIMAL_CONFIGS)) {
-            needsMigration = true;
-            ANIMAL_CONFIGS = cleanedAnimals;
-        }
-
-        if (needsMigration) {
-            // Update ROOT
-            ROOT.monsters = MONSTER_CONFIGS;
-            ROOT.animals = ANIMAL_CONFIGS;
-            persist();
-            EZVCSurvival.LOGGER.info("Migrated old entity voice keys to clean format");
-        }
-    }
 
     public static void persist() {
         save(getConfigPath());
+
+        reloadFromDisk();
     }
 
     private static Path getConfigPath() {
@@ -178,14 +120,8 @@ public final class EntityVoiceConfig {
                 RootConfig loaded = GSON.fromJson(reader, ROOT_TYPE);
                 if (loaded != null) {
                     ROOT = loaded;
-
-                    // Clean up keys when loading
-                    MONSTER_CONFIGS = cleanConfigMap(loaded.monsters);
-                    ANIMAL_CONFIGS = cleanConfigMap(loaded.animals);
-
-                    // Update ROOT with cleaned maps
-                    ROOT.monsters = MONSTER_CONFIGS;
-                    ROOT.animals = ANIMAL_CONFIGS;
+                    MONSTER_CONFIGS = loaded.monsters != null ? new HashMap<>(loaded.monsters) : new HashMap<>();
+                    ANIMAL_CONFIGS = loaded.animals != null ? new HashMap<>(loaded.animals) : new HashMap<>();
                 } else {
                     ROOT = new RootConfig();
                     MONSTER_CONFIGS = new HashMap<>();
@@ -220,22 +156,18 @@ public final class EntityVoiceConfig {
 
     private static boolean ensureAllEntitiesPresent() {
         boolean added = false;
-        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
-            MobCategory category = type.getCategory();
-            if (category == MobCategory.MISC) continue;
-            String id = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(type)).toString();
-
-            // Use clean ID for checking
-            String cleanId = cleanEntityId(id);
-
+        for (EntityType<?> type : Registries.ENTITY_TYPE) {
+            SpawnGroup  category = type.getSpawnGroup();
+            if (category == SpawnGroup.MISC) continue;
+            String id = Registries.ENTITY_TYPE.getId(type).toString();
             if (isMonsterCategory(category)) {
-                if (!MONSTER_CONFIGS.containsKey(cleanId)) {
-                    MONSTER_CONFIGS.put(cleanId, EntityConfig.defaultFor(type));
+                if (!MONSTER_CONFIGS.containsKey(id)) {
+                    MONSTER_CONFIGS.put(id, EntityConfig.defaultFor(type));
                     added = true;
                 }
             } else if (isAnimalLikeCategory(category)) {
-                if (!ANIMAL_CONFIGS.containsKey(cleanId)) {
-                    ANIMAL_CONFIGS.put(cleanId, EntityConfig.defaultFor(type));
+                if (!ANIMAL_CONFIGS.containsKey(id)) {
+                    ANIMAL_CONFIGS.put(id, EntityConfig.defaultFor(type));
                     added = true;
                 }
             }
@@ -246,22 +178,22 @@ public final class EntityVoiceConfig {
     private static void generateDefaults() {
         MONSTER_CONFIGS.clear();
         ANIMAL_CONFIGS.clear();
-        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
-            MobCategory category = type.getCategory();
-            if (category == MobCategory.MISC) continue;
-
-            String id = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(type)).toString();
-            // Store with clean ID
-            String cleanId = cleanEntityId(id);
-
+        for (EntityType<?> type : Registries.ENTITY_TYPE) {
+            SpawnGroup category = type.getSpawnGroup();
+            if (category == SpawnGroup.MISC) continue;
             if (isMonsterCategory(category)) {
-                MONSTER_CONFIGS.put(cleanId, EntityConfig.defaultFor(type));
+                MONSTER_CONFIGS.put(
+                        Registries.ENTITY_TYPE.getId(type).toString(),
+                        EntityConfig.defaultFor(type)
+                );
             } else if (isAnimalLikeCategory(category)) {
-                ANIMAL_CONFIGS.put(cleanId, EntityConfig.defaultFor(type));
+                ANIMAL_CONFIGS.put(
+                        Registries.ENTITY_TYPE.getId(type).toString(),
+                        EntityConfig.defaultFor(type)
+                );
             }
         }
 
-        // Use clean IDs for putIfPresent calls too
         putIfPresent(MONSTER_CONFIGS, "minecraft:zombie", new EntityConfig(true, 1.0, 60.0, -20.0));
         putIfPresent(MONSTER_CONFIGS, "minecraft:skeleton", new EntityConfig(true, 1.0, 40.0, -15.0));
         putIfPresent(MONSTER_CONFIGS, "quiet_place:death_angel", new EntityConfig(true, 1.0, 50.0, -10.0));
@@ -269,22 +201,21 @@ public final class EntityVoiceConfig {
         putIfPresent(ANIMAL_CONFIGS, "minecraft:pig", new EntityConfig(true, 1.0, 15.0, -18.0));
     }
 
-    private static boolean isMonsterCategory(MobCategory category) {
-        return category == MobCategory.MONSTER;
+    private static boolean isMonsterCategory(SpawnGroup category) {
+        return category == SpawnGroup.MONSTER;
     }
 
-    private static boolean isAnimalLikeCategory(MobCategory category) {
-        return category == MobCategory.CREATURE
-                || category == MobCategory.AMBIENT
-                || category == MobCategory.WATER_CREATURE
-                || category == MobCategory.UNDERGROUND_WATER_CREATURE
+    private static boolean isAnimalLikeCategory(SpawnGroup category) {
+        return category == SpawnGroup.CREATURE
+                || category == SpawnGroup.AMBIENT
+                || category == SpawnGroup.WATER_CREATURE
+                || category == SpawnGroup.UNDERGROUND_WATER_CREATURE
                 || category.name().equalsIgnoreCase("AXOLOTLS");
     }
 
     private static void putIfPresent(Map<String, EntityConfig> map, String id, EntityConfig config) {
-        String cleanId = cleanEntityId(id);
-        if (map.containsKey(cleanId)) {
-            map.put(cleanId, config);
+        if (map.containsKey(id)) {
+            map.put(id, config);
         }
     }
 
@@ -353,7 +284,7 @@ public final class EntityVoiceConfig {
             double baseRange = 50.0;
             double baseThreshold = -20.0;
 
-            if (type != null && type.getCategory() == MobCategory.MONSTER) {
+            if (type != null && type.getSpawnGroup() == SpawnGroup.MONSTER) {
                 baseRange = 60.0;
             }
             return new EntityConfig(false, baseSpeed, baseRange, baseThreshold);
@@ -367,8 +298,7 @@ public final class EntityVoiceConfig {
     }
 
     public static EntityConfig getOrCreate(String entityId) {
-        String cleanId = cleanEntityId(entityId);
-        EntityConfig config = get(cleanId);
+        EntityConfig config = get(entityId);
 
         if (config != null) {
             return config;
@@ -381,10 +311,10 @@ public final class EntityVoiceConfig {
                 -20.0
         );
 
-        set(cleanId, config);
+        set(entityId, config);
         persist();
 
-        System.out.println("[EZVCSurvival] Created default voice config for: " + cleanId);
+        System.out.println("[EZVCSurvival] Created default voice config for: " + entityId);
 
         return config;
     }

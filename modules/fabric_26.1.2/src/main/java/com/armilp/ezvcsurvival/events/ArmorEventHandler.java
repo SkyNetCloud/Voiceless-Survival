@@ -9,6 +9,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,7 @@ public class ArmorEventHandler  {
 
             ItemStack stack = player.getItemBySlot(slot);
             if (!stack.isEmpty()) {
-                Identifier id = BuiltInRegistries.ITEM.key().identifier();
+                Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
                 if (armorEffectsMap.containsKey(id.toString())) {
                     ArmorEffect effect = armorEffectsMap.get(id.toString());
                     speedMultiplier *= effect.speedMultiplier();

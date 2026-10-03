@@ -38,11 +38,11 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
 
-
     // Voice Chat
     implementation "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}"
     runtimeOnly "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}:fabric-stub"
     runtimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_mod_version}"
+    implementation "curse.maven:plasmo-voice-467028:8890202"
 
     // Config
     compileOnly "com.electronwill.night-config:toml:3.6.0"

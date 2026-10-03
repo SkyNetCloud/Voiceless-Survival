@@ -1,26 +1,26 @@
 package com.armilp.ezvcsurvival.client.gui.edit;
 
-
 import com.armilp.ezvcsurvival.client.gui.list.ConfigListScreen;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
+import com.armilp.ezvcsurvival.network.packets.UpdateConfigPacket;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-
-
+import static com.armilp.ezvcsurvival.client.gui.edit.SoundFilterEditScreen.getEntityDisplayName;
+import static com.armilp.ezvcsurvival.client.gui.list.ConfigListWidget.UniversalEntry.cleanElementId;
 
 public class ConfigEditScreen extends Screen {
 
-    public static final Identifier MENU_BACKGROUND_TEXTURE = Identifier.withDefaultNamespace("textures/gui/menu_background.png");
+    public static final Identifier MENU_BACKGROUND_TEXTURE = Identifier.ofVanilla("textures/gui/menu_background.png");
 
     public enum EditType {
         ENTITY_CONFIG,
@@ -33,13 +33,13 @@ public class ConfigEditScreen extends Screen {
     private final String elementId;
     private final String elementName;
 
-    private Button enabledButton;
-    private EditBox speedBox;
-    private EditBox rangeBox;
-    private EditBox thresholdBox;
-    private Button priorityButton;
-    private Button saveButton;
-    private Button soundFiltersButton;
+    private ButtonWidget enabledButton;
+    private TextFieldWidget speedBox;
+    private TextFieldWidget rangeBox;
+    private TextFieldWidget thresholdBox;
+    private ButtonWidget priorityButton;
+    private ButtonWidget saveButton;
+    private ButtonWidget soundFiltersButton;
 
     private boolean enabled;
     private double speed;
@@ -63,15 +63,13 @@ public class ConfigEditScreen extends Screen {
     private static final int BUTTON_SPACING = 10;
 
     public ConfigEditScreen(Screen parent, EditType editType, String elementId, String elementName) {
-        super(Component.translatable(getTitleKey(editType), elementName));
+        super(Text.translatable(getTitleKey(editType), cleanElementId(getEntityDisplayName(elementId))));
         this.parent = parent;
         this.editType = editType;
-        this.elementId = elementId;
-        this.elementName = elementName;
-
+        this.elementId = cleanElementId(elementId);
+        this.elementName = cleanElementId(elementName);
         loadCurrentValues();
     }
-
 
     private static String getTitleKey(EditType editType) {
         return switch (editType) {
@@ -85,73 +83,56 @@ public class ConfigEditScreen extends Screen {
     private void loadCurrentValues() {
         switch (editType) {
             case ENTITY_CONFIG -> {
-                EntityVoiceConfig.EntityConfig entityConfig = EntityVoiceConfig.get(elementName);
+                EntityVoiceConfig.EntityConfig entityConfig = EntityVoiceConfig.get(elementId);
                 if (entityConfig != null) {
                     this.enabled = entityConfig.enabled;
                     this.speed = entityConfig.speed;
                     this.range = entityConfig.range;
                     this.threshold = entityConfig.threshold;
-
-                    this.originalEnabled = entityConfig.enabled;
-                    this.originalSpeed = entityConfig.speed;
-                    this.originalRange = entityConfig.range;
-                    this.originalThreshold = entityConfig.threshold;
                 } else {
                     this.enabled = true;
                     this.speed = 1.0;
                     this.range = 50.0;
                     this.threshold = 0.0;
-
-                    this.originalEnabled = this.enabled;
-                    this.originalSpeed = this.speed;
-                    this.originalRange = this.range;
-                    this.originalThreshold = this.threshold;
                 }
+                this.originalEnabled = this.enabled;
+                this.originalSpeed = this.speed;
+                this.originalRange = this.range;
+                this.originalThreshold = this.threshold;
             }
             case GENERAL_SOUND_CONFIG -> {
-                GeneralSoundsConfig.SoundEntry soundConfig = GeneralSoundsConfig.getSounds().get(elementName);
+                GeneralSoundsConfig.SoundEntry soundConfig = GeneralSoundsConfig.getSounds().get(elementId);
                 if (soundConfig != null) {
                     this.enabled = soundConfig.enabled;
                     this.speed = soundConfig.speed_multiplier;
                     this.range = soundConfig.range_multiplier;
                     this.isPriority = soundConfig.is_priority;
-
-                    this.originalEnabled = soundConfig.enabled;
-                    this.originalSpeed = soundConfig.speed_multiplier;
-                    this.originalRange = soundConfig.range_multiplier;
-                    this.originalIsPriority = soundConfig.is_priority;
                 } else {
                     this.enabled = false;
                     this.speed = 1.0;
                     this.range = 1.0;
                     this.isPriority = false;
-
-                    this.originalEnabled = this.enabled;
-                    this.originalSpeed = this.speed;
-                    this.originalRange = this.range;
-                    this.originalIsPriority = this.isPriority;
                 }
+                this.originalEnabled = this.enabled;
+                this.originalSpeed = this.speed;
+                this.originalRange = this.range;
+                this.originalIsPriority = this.isPriority;
             }
             case GENERAL_SOUND_ENTITY -> {
                 var reactions = GeneralSoundsConfig.getMobReactions();
-                GeneralSoundsConfig.Reaction generalReaction = reactions != null ? reactions.get(elementName) : null;
+                GeneralSoundsConfig.Reaction generalReaction = reactions != null ? reactions.get(elementId) : null;
                 if (generalReaction != null) {
                     this.enabled = generalReaction.enabled;
                     this.speed = generalReaction.speed;
                     this.range = generalReaction.range;
-
-                    this.originalEnabled = generalReaction.enabled;
-                    this.originalSpeed = generalReaction.speed;
-                    this.originalRange = generalReaction.range;
                 } else {
                     this.enabled = true;
                     this.speed = 1.0;
                     this.range = 50.0;
-
-                    this.originalEnabled = this.enabled;
-                    this.originalSpeed = this.speed;
-                    this.originalRange = this.range;
                 }
+                this.originalEnabled = this.enabled;
+                this.originalSpeed = this.speed;
+                this.originalRange = this.range;
             }
         }
     }
@@ -161,7 +142,7 @@ public class ConfigEditScreen extends Screen {
         super.init();
         int centerX = this.width / 2;
         int startY = TOP_MARGIN + 40;
-        clearWidgets();
+        clearChildren();
         initFields(centerX, startY);
         initActionButtons(centerX, startY);
         updateSaveButtonState();
@@ -170,69 +151,60 @@ public class ConfigEditScreen extends Screen {
     private void initFields(int centerX, int startY) {
         int currentY = startY;
 
-        enabledButton = Button.builder(
-                Component.translatable(enabled ? "button.ezvcsurvival.enabled" : "button.ezvcsurvival.disabled"),
+        enabledButton = ButtonWidget.builder(
+                Text.translatable(enabled ? "button.ezvcsurvival.enabled" : "button.ezvcsurvival.disabled"),
                 b -> toggleEnabled()
-        ).bounds(centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT).build();
-        this.addRenderableWidget(enabledButton);
+        ).dimensions(centerX - CENTER_X_OFFSET, currentY + 9, FIELD_WIDTH, FIELD_HEIGHT).build();
+        this.addDrawableChild(enabledButton);
         currentY += FIELD_SPACING + 20;
 
-        speedBox = new EditBox(this.font, centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT, Component.literal(""));
-        speedBox.setValue(String.valueOf(speed));
+        speedBox = new TextFieldWidget(this.textRenderer, centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT, Text.literal(""));
+        speedBox.setText(String.valueOf(speed));
         speedBox.setMaxLength(20);
-        speedBox.setResponder(s -> {
-            try {
-                speed = Double.parseDouble(s);
-                updateSaveButtonState();
-            } catch (NumberFormatException ignored) {
-            }
+        speedBox.setChangedListener(s -> {
+            try { speed = Double.parseDouble(s); updateSaveButtonState(); }
+            catch (NumberFormatException ignored) {}
         });
-        this.addRenderableWidget(speedBox);
+        this.addDrawableChild(speedBox);
         currentY += FIELD_SPACING + 20;
 
-        rangeBox = new EditBox(this.font, centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT, Component.literal(""));
-        rangeBox.setValue(String.valueOf(range));
+        rangeBox = new TextFieldWidget(this.textRenderer, centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT, Text.literal(""));
+        rangeBox.setText(String.valueOf(range));
         rangeBox.setMaxLength(20);
-        rangeBox.setResponder(s -> {
-            try {
-                range = Double.parseDouble(s);
-                updateSaveButtonState();
-            } catch (NumberFormatException ignored) {
-            }
+        rangeBox.setChangedListener(s -> {
+            try { range = Double.parseDouble(s); updateSaveButtonState(); }
+            catch (NumberFormatException ignored) {}
         });
-        this.addRenderableWidget(rangeBox);
+        this.addDrawableChild(rangeBox);
         currentY += FIELD_SPACING + 20;
 
         if (editType == EditType.ENTITY_CONFIG) {
-            thresholdBox = new EditBox(this.font, centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT, Component.literal(""));
-            thresholdBox.setValue(String.valueOf(threshold));
+            thresholdBox = new TextFieldWidget(this.textRenderer, centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT, Text.literal(""));
+            thresholdBox.setText(String.valueOf(threshold));
             thresholdBox.setMaxLength(20);
-            thresholdBox.setResponder(s -> {
-                try {
-                    threshold = Double.parseDouble(s);
-                    updateSaveButtonState();
-                } catch (NumberFormatException ignored) {
-                }
+            thresholdBox.setChangedListener(s -> {
+                try { threshold = Double.parseDouble(s); updateSaveButtonState(); }
+                catch (NumberFormatException ignored) {}
             });
-            this.addRenderableWidget(thresholdBox);
+            this.addDrawableChild(thresholdBox);
             currentY += FIELD_SPACING + 20;
         }
 
         if (editType == EditType.GENERAL_SOUND_CONFIG) {
-            priorityButton = Button.builder(
-                    Component.translatable(isPriority ? "button.ezvcsurvival.priority_on" : "button.ezvcsurvival.priority_off"),
+            priorityButton = ButtonWidget.builder(
+                    Text.translatable(isPriority ? "button.ezvcsurvival.priority_on" : "button.ezvcsurvival.priority_off"),
                     b -> togglePriority()
-            ).bounds(centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT).build();
-            this.addRenderableWidget(priorityButton);
+            ).dimensions(centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT).build();
+            this.addDrawableChild(priorityButton);
             currentY += FIELD_SPACING + 20;
         }
 
         if (editType == EditType.GENERAL_SOUND_ENTITY) {
-            soundFiltersButton = Button.builder(
-                    Component.literal("Sound Filters..."),
-                    b -> Minecraft.getInstance().setScreen(new SoundFilterEditScreen(this, elementId, elementName))
-            ).bounds(centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT).build();
-            this.addRenderableWidget(soundFiltersButton);
+            soundFiltersButton = ButtonWidget.builder(
+                    Text.literal("Sound Filters..."),
+                    b -> MinecraftClient.getInstance().setScreen(new SoundFilterEditScreen(this, elementId, elementName))
+            ).dimensions(centerX - CENTER_X_OFFSET, currentY, FIELD_WIDTH, FIELD_HEIGHT).build();
+            this.addDrawableChild(soundFiltersButton);
         }
     }
 
@@ -240,57 +212,54 @@ public class ConfigEditScreen extends Screen {
         int fieldCount = getFieldCount();
         int buttonY = startY + (fieldCount * FIELD_SPACING) + 30;
 
-        this.saveButton = Button.builder(
-                Component.translatable("button.ezvcsurvival.save"),
+        this.saveButton = ButtonWidget.builder(
+                Text.translatable("button.ezvcsurvival.save"),
                 b -> saveConfig()
-        ).bounds(centerX - CENTER_X_OFFSET - BUTTON_WIDTH - BUTTON_SPACING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
-        this.addRenderableWidget(this.saveButton);
+        ).dimensions(centerX - CENTER_X_OFFSET - BUTTON_WIDTH - BUTTON_SPACING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
+        this.addDrawableChild(this.saveButton);
 
-        Button cancelButton = Button.builder(
-                Component.translatable("button.ezvcsurvival.cancel"),
-                b -> Minecraft.getInstance().setScreen(parent)
-        ).bounds(centerX + CENTER_X_OFFSET, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
-        this.addRenderableWidget(cancelButton);
+        ButtonWidget cancelButton = ButtonWidget.builder(
+                Text.translatable("button.ezvcsurvival.cancel"),
+                b -> close()
+        ).dimensions(centerX + CENTER_X_OFFSET + 11, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build();
+        this.addDrawableChild(cancelButton);
 
-        Button resetButton = Button.builder(
-                Component.translatable("button.ezvcsurvival.reset"),
+        ButtonWidget resetButton = ButtonWidget.builder(
+                Text.translatable("button.ezvcsurvival.reset"),
                 b -> resetToDefaults()
-        ).bounds(centerX - BUTTON_WIDTH / 2, buttonY + BUTTON_SPACING + BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT).build();
-        this.addRenderableWidget(resetButton);
+        ).dimensions(centerX - BUTTON_WIDTH / 2, buttonY + BUTTON_SPACING + BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT).build();
+        this.addDrawableChild(resetButton);
     }
 
     private int getFieldCount() {
-        return switch (editType) {
-            case ENTITY_CONFIG, GENERAL_SOUND_CONFIG, GENERAL_SOUND_ENTITY -> 4;
-            default -> 3;
-        };
+        return 4;
     }
 
     private void toggleEnabled() {
         enabled = !enabled;
-        enabledButton.setMessage(Component.translatable(enabled ? "button.ezvcsurvival.enabled" : "button.ezvcsurvival.disabled"));
+        enabledButton.setMessage(Text.translatable(enabled ? "button.ezvcsurvival.enabled" : "button.ezvcsurvival.disabled"));
         updateSaveButtonState();
     }
 
     private void togglePriority() {
         isPriority = !isPriority;
-        priorityButton.setMessage(Component.translatable(isPriority ? "button.ezvcsurvival.priority_on" : "button.ezvcsurvival.priority_off"));
+        priorityButton.setMessage(Text.translatable(isPriority ? "button.ezvcsurvival.priority_on" : "button.ezvcsurvival.priority_off"));
         updateSaveButtonState();
     }
 
     private void saveConfig() {
         try {
             try {
-                speed = Double.parseDouble(speedBox.getValue());
-                range = Double.parseDouble(rangeBox.getValue());
-                if (thresholdBox != null) threshold = Double.parseDouble(thresholdBox.getValue());
+                speed = Double.parseDouble(speedBox.getText());
+                range = Double.parseDouble(rangeBox.getText());
+                if (thresholdBox != null) threshold = Double.parseDouble(thresholdBox.getText());
             } catch (NumberFormatException e) {
                 showError();
                 return;
             }
 
             if (editType == EditType.ENTITY_CONFIG && thresholdBox != null) {
-                threshold = Math.max(-100.0, Math.min(100.0, threshold));
+                threshold = Math.clamp(threshold, -100.0, 100.0);
             }
 
             boolean localSuccess = switch (editType) {
@@ -302,7 +271,6 @@ public class ConfigEditScreen extends Screen {
                 case GENERAL_SOUND_CONFIG -> {
                     GeneralSoundsConfig.setSoundEntry(elementId, enabled, speed, range, isPriority);
                     GeneralSoundsConfig.persist();
-
                     GeneralSoundsConfig.SoundEntry updated = GeneralSoundsConfig.getSounds().get(elementId);
                     yield (updated != null &&
                             updated.enabled == enabled &&
@@ -318,20 +286,10 @@ public class ConfigEditScreen extends Screen {
             };
 
             if (localSuccess) {
-                try {
-                   SoundConfig.loadConfigs();
-                } catch (Exception e) {
-                    // Ignore reload errors
-                }
-
+                try { SoundConfig.loadConfigs(); } catch (Exception ignored) {}
                 sendUpdate();
                 updateOriginalValues();
-
-                if (parent instanceof ConfigListScreen configList) {
-                    configList.onConfigUpdated();
-                }
-
-                Minecraft.getInstance().setScreen(parent);
+                close();
             } else {
                 showError();
             }
@@ -339,6 +297,15 @@ public class ConfigEditScreen extends Screen {
         } catch (Exception e) {
             showError();
         }
+    }
+
+    @Override
+    public void close() {
+        // Refresh the list behind us before closing so enabled states update immediately
+        if (parent instanceof ConfigListScreen configList) {
+            configList.safeRefresh();
+        }
+        MinecraftClient.getInstance().setScreen(parent);
     }
 
     private void resetToDefaults() {
@@ -349,7 +316,7 @@ public class ConfigEditScreen extends Screen {
                 speed = defaultConfig.speed;
                 range = defaultConfig.range;
                 threshold = defaultConfig.threshold;
-                if (thresholdBox != null) thresholdBox.setValue(String.valueOf(threshold));
+                if (thresholdBox != null) thresholdBox.setText(String.valueOf(threshold));
             }
             case GENERAL_SOUND_CONFIG -> {
                 enabled = false;
@@ -357,7 +324,9 @@ public class ConfigEditScreen extends Screen {
                 range = 1.0;
                 isPriority = false;
                 if (priorityButton != null) {
-                    priorityButton.setMessage(Component.translatable(isPriority ? "button.ezvcsurvival.priority_on" : "button.ezvcsurvival.priority_off"));
+                    priorityButton.setMessage(Text.translatable(isPriority
+                            ? "button.ezvcsurvival.priority_on"
+                            : "button.ezvcsurvival.priority_off"));
                 }
             }
             case GENERAL_SOUND_ENTITY -> {
@@ -368,69 +337,71 @@ public class ConfigEditScreen extends Screen {
         }
 
         if (enabledButton != null) {
-            enabledButton.setMessage(Component.translatable(enabled ? "button.ezvcsurvival.enabled" : "button.ezvcsurvival.disabled"));
+            enabledButton.setMessage(Text.translatable(enabled
+                    ? "button.ezvcsurvival.enabled"
+                    : "button.ezvcsurvival.disabled"));
         }
-        if (speedBox != null) speedBox.setValue(String.valueOf(speed));
-        if (rangeBox != null) rangeBox.setValue(String.valueOf(range));
+        if (speedBox != null) speedBox.setText(String.valueOf(speed));
+        if (rangeBox != null) rangeBox.setText(String.valueOf(range));
 
         updateSaveButtonState();
     }
 
-
-
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
-        super.extractRenderState(graphics, mouseX, mouseY, a);
+    public void render(DrawContext graphics, int mouseX, int mouseY, float partialTick) {
+        super.render(graphics, mouseX, mouseY, partialTick);
 
         int titleY = TOP_MARGIN;
-        graphics.text(this.font, this.title, this.width / 2, titleY, 0xFFFFFFFF);
 
+        // Centered title
+        graphics.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, titleY, 0xFFFFFFFF);
 
-
+        // Centered element ID info
         String elementInfo = "ID: " + elementId;
-        int elementInfoY = titleY + 15;
-        graphics.text(this.font, elementInfo, this.width / 2, elementInfoY, 0xFFAAAAAA);
+        int elementInfoY = titleY + 18;
+        graphics.drawCenteredTextWithShadow(this.textRenderer, elementInfo, this.width / 2, elementInfoY, 0xFFAAAAAA);
 
-        int lineY = elementInfoY + 10;
+        // Separator line
+        int lineY = elementInfoY + 12;
         int lineWidth = Math.min(180, this.width - 100);
-        graphics.fill(this.width / 2 - lineWidth / 2, lineY, this.width / 2 + lineWidth / 2, lineY + 1, 0x44FFFFFF);
+        graphics.fill(this.width / 2 - lineWidth / 2, lineY,
+                this.width / 2 + lineWidth / 2, lineY + 1, 0x44FFFFFF);
 
         renderFieldLabels(graphics);
     }
 
-    private void renderFieldLabels(GuiGraphicsExtractor graphics) {
+    private void renderFieldLabels(DrawContext graphics) {
         int centerX = this.width / 2;
         int startY = TOP_MARGIN + 40;
         int currentY = startY;
 
-        graphics.text(this.font, "Enabled", centerX - CENTER_X_OFFSET, currentY - 12, 0xFFFFFFFF);
+        graphics.drawTextWithShadow(this.textRenderer, "Enabled", centerX - CENTER_X_OFFSET, currentY - 4, 0xFFFFFFFF);
         currentY += FIELD_SPACING + 20;
 
-        graphics.text(this.font, "Speed", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
+        graphics.drawTextWithShadow(this.textRenderer, "Speed", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
         currentY += FIELD_SPACING + 20;
 
-        graphics.text(this.font, "Range", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
+        graphics.drawTextWithShadow(this.textRenderer, "Range", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
         currentY += FIELD_SPACING + 20;
 
         if (editType == EditType.ENTITY_CONFIG) {
-            graphics.text(this.font, "Threshold", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
+            graphics.drawTextWithShadow(this.textRenderer, "Threshold", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
             currentY += FIELD_SPACING + 20;
         }
 
         if (editType == EditType.GENERAL_SOUND_CONFIG) {
-            graphics.text(this.font, "Priority Sound", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
+            graphics.drawTextWithShadow(this.textRenderer, "Priority Sound", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
         }
 
         if (editType == EditType.GENERAL_SOUND_ENTITY) {
-            graphics.text(this.font, "Configure Filters", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
+            graphics.drawTextWithShadow(this.textRenderer, "Configure Filters", centerX - CENTER_X_OFFSET, currentY - 15, 0xFFFFFFFF);
         }
     }
 
-
     @Override
-    public boolean keyPressed(KeyEvent keyCode) {
-        if (keyCode.key() == 256) { // ESC key
-            Minecraft.getInstance().setScreen(parent);
+    public boolean keyPressed(KeyInput keyCode) {
+        if (keyCode.key() == 256) { // ESC
+            close();
             return true;
         }
         return super.keyPressed(keyCode);
@@ -439,54 +410,32 @@ public class ConfigEditScreen extends Screen {
     private void sendUpdate() {
         try {
             switch (editType) {
-                case ENTITY_CONFIG:
-                    EZVCNetwork.sendEntityConfigUpdate(
-                            elementId,
-                            enabled,
-                            speed,
-                            range,
-                            threshold
-                    );
-                    break;
-
-                case GENERAL_SOUND_CONFIG:
-                    EZVCNetwork.sendGeneralSoundConfigUpdate(
-                            elementId,
-                            enabled,
-                            speed,
-                            range,
-                            isPriority
-                    );
-                    break;
-
-                case GENERAL_SOUND_ENTITY:
-                    EZVCNetwork.sendGeneralSoundEntityUpdate(
-                            elementId,
-                            enabled,
-                            speed,
-                            range
-                    );
-                    break;
+                case ENTITY_CONFIG ->
+                        EZVCNetwork.ezvcNetworkService.sendToServer(
+                                new UpdateConfigPacket(elementId, enabled, speed, range, threshold));
+                case GENERAL_SOUND_CONFIG ->
+                        EZVCNetwork.ezvcNetworkService.sendToServer(
+                                new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GENERAL_SOUND,
+                                        elementId, enabled, speed, range, isPriority));
+                case GENERAL_SOUND_ENTITY ->
+                        EZVCNetwork.ezvcNetworkService.sendToServer(
+                                new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GENERAL_SOUND_ENTITY,
+                                        elementId, enabled, speed, range));
             }
         } catch (Exception e) {
             System.err.println("[EZVCSurvival] Error sending configuration: " + e.getMessage());
         }
     }
 
-
     private boolean hasChanges() {
         return switch (editType) {
-            case ENTITY_CONFIG -> enabled != originalEnabled ||
-                    speed != originalSpeed ||
-                    range != originalRange ||
-                    threshold != originalThreshold;
-            case GENERAL_SOUND_CONFIG -> enabled != originalEnabled ||
-                    speed != originalSpeed ||
-                    range != originalRange ||
-                    isPriority != originalIsPriority;
-            case GENERAL_SOUND_ENTITY -> enabled != originalEnabled ||
-                    speed != originalSpeed ||
-                    range != originalRange;
+            case ENTITY_CONFIG -> enabled != originalEnabled || speed != originalSpeed
+                    || range != originalRange || threshold != originalThreshold;
+            case GENERAL_SOUND_CONFIG -> enabled != originalEnabled || speed != originalSpeed
+                    || range != originalRange || isPriority != originalIsPriority;
+            case GENERAL_SOUND_ENTITY -> enabled != originalEnabled || speed != originalSpeed
+                    || range != originalRange;
+            default -> false;
         };
     }
 
@@ -494,12 +443,9 @@ public class ConfigEditScreen extends Screen {
         if (saveButton != null) {
             boolean hasChanges = hasChanges();
             saveButton.active = hasChanges;
-
-            if (hasChanges) {
-                saveButton.setMessage(Component.translatable("button.ezvcsurvival.save"));
-            } else {
-                saveButton.setMessage(Component.translatable("button.ezvcsurvival.no_changes"));
-            }
+            saveButton.setMessage(Text.translatable(hasChanges
+                    ? "button.ezvcsurvival.save"
+                    : "button.ezvcsurvival.no_changes"));
         }
     }
 
@@ -524,6 +470,7 @@ public class ConfigEditScreen extends Screen {
             }
         }
     }
+
 
     private void showError() {
         System.err.println("[EZVCSurvival] Error: Values must be valid numbers.");
