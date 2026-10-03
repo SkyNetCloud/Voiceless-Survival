@@ -1,6 +1,8 @@
-### Version 2.1.5-beta
+### Version 2.2.0
 
-#### ✅ Fixed
-- Fixed a bug where the mod would crash on server side because of some packet handling mix-ups.
+#### ✅ Added
+- Hud display for voice db
+- TacZ Unnoficial Fabric as sounds mobs can hear.
+
 
 ### Any issues with this mod should be reported on the [eZApocalypse Mods Discord](https://discord.gg/jqBFMhnJPe)

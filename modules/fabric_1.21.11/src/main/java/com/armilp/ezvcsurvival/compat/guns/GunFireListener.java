@@ -14,7 +14,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
+import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
@@ -90,14 +90,22 @@ public class GunFireListener {
     }
 
     private static boolean isSilenced(LivingEntity entity, ItemStack gunStack) {
-        IGunOperator operator = IGunOperator.fromLivingEntity(entity);
-        if (operator != null) {
-            AttachmentCacheProperty cacheProperty = operator.getCacheProperty();
-            if (cacheProperty != null) {
-                Pair<Integer, Boolean> silence = cacheProperty.getCache(SilenceModifier.ID);
-                if (silence != null && silence.getRight()) return true;
+        try {
+            IGunOperator operator = IGunOperator.fromLivingEntity(entity);
+            if (operator != null) {
+                AttachmentCacheProperty cacheProperty = operator.getCacheProperty();
+                if (cacheProperty != null) {
+                    Object raw = cacheProperty.getCache(SilenceModifier.ID);
+                    if (raw instanceof Pair<?, ?> p) {
+                        if (Boolean.TRUE.equals(p.right())) return true;
+                    } else if (raw instanceof net.minecraft.util.Pair<?, ?> p) {
+                        if (Boolean.TRUE.equals(p.getRight())) return true;
+                    }
+                }
             }
+        } catch (Throwable t) {
         }
+
         IGun gun = IGun.getIGunOrNull(gunStack);
         if (gun != null) {
             return SoundConfig.isSilencedGun(gun.getGunId(gunStack));

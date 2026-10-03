@@ -47,7 +47,11 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     // Optional dependency for point-blank
-    modImplementation"curse.maven:vics-point-blank-961053:7881990"
+    modImplementation "curse.maven:vics-point-blank-961053:7881990"
+
+    modRuntimeOnly "curse.maven:plasmo-voice-467028:8890200"
+    modImplementation "curse.maven:unofficial-tacz-refabricated-1627909:8873045"
+    modRuntimeOnly "curse.maven:unofficial-tacz-refabricated-1627909:8873045"
 
     // Voice Chat API dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
@@ -57,8 +61,6 @@ dependencies {
     compileOnly "com.electronwill.night-config:toml:3.6.0"
     compileOnly("su.plo.voice.api:client:${plasmovoice_api_version}")
     compileOnly("su.plo.voice.api:server:${plasmovoice_api_version}")
-    modImplementation "curse.maven:plasmo-voice-467028:8890200"
-    modImplementation "curse.maven:unofficial-tacz-refabricated-1627909:8873045"
 
     // Forge Config API Port
     modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${project.forge_config_api_port_version}"

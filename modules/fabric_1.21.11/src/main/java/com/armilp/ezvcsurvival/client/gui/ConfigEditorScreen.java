@@ -13,7 +13,7 @@ public class ConfigEditorScreen extends Screen {
 
     private static final int BUTTON_WIDTH = 120;
     private static final int BUTTON_HEIGHT = 20;
-    private static final int BUTTON_SPACING = 24;
+    private static final int BUTTON_SPACING = 25;
 
     private int centerX;
     private int centerY;
@@ -30,22 +30,24 @@ public class ConfigEditorScreen extends Screen {
         centerX = this.width / 2;
         centerY = this.height / 2;
 
-        startY = Math.max(centerY - 10, 90);
-
-        // For Fabric, use TextWidget for button labels (ButtonWidget is Forge-specific)
-        this.addDrawableChild(ButtonWidget.builder(
-                        Text.translatable("button.ezvcsurvival.entity_config"),
-                        btn -> client.setScreen(new ConfigListScreen(ConfigListScreen.ListType.ENTITY_CONFIG, this))
-                )
-                .dimensions(centerX - BUTTON_WIDTH / 2, startY, BUTTON_WIDTH, BUTTON_HEIGHT)
-                .build());
+        startY = Math.max(centerY - 30, 70);
 
         this.addDrawableChild(ButtonWidget.builder(
-                        Text.translatable("button.ezvcsurvival.general_sounds"),
-                        btn -> client.setScreen(new ConfigListScreen(ConfigListScreen.ListType.GENERAL_SOUNDS_CONFIG, this))
-                )
-                .dimensions(centerX - BUTTON_WIDTH / 2, startY + BUTTON_HEIGHT + BUTTON_SPACING, BUTTON_WIDTH, BUTTON_HEIGHT)
-                .build());
+                Text.translatable("button.ezvcsurvival.entity_config"),
+                btn -> client.setScreen(new ConfigListScreen(ConfigListScreen.ListType.ENTITY_CONFIG, this))
+        ).dimensions(centerX - BUTTON_WIDTH / 2, startY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+
+        this.addDrawableChild(ButtonWidget.builder(
+                Text.translatable("button.ezvcsurvival.general_sounds"),
+                btn -> client.setScreen(new ConfigListScreen(ConfigListScreen.ListType.GENERAL_SOUNDS_CONFIG, this))
+        ).dimensions(centerX - BUTTON_WIDTH / 2, startY + BUTTON_SPACING, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+
+        this.addDrawableChild(ButtonWidget.builder(
+                Text.translatable("button.ezvcsurvival.gunfire_config"),
+                btn -> client.setScreen(new ConfigListScreen(ConfigListScreen.ListType.GUNFIRE_CONFIG, this))
+        ).dimensions(centerX - BUTTON_WIDTH / 2, startY + BUTTON_SPACING * 2, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+
+
     }
 
     @Override
