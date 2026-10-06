@@ -19,19 +19,11 @@ def site_debugMode = false
 repositories {
     maven { url = "https://maven.maxhenkel.de/repository/public" }
     maven { url = "https://api.modrinth.com/maven" }
-    mavenCentral()
-}
-
-
-loom {
-    runs {
-        client {
-            client()
-            setConfigName('Fabric Client 1.21.11')
-            ideConfigGenerated(true)
-            runDir('runs/client')
-        }
+    maven {
+        url "https://jitpack.io"
+        content { includeGroup "com.github.FiguraMC.luaj" }
     }
+    mavenCentral()
 }
 
 
@@ -45,6 +37,7 @@ dependencies {
     // Fabric Loader and API
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    modImplementation "software.bernie.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}"
 
     // Optional dependency for point-blank
     modImplementation "curse.maven:vics-point-blank-961053:7881990"
@@ -52,6 +45,14 @@ dependencies {
     modRuntimeOnly "curse.maven:plasmo-voice-467028:8890200"
     modImplementation "curse.maven:unofficial-tacz-refabricated-1627909:8873045"
     modRuntimeOnly "curse.maven:unofficial-tacz-refabricated-1627909:8873045"
+
+    // TACZ's nested libs, which don't resolve in dev
+    modImplementation "org.apache.bcel:bcel:6.6.1"
+    modImplementation "org.apache.commons:commons-math3:3.6.1"
+    modImplementation "com.maydaymemory:mae:1.1.1"
+
+    modImplementation 'com.github.FiguraMC.luaj:luaj-jse:3.0.8-figura'
+    include 'com.github.FiguraMC.luaj:luaj-jse:3.0.8-figura'
 
     // Voice Chat API dependencies
     modRuntimeOnly "maven.modrinth:simple-voice-chat:fabric-${voicechat_version}"
@@ -108,10 +109,13 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     mainFile.releaseType = 'release'
     mainFile.changelog = changelogText
     debugMode = site_debugMode
+    mainFile.addEnvironment("Client", "Server")
 
-    mainFile.addRequirement("simple-voice-chat")
+
     mainFile.addRequirement("forge-config-api-port")
     mainFile.addOptional("vics-point-blank")
+    mainFile.addOptional("simple-voice-chat")
+    mainFile.addOptional("plasmo-voice")
 
 }
 

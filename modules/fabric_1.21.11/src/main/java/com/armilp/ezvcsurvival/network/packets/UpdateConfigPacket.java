@@ -154,40 +154,34 @@ public class UpdateConfigPacket {
             }
 
             if (configChanged) {
-                reloadConfigs(msg);
+                try{
+                    switch (msg.configType) {
+                        case ENTITY_VOICE:
+                            EntityVoiceConfig.init();
+                            break;
+                            case GENERAL_SOUND:
+                            case GENERAL_SOUND_ENTITY:
+                            case SOUND_PRIORITY:
+                                GeneralSoundsConfig.init();
+                                break;
+                            case GUNFIRE_SOUND:
+                            case GUNFIRE_ENTITY:
+                                GunfireConfig.init();
+                                break;
+                    }
+                    SoundConfig.loadConfigs();
+                    if (VoiceConfig.DEBUG.get()) {
+                        System.out.println("[EZVCSurvival] Configurations reloaded successfully after update: " + msg.configType + " - " + msg.targetId);
+                    }
+                } catch (Exception e) {
+                    if (VoiceConfig.DEBUG.get()){
+                        System.err.println("[EZVCSurvival] Error reloading configurations after update: " + e.getMessage());
+                    }
+                }
             }
 
             ctx.setPacketHandled(true);
         });
-    }
-
-    private static void reloadConfigs(UpdateConfigPacket msg) {
-        try {
-            switch (msg.configType) {
-                case ENTITY_VOICE -> EntityVoiceConfig.init();
-                case GENERAL_SOUND, GENERAL_SOUND_ENTITY, SOUND_PRIORITY -> GeneralSoundsConfig.init();
-            }
-
-            SoundConfig.loadConfigs();
-
-            if (VoiceConfig.DEBUG.get()) {
-                System.out.println("[EZVCSurvival] Reloaded config: " + msg.configType + " - " + msg.targetId);
-            }
-
-        } catch (Exception e) {
-            if (VoiceConfig.DEBUG.get()) {
-                System.err.println("[EZVCSurvival] Reload error: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }
-
-        MobGoalInjector.refreshAll();
-
-        if (msg.configType == ConfigType.ENTITY_VOICE ||
-                msg.configType == ConfigType.GENERAL_SOUND_ENTITY ||
-                msg.configType == ConfigType.SOUND_PRIORITY) {
-            MobGoalInjector.refreshEntityId(msg.targetId);
-        }
     }
 
     private static void handleEntityVoiceConfig(UpdateConfigPacket msg) {

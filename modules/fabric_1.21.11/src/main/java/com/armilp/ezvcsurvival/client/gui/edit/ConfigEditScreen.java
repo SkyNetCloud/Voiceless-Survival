@@ -3,6 +3,7 @@ package com.armilp.ezvcsurvival.client.gui.edit;
 import com.armilp.ezvcsurvival.client.gui.list.ConfigListScreen;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
+import com.armilp.ezvcsurvival.config.GunfireConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.network.packets.UpdateConfigPacket;
@@ -25,7 +26,8 @@ public class ConfigEditScreen extends Screen {
     public enum EditType {
         ENTITY_CONFIG,
         GENERAL_SOUND_CONFIG,
-        GENERAL_SOUND_ENTITY
+        GENERAL_SOUND_ENTITY,
+        GUNFIRE_ENTITY
     }
 
     private final Screen parent;
@@ -76,6 +78,7 @@ public class ConfigEditScreen extends Screen {
             case ENTITY_CONFIG -> "screen.ezvcsurvival.entity_config_edit";
             case GENERAL_SOUND_CONFIG -> "screen.ezvcsurvival.general_sound_config_edit";
             case GENERAL_SOUND_ENTITY -> "screen.ezvcsurvival.general_sound_entity_edit";
+            case GUNFIRE_ENTITY -> "screen.ezvcsurvival.gunfire_entity_edit";
             default -> "screen.ezvcsurvival.config_edit";
         };
     }
@@ -129,6 +132,22 @@ public class ConfigEditScreen extends Screen {
                     this.enabled = true;
                     this.speed = 1.0;
                     this.range = 50.0;
+                }
+                this.originalEnabled = this.enabled;
+                this.originalSpeed = this.speed;
+                this.originalRange = this.range;
+            }
+            case GUNFIRE_ENTITY -> {
+                var reactions = GunfireConfig.getMobReactions();
+                GunfireConfig.Reaction gunReaction = reactions != null ? reactions.get(elementId) : null;
+                if (gunReaction != null) {
+                    this.enabled = gunReaction.enabled;
+                    this.speed = gunReaction.speed;
+                    this.range = gunReaction.range;
+                } else {
+                    this.enabled = true;
+                    this.speed = 1.0;
+                    this.range = 40.0;
                 }
                 this.originalEnabled = this.enabled;
                 this.originalSpeed = this.speed;
@@ -283,6 +302,11 @@ public class ConfigEditScreen extends Screen {
                     GeneralSoundsConfig.persist();
                     yield true;
                 }
+                case GUNFIRE_ENTITY -> {
+                    GunfireConfig.setMobReaction(elementId, enabled, speed, range);
+                    GunfireConfig.persist();
+                    yield true;
+                }
             };
 
             if (localSuccess) {
@@ -301,11 +325,12 @@ public class ConfigEditScreen extends Screen {
 
     @Override
     public void close() {
-        // Refresh the list behind us before closing so enabled states update immediately
+        // Switch screens first so the list is the active screen, then refresh it
+        // so enabled states update immediately.
+        MinecraftClient.getInstance().setScreen(parent);
         if (parent instanceof ConfigListScreen configList) {
             configList.safeRefresh();
         }
-        MinecraftClient.getInstance().setScreen(parent);
     }
 
     private void resetToDefaults() {
@@ -333,6 +358,11 @@ public class ConfigEditScreen extends Screen {
                 enabled = true;
                 speed = 1.0;
                 range = 50.0;
+            }
+            case GUNFIRE_ENTITY -> {
+                enabled = true;
+                speed = 1.0;
+                range = 40.0;
             }
         }
 
@@ -421,6 +451,10 @@ public class ConfigEditScreen extends Screen {
                         EZVCNetwork.ezvcNetworkService.sendToServer(
                                 new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GENERAL_SOUND_ENTITY,
                                         elementId, enabled, speed, range));
+                case GUNFIRE_ENTITY ->
+                        EZVCNetwork.ezvcNetworkService.sendToServer(
+                                new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GUNFIRE_ENTITY,
+                                        elementId, enabled, speed, range));
             }
         } catch (Exception e) {
             System.err.println("[EZVCSurvival] Error sending configuration: " + e.getMessage());
@@ -433,7 +467,7 @@ public class ConfigEditScreen extends Screen {
                     || range != originalRange || threshold != originalThreshold;
             case GENERAL_SOUND_CONFIG -> enabled != originalEnabled || speed != originalSpeed
                     || range != originalRange || isPriority != originalIsPriority;
-            case GENERAL_SOUND_ENTITY -> enabled != originalEnabled || speed != originalSpeed
+            case GENERAL_SOUND_ENTITY, GUNFIRE_ENTITY -> enabled != originalEnabled || speed != originalSpeed
                     || range != originalRange;
             default -> false;
         };
@@ -463,7 +497,7 @@ public class ConfigEditScreen extends Screen {
                 originalRange = range;
                 originalIsPriority = isPriority;
             }
-            case GENERAL_SOUND_ENTITY -> {
+            case GENERAL_SOUND_ENTITY, GUNFIRE_ENTITY -> {
                 originalEnabled = enabled;
                 originalSpeed = speed;
                 originalRange = range;

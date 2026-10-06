@@ -3,6 +3,7 @@ package com.armilp.ezvcsurvival.client.gui.list;
 import com.armilp.ezvcsurvival.client.gui.edit.ConfigEditScreen;
 import com.armilp.ezvcsurvival.config.EntityVoiceConfig;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
+import com.armilp.ezvcsurvival.config.GunfireConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Click;
@@ -114,13 +115,15 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
                 renderSoundConfig(context, sound, textLeft, actualWidth, centerY, statusRight);
             } else if (item instanceof ConfigListScreen.EntityReactionItem reaction) {
                 renderEntityReaction(context, reaction, textLeft, actualWidth, centerY, statusRight);
+            } else if (item instanceof ConfigListScreen.GunfireEntityItem gun) {
+                renderGunfireEntity(context, gun, textLeft, centerY, statusRight);
             }
         }
 
         private void renderEntityConfig(DrawContext context, ConfigListScreen.EntityConfigItem entity,
                                         int textLeft, int width, int centerY, int statusRight) {
             EntityVoiceConfig.EntityConfig cfg = entity.getConfig();
-            boolean enabled = cfg != null && cfg.enabled && EntityVoiceConfig.isEnabled();
+            boolean enabled = cfg != null && cfg.enabled;
             int nameColor = enabled ? 0xFFFFFFFF : 0xFF777777;
             int maxTextWidth = width - STATUS_AREA_WIDTH - PADDING * 2;
 
@@ -133,12 +136,12 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
         private void renderSoundConfig(DrawContext context, ConfigListScreen.SoundConfigItem sound,
                                        int textLeft, int width, int centerY, int statusRight) {
             GeneralSoundsConfig.SoundEntry cfg = sound.getConfig();
-            boolean enabled = cfg != null && cfg.enabled && GeneralSoundsConfig.isEnabled();
+            boolean enabled = cfg != null && cfg.enabled;
             int nameColor = enabled ? 0xFFFFFFFF : 0xFF777777;
             int maxTextWidth = width - STATUS_AREA_WIDTH - PADDING * 2;
 
             context.drawText(client.textRenderer,
-                    truncateText(cleanElementId(sound.getId()), maxTextWidth),
+                    truncateText(cleanElementId(sound.id()), maxTextWidth),
                     textLeft, centerY - 4, nameColor, false);
 
             renderStatusBadge(context, enabled, centerY, statusRight);
@@ -147,11 +150,24 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
         private void renderEntityReaction(DrawContext context, ConfigListScreen.EntityReactionItem reaction,
                                           int textLeft, int width, int centerY, int statusRight) {
             GeneralSoundsConfig.Reaction r = reaction.getReaction();
-            boolean enabled = r != null && r.enabled && GeneralSoundsConfig.isEnabled();
+            boolean enabled = r != null && r.enabled;
             int nameColor = enabled ? 0xFFFFFFFF : 0xFF777777;
 
             context.drawText(client.textRenderer,
                     getEntityDisplayName(cleanElementId(reaction.id())),
+                    textLeft, centerY - 4, nameColor, false);
+
+            renderStatusBadge(context, enabled, centerY, statusRight);
+        }
+
+        private void renderGunfireEntity(DrawContext context, ConfigListScreen.GunfireEntityItem gun,
+                                         int textLeft, int centerY, int statusRight) {
+            GunfireConfig.Reaction r = gun.getReaction();
+            boolean enabled = r != null && r.enabled;
+            int nameColor = enabled ? 0xFFFFFFFF : 0xFF777777;
+
+            context.drawText(client.textRenderer,
+                    getEntityDisplayName(cleanElementId(gun.id())),
                     textLeft, centerY - 4, nameColor, false);
 
             renderStatusBadge(context, enabled, centerY, statusRight);
@@ -238,7 +254,7 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
                 if (config == null) return tooltip;
 
                 tooltip.add("§6§l" + entityItem.getDisplayName());
-                tooltip.add("§7ID: §f" + entityItem.getId());
+                tooltip.add("§7ID: §f" + entityItem.id());
                 tooltip.add("");
                 tooltip.add(I18n.translate("tooltip.ezvcsurvival.configuration"));
                 tooltip.add(I18n.translate("tooltip.ezvcsurvival.enabled",
@@ -251,7 +267,7 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
                 GeneralSoundsConfig.SoundEntry config = soundItem.getConfig();
                 if (config == null) return tooltip;
 
-                tooltip.add("§6§lSound: §f" + soundItem.getId());
+                tooltip.add("§6§lSound: §f" + soundItem.id());
                 tooltip.add("");
                 tooltip.add(I18n.translate("tooltip.ezvcsurvival.configuration"));
                 tooltip.add(I18n.translate("tooltip.ezvcsurvival.enabled",
@@ -268,6 +284,19 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
                 tooltip.add("§7ID: §f" + entityItem.id());
                 tooltip.add("");
                 tooltip.add(I18n.translate("tooltip.ezvcsurvival.sound_reaction"));
+                tooltip.add(I18n.translate("tooltip.ezvcsurvival.enabled",
+                        reaction.enabled ? I18n.translate("gui.ezvcsurvival.enabled") : I18n.translate("gui.ezvcsurvival.disabled")));
+                tooltip.add(I18n.translate("tooltip.ezvcsurvival.speed", "§e" + reaction.speed));
+                tooltip.add(I18n.translate("tooltip.ezvcsurvival.range", "§e" + reaction.range));
+
+            } else if (item instanceof ConfigListScreen.GunfireEntityItem gunItem) {
+                GunfireConfig.Reaction reaction = gunItem.getReaction();
+                if (reaction == null) return tooltip;
+
+                tooltip.add("§6§l" + getEntityDisplayName(gunItem.id()));
+                tooltip.add("§7ID: §f" + gunItem.id());
+                tooltip.add("");
+                tooltip.add(I18n.translate("tooltip.ezvcsurvival.gunfire_reaction"));
                 tooltip.add(I18n.translate("tooltip.ezvcsurvival.enabled",
                         reaction.enabled ? I18n.translate("gui.ezvcsurvival.enabled") : I18n.translate("gui.ezvcsurvival.disabled")));
                 tooltip.add(I18n.translate("tooltip.ezvcsurvival.speed", "§e" + reaction.speed));
@@ -295,10 +324,13 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
                 elementName = entity.getDisplayName();
             } else if (item instanceof ConfigListScreen.SoundConfigItem sound) {
                 editType = ConfigEditScreen.EditType.GENERAL_SOUND_CONFIG;
-                elementName = sound.getId();
+                elementName = sound.id();
             } else if (item instanceof ConfigListScreen.EntityReactionItem reaction) {
                 editType = ConfigEditScreen.EditType.GENERAL_SOUND_ENTITY;
                 elementName = getEntityDisplayName(reaction.id());
+            } else if (item instanceof ConfigListScreen.GunfireEntityItem gun) {
+                editType = ConfigEditScreen.EditType.GUNFIRE_ENTITY;
+                elementName = getEntityDisplayName(gun.id());
             }
 
             if (editType != null) {
@@ -307,9 +339,10 @@ public class ConfigListWidget extends AlwaysSelectedEntryListWidget<ConfigListWi
         }
 
         private String getElementId() {
-            if (item instanceof ConfigListScreen.EntityConfigItem e) return e.getId();
-            if (item instanceof ConfigListScreen.SoundConfigItem s) return s.getId();
+            if (item instanceof ConfigListScreen.EntityConfigItem e) return e.id();
+            if (item instanceof ConfigListScreen.SoundConfigItem s) return s.id();
             if (item instanceof ConfigListScreen.EntityReactionItem r) return r.id();
+            if (item instanceof ConfigListScreen.GunfireEntityItem g) return g.id();
             return "";
         }
 

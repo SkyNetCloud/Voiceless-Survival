@@ -34,8 +34,6 @@ public class ConfigListScreen extends Screen {
 
     private TextFieldWidget searchBox;
     private String searchQuery = "";
-    private ButtonWidget clearSearchButtonWidget;
-    private ButtonWidget backButtonWidget;
     private ButtonWidget toggleViewButtonWidget;
     private ButtonWidget toggleEnabledButtonWidget;
     private ConfigListWidget list;
@@ -56,7 +54,7 @@ public class ConfigListScreen extends Screen {
         this.listType = listType;
         this.parent = parent;
         this.items = new ArrayList<>();
-        if (this.listType == ListType.GENERAL_SOUNDS_CONFIG) {
+        if (this.listType == ListType.GENERAL_SOUNDS_CONFIG || this.listType == ListType.GUNFIRE_CONFIG) {
             this.showingSounds = false;
         }
     }
@@ -82,7 +80,7 @@ public class ConfigListScreen extends Screen {
         int buttonWidth = Math.clamp(
                 (usableWidth - (long) (buttonCount - 1) * HORIZONTAL_SPACING) / buttonCount, MIN_BUTTON_WIDTH, MAX_BUTTON_WIDTH);
 
-        backButtonWidget = ButtonWidget.builder(Text.translatable("button.ezvcsurvival.back"), b ->
+        ButtonWidget backButtonWidget = ButtonWidget.builder(Text.translatable("button.ezvcsurvival.back"), b ->
                 MinecraftClient.getInstance().setScreen(parent != null ? parent : new ConfigEditorScreen())
         ).dimensions(leftMargin, topRowY + 5, buttonWidth, BUTTON_HEIGHT).build();
         this.addDrawableChild(backButtonWidget);
@@ -98,7 +96,7 @@ public class ConfigListScreen extends Screen {
             currentX += buttonWidth + HORIZONTAL_SPACING;
         }
 
-        if (listType == ListType.GENERAL_SOUNDS_CONFIG || listType == ListType.ENTITY_CONFIG) {
+        {
             toggleEnabledButtonWidget = ButtonWidget.builder(
                     getToggleEnabledMessage(),
                     b -> toggleEnabled()
@@ -113,7 +111,7 @@ public class ConfigListScreen extends Screen {
         searchBox.setMaxLength(50);
         this.addDrawableChild(searchBox);
 
-        clearSearchButtonWidget = ButtonWidget.builder(Text.literal("✕"), b -> searchBox.setText(""))
+        ButtonWidget clearSearchButtonWidget = ButtonWidget.builder(Text.literal("✕"), b -> searchBox.setText(""))
                 .dimensions(leftMargin + searchWidth + HORIZONTAL_SPACING, searchRowY + 9, 20, SEARCH_HEIGHT).build();
         this.addDrawableChild(clearSearchButtonWidget);
 
@@ -128,9 +126,8 @@ public class ConfigListScreen extends Screen {
     }
 
     private int getButtonCount() {
-        int count = 2;
-        if (listType == ListType.GENERAL_SOUNDS_CONFIG) count += 2;
-        else if (listType == ListType.ENTITY_CONFIG) count += 1;
+        int count = 2; // Back + Enable/Disable All
+        if (listType == ListType.GENERAL_SOUNDS_CONFIG) count += 1; // view toggle
         return count;
     }
 
@@ -165,7 +162,7 @@ public class ConfigListScreen extends Screen {
                 config = EntityVoiceConfig.EntityConfig.defaultFor(type);
                 EntityVoiceConfig.set(id, config);
             }
-            items.add(new EntityConfigItem(id, type, config));
+            items.add(new EntityConfigItem(id, type));
         }
         items.sort(Comparator.comparing(item -> ((EntityConfigItem) item).getDisplayName()));
     }
@@ -175,14 +172,12 @@ public class ConfigListScreen extends Screen {
         Map<String, GeneralSoundsConfig.SoundEntry> soundConfigs = GeneralSoundsConfig.getSounds();
         for (SoundEvent sound : Registries.SOUND_EVENT) {
             String id = Registries.SOUND_EVENT.getId(sound).toString();
-            GeneralSoundsConfig.SoundEntry config = soundConfigs.get(id);
-            if (config == null) {
-                config = new GeneralSoundsConfig.SoundEntry(false, 1.0, 1.0);
+            if (!soundConfigs.containsKey(id)) {
                 GeneralSoundsConfig.setSoundEntry(id, false, 1.0, 1.0);
             }
-            items.add(new SoundConfigItem(id, sound, config, false));
+            items.add(new SoundConfigItem(id, sound));
         }
-        items.sort(Comparator.comparing(item -> ((SoundConfigItem) item).getId()));
+        items.sort(Comparator.comparing(item -> ((SoundConfigItem) item).id()));
     }
 
     private void loadGeneralEntityConfigs() {
@@ -193,7 +188,7 @@ public class ConfigListScreen extends Screen {
         for (EntityType<?> type : Registries.ENTITY_TYPE) {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
-            String id = Registries.ENTITY_TYPE.getId(type).toString();
+            String id = Registries.ENTITY_TYPE.getKey(type).map(key -> key.getValue().toString()).orElse(null);
             GeneralSoundsConfig.Reaction reaction = entityConfigs.get(id);
             if (reaction == null) {
                 double range = category == SpawnGroup.MONSTER ? 60.0 : 50.0;
@@ -213,7 +208,7 @@ public class ConfigListScreen extends Screen {
             SpawnGroup category = type.getSpawnGroup();
             if (category == SpawnGroup.MISC) continue;
 
-            String id = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString();
+            String id = Registries.ENTITY_TYPE.getKey(type).map(key -> key.getValue().toString()).orElse(null);
             GunfireConfig.Reaction reaction = entityConfigs.get(id);
 
             if (reaction == null) {
@@ -237,23 +232,22 @@ public class ConfigListScreen extends Screen {
     }
 
     private void toggleEnabled() {
+        // If anything is off, "Enable All" turns everything on; otherwise "Disable All" turns everything off.
+        boolean state = anyDisabled();
+
         switch (listType) {
             case ENTITY_CONFIG -> {
-                boolean state = !EntityVoiceConfig.isEnabled();
                 EntityVoiceConfig.ROOT.enabled = state;
-
                 for (String id : EntityVoiceConfig.getAllEntityIds()) {
                     EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.get(id);
                     if (cfg != null) cfg.enabled = state;
                 }
-
                 EntityVoiceConfig.persist();
                 EZVCNetwork.ezvcNetworkService.sendToServer(
                         new UpdateConfigPacket(UpdateConfigPacket.ConfigType.ENTITY_VOICE,
                                 "global", state, 1.0, 1.0));
             }
             case GENERAL_SOUNDS_CONFIG -> {
-                boolean state = !GeneralSoundsConfig.isEnabled();
                 GeneralSoundsConfig.ROOT.enabled = state;
 
                 Map<String, GeneralSoundsConfig.SoundEntry> sounds = GeneralSoundsConfig.getSounds();
@@ -267,20 +261,45 @@ public class ConfigListScreen extends Screen {
                         new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GENERAL_SOUND,
                                 "global", state, 1.0, 1.0));
             }
+            case GUNFIRE_CONFIG -> {
+                GunfireConfig.ROOT.enabled = state;
+
+                Map<String, GunfireConfig.Reaction> reactions = GunfireConfig.getMobReactions();
+                if (reactions != null) reactions.values().forEach(cfg -> cfg.enabled = state);
+
+                GunfireConfig.persist();
+                EZVCNetwork.ezvcNetworkService.sendToServer(
+                        new UpdateConfigPacket(UpdateConfigPacket.ConfigType.GUNFIRE_SOUND,
+                                "global", state, 1.0, 1.0));
+            }
         }
         toggleEnabledButtonWidget.setMessage(getToggleEnabledMessage());
         updateList();
     }
 
-    private Text getToggleEnabledMessage() {
-        boolean isEnabled = switch (listType) {
-            case ENTITY_CONFIG -> EntityVoiceConfig.isEnabled();
-            case GENERAL_SOUNDS_CONFIG -> GeneralSoundsConfig.isEnabled();
-            case GUNFIRE_CONFIG -> GunfireConfig.isEnabled();
+    /** True if at least one entry in the current list type is individually disabled. */
+    private boolean anyDisabled() {
+        return switch (listType) {
+            case ENTITY_CONFIG -> EntityVoiceConfig.getAllEntityIds().stream()
+                    .map(EntityVoiceConfig::get)
+                    .anyMatch(c -> c != null && !c.enabled);
+            case GENERAL_SOUNDS_CONFIG -> {
+                Map<String, GeneralSoundsConfig.SoundEntry> sounds = GeneralSoundsConfig.getSounds();
+                Map<String, GeneralSoundsConfig.Reaction> reactions = GeneralSoundsConfig.getMobReactions();
+                yield (sounds != null && sounds.values().stream().anyMatch(c -> !c.enabled))
+                        || (reactions != null && reactions.values().stream().anyMatch(c -> !c.enabled));
+            }
+            case GUNFIRE_CONFIG -> {
+                Map<String, GunfireConfig.Reaction> reactions = GunfireConfig.getMobReactions();
+                yield reactions != null && reactions.values().stream().anyMatch(c -> !c.enabled);
+            }
         };
-        return Text.translatable(isEnabled
-                ? "button.ezvcsurvival.disable_all"
-                : "button.ezvcsurvival.enable_all");
+    }
+
+    private Text getToggleEnabledMessage() {
+        return Text.translatable(anyDisabled()
+                ? "button.ezvcsurvival.enable_all"
+                : "button.ezvcsurvival.disable_all");
     }
 
     public void updateList() {
@@ -293,9 +312,10 @@ public class ConfigListScreen extends Screen {
     }
 
     private String getSearchableText(Object item) {
-        if (item instanceof EntityConfigItem e) return e.getDisplayName() + " " + e.getId();
-        if (item instanceof SoundConfigItem s) return s.getId();
-        if (item instanceof EntityReactionItem r) return r.id();
+        if (item instanceof EntityConfigItem e) return e.getDisplayName() + " " + e.id;
+        if (item instanceof SoundConfigItem s) return s.id;
+        if (item instanceof EntityReactionItem r) return r.id;
+        if (item instanceof GunfireEntityItem g) return g.id;
         return "";
     }
 
@@ -401,12 +421,16 @@ public class ConfigListScreen extends Screen {
         switch (listType) {
             case ENTITY_CONFIG -> EntityVoiceConfig.persist();
             case GENERAL_SOUNDS_CONFIG -> GeneralSoundsConfig.persist();
+            case GUNFIRE_CONFIG -> GunfireConfig.persist();
         }
     }
 
     public void safeRefresh() {
         loadData();
         updateList();
+        if (toggleEnabledButtonWidget != null) {
+            toggleEnabledButtonWidget.setMessage(getToggleEnabledMessage());
+        }
     }
 
 
@@ -421,34 +445,21 @@ public class ConfigListScreen extends Screen {
     }
 
     // ── Item types ────────────────────────────────────────────────────────────
-
-    public static class EntityConfigItem {
-        @Getter
-        private final String id;
-        private final EntityType<?> type;
-
-        public EntityConfigItem(String id, EntityType<?> type, EntityVoiceConfig.EntityConfig config) {
-            this.id = id;
-            this.type = type;
+    public record EntityConfigItem(String id, EntityType<?> type) {
+        public EntityVoiceConfig.EntityConfig getConfig() {
+            return EntityVoiceConfig.get(id);
         }
 
-        // Always read live from config so toggle reflects immediately
-        public EntityVoiceConfig.EntityConfig getConfig() { return EntityVoiceConfig.get(id); }
-
-        public String getDisplayName() { return type.getName().getString(); }
+        public String getDisplayName() {
+            return type.getName().getString();
+        }
     }
 
-    @Getter
-    public static class SoundConfigItem {
-        private final String id;
-        private final SoundEvent sound;
 
-        public SoundConfigItem(String id, SoundEvent sound, GeneralSoundsConfig.SoundEntry config, boolean isPriority) {
-            this.id = id;
-            this.sound = sound;
+    public record SoundConfigItem(String id, SoundEvent sound) {
+        public GeneralSoundsConfig.SoundEntry getConfig() {
+            return GeneralSoundsConfig.getSounds().get(id);
         }
-
-        public GeneralSoundsConfig.SoundEntry getConfig() { return GeneralSoundsConfig.getSounds().get(id); }
     }
 
     public record EntityReactionItem(String id, GeneralSoundsConfig.Reaction reaction) {
@@ -458,5 +469,9 @@ public class ConfigListScreen extends Screen {
     }
 
     public record GunfireEntityItem(String id, GunfireConfig.Reaction reaction) {
+        public GunfireConfig.Reaction getReaction() {
+            Map<String, GunfireConfig.Reaction> map = GunfireConfig.getMobReactions();
+            return map != null ? map.get(id) : null;
+        }
     }
 }

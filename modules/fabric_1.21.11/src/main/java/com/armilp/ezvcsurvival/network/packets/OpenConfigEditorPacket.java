@@ -1,6 +1,6 @@
 package com.armilp.ezvcsurvival.network.packets;
 
-import com.armilp.ezvcsurvival.client.gui.ConfigEditorScreen;
+
 import com.armilp.ezvcsurvival.network.EZVCNetworkService;
 import com.armilp.ezvcsurvival.utils.DistExecutor;
 import net.fabricmc.api.EnvType;

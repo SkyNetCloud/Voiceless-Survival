@@ -10,6 +10,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
 
 
 import java.io.BufferedReader;
@@ -89,7 +90,7 @@ public final class EntityVoiceConfig {
         MONSTER_CONFIGS.remove(entityId);
         ANIMAL_CONFIGS.remove(entityId);
 
-        EntityType<?> type = Registries.ENTITY_TYPE.get(net.minecraft.util.Identifier.of(entityId));
+        EntityType<?> type = Registries.ENTITY_TYPE.get(Identifier.tryParse(entityId));
 
         if (type.getSpawnGroup() == SpawnGroup.MONSTER) {
             MONSTER_CONFIGS.put(entityId, value);

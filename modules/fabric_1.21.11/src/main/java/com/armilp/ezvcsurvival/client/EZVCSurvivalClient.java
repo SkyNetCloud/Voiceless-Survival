@@ -10,10 +10,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.util.Identifier;
 
-
 public class EZVCSurvivalClient implements ClientModInitializer {
 
-    private boolean soundManagerRegistered = false;
     public static final Identifier HUD_ID = Identifier.of("ezvcsurvival", "db_meter");
 
     @Override
