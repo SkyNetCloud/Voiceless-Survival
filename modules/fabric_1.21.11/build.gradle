@@ -116,6 +116,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     mainFile.addOptional("vics-point-blank")
     mainFile.addOptional("simple-voice-chat")
     mainFile.addOptional("plasmo-voice")
+    mainFile.addOptional("unofficial-tacz-refabricated")
 
 }
 
@@ -128,7 +129,7 @@ modrinth {
     versionType = "release" // This is the default -- can also be `beta` or `alpha`
     uploadFile = file("build/libs/${mod_id}-${mod_version}.jar") // With Loom, this MUST be set to `remapJar` instead of `jar`!
     gameVersions = ["${minecraft_version}"] as Iterable<? extends String>
-    // Must be an array, even with only one version
+
     loaders = ["fabric"] // Must also be an array - no need to specify this if you're using Loom or ForgeGradle
     changelog = changelogText
     debugMode = site_debugMode
@@ -136,9 +137,10 @@ modrinth {
 
     dependencies { // A special DSL for creating dependencies
         required.project "fabric-api"
-        required.project 'simple-voice-chat'
         required.project 'forge-config-api-port'
         optional.project 'vics-point-blank'
+        optional.project 'simple-voice-chat'
+        optional.project 'plasmo-voice'
     }
 }
 
