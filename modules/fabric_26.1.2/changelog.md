@@ -1,8 +1,8 @@
-### Version 2.2.0-a
+### Version 3.0.0
 
-#### ✅ Fixed
-- Gun configs stuff was not fully added in version 2.2.0 this version 2.2.0-a should have them fixed
-- Config command was not laid out correctly; fixed in this version
+#### 🔄 Changed
+- Ported to Minecraft 26.1.2 (Fabric), updated for the new Mojang-mapped system
+- TaCZ integration is now optional: the Gunfire config button is hidden when TaCZ isn't installed
 
 
 ### Any issues with this mod should be reported on the [eZApocalypse Mods Discord](https://discord.gg/jqBFMhnJPe)
