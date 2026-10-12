@@ -8,13 +8,10 @@ import com.armilp.ezvcsurvival.voicechat.client.DbMeterOverlay;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.resources.Identifier;
 
 public class EZVCSurvivalClient implements ClientModInitializer {
 
-    private boolean soundManagerRegistered = false;
-    public static final Identifier HUD_ID = Identifier.of("ezvcsurvival", "db_meter");
 
     @Override
     public void onInitializeClient() {
@@ -25,7 +22,7 @@ public class EZVCSurvivalClient implements ClientModInitializer {
 
         HudElementRegistry.attachElementBefore(
                 VanillaHudElements.CHAT,
-                Identifier.of("ezvcsurvival", "hud_test"),
+                Identifier.fromNamespaceAndPath("ezvcsurvival", "hud_test"),
                 DbMeterOverlay.INSTANCE
         );
 

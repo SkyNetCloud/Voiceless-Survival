@@ -1,4 +1,4 @@
-package com.armilp.ezvcsurvival.guns;
+package com.armilp.ezvcsurvival.compat.guns;
 
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 

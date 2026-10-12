@@ -1,7 +1,7 @@
 {
   "required": true,
   "package": "com.armilp.ezvcsurvival.mixins",
-  "compatibilityLevel": "JAVA_25",
+  "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MobEntityAccessor"
   ],
@@ -10,5 +10,8 @@
   },
   "overwrites": {
     "requireAnnotations": true
-  }
+  },
+  "client": [
+    "SoundSystemMixin"
+  ]
 }

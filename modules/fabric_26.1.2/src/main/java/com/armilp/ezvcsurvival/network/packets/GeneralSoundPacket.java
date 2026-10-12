@@ -4,24 +4,27 @@ import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.events.SoundEventTracker;
 import com.armilp.ezvcsurvival.goals.ReactToGeneralSoundGoal;
 import com.armilp.ezvcsurvival.network.EZVCNetworkService;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
+
 
 import java.util.Map;
 
 public class GeneralSoundPacket {
-    public static final PacketCodec<PacketByteBuf, GeneralSoundPacket> STREAM_CODEC = PacketCodec.of(GeneralSoundPacket::encode, GeneralSoundPacket::decode);
+    public static final StreamCodec<RegistryFriendlyByteBuf, GeneralSoundPacket> STREAM_CODEC =
+            StreamCodec.of((buf, packet) -> encode(packet, buf), GeneralSoundPacket::decode);
     private final Identifier sound;
     private final double x;
     private final double y;
     private final double z;
     private final double speedMultiplier;
     private final double rangeMultiplier;
-    private PacketByteBuf buf;
+    private FriendlyByteBuf buf;
 
     public GeneralSoundPacket(Identifier sound, double x, double y, double z,
                               double speedMultiplier, double rangeMultiplier) {
@@ -33,7 +36,7 @@ public class GeneralSoundPacket {
         this.rangeMultiplier = rangeMultiplier;
     }
 
-    public static void encode(GeneralSoundPacket packet, PacketByteBuf buf) {
+    public static void encode(GeneralSoundPacket packet, RegistryFriendlyByteBuf buf) {
         buf.writeIdentifier(packet.sound);
         buf.writeDouble(packet.x);
         buf.writeDouble(packet.y);
@@ -42,7 +45,7 @@ public class GeneralSoundPacket {
         buf.writeDouble(packet.rangeMultiplier);
     }
 
-    public static GeneralSoundPacket decode(PacketByteBuf buf) {
+    public static GeneralSoundPacket decode(RegistryFriendlyByteBuf buf) {
         Identifier sound = buf.readIdentifier();
         double x = buf.readDouble();
         double y = buf.readDouble();
@@ -54,11 +57,11 @@ public class GeneralSoundPacket {
 
     public static void handle(GeneralSoundPacket packet, EZVCNetworkService.MessageContext ctx) {
         ctx.enqueueWork(() -> {
-            ServerPlayerEntity player = (ServerPlayerEntity) ctx.getSender();
+            ServerPlayer player = (ServerPlayer) ctx.getSender();
             if (player == null) return;
 
-            ServerWorld level = player.getEntityWorld();
-            Vec3d soundPos = new Vec3d(packet.x, packet.y, packet.z);
+            ServerLevel level = player.level();
+            Vec3 soundPos = new Vec3(packet.x, packet.y, packet.z);
 
             SoundEventTracker.setLastPlayedPosition(packet.sound, soundPos.x, soundPos.y, soundPos.z, packet.speedMultiplier, packet.rangeMultiplier);
 

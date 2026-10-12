@@ -4,7 +4,7 @@ import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.data.GunTypeModifiers;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import fuzs.forgeconfigapiport.fabric.api.v5.ModConfigEvents;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.*;
@@ -87,7 +87,7 @@ public class SoundConfig {
                 obj -> {
                     if (!(obj instanceof String)) return false;
                     String s = ((String) obj).trim();
-                    return Identifier.isNamespaceValid(s);
+                    return Identifier.isValidNamespace(s);
                 }
         );
         builder.pop();

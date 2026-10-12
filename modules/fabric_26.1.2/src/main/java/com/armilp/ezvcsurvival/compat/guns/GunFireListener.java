@@ -1,4 +1,4 @@
-package com.armilp.ezvcsurvival.guns;
+package com.armilp.ezvcsurvival.compat.guns;
 
 import com.armilp.ezvcsurvival.commands.EZVCCommands;
 import com.armilp.ezvcsurvival.config.SoundConfig;
@@ -11,11 +11,11 @@ import com.tacz.guns.resource.index.CommonGunIndex;
 import com.tacz.guns.resource.modifier.AttachmentCacheProperty;
 import com.tacz.guns.resource.modifier.custom.SilenceModifier;
 import it.unimi.dsi.fastutil.Pair;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class GunFireListener {
 
         if (silenced && !SoundConfig.isSilencerModifiersEnabled()) return;
 
-        Vec3d shooterPos = shooter.getEntityPos();
+        Vec3 shooterPos = shooter.position();
         GunTabType gunType = GunTabType.PISTOL;
 
         if (gun != null) {
@@ -62,7 +62,7 @@ public class GunFireListener {
             }
         }
 
-        if (shooter instanceof ServerPlayerEntity serverPlayer) {
+        if (shooter instanceof ServerPlayer serverPlayer) {
             EZVCCommands.applyEffect(serverPlayer);
         }
 
@@ -98,8 +98,8 @@ public class GunFireListener {
                     Object raw = cacheProperty.getCache(SilenceModifier.ID);
                     if (raw instanceof Pair<?, ?> p) {
                         if (Boolean.TRUE.equals(p.right())) return true;
-                    } else if (raw instanceof net.minecraft.util.Pair<?, ?> p) {
-                        if (Boolean.TRUE.equals(p.getRight())) return true;
+                    } else if (raw instanceof com.mojang.datafixers.util.Pair<?, ?> p) {
+                        if (Boolean.TRUE.equals(p.getSecond())) return true;
                     }
                 }
             }

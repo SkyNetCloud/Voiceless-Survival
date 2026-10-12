@@ -1,19 +1,19 @@
 package com.armilp.ezvcsurvival.goals;
 
 import com.armilp.ezvcsurvival.voicechat.VoiceProcessor;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.Heightmap;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
 
 public class RunawayVoiceGoal extends Goal {
 
-    private final AnimalEntity mob;
+    private final Animal mob;
     private final double speedModifier;
     private final double voiceDetectionRange;
     private final double threshold;
@@ -21,32 +21,32 @@ public class RunawayVoiceGoal extends Goal {
     private int ambientSoundCount;
     private int distanceCovered = 0;
 
-    public RunawayVoiceGoal(AnimalEntity mob, double speedModifier, double detectionRange, double threshold) {
+    public RunawayVoiceGoal(Animal mob, double speedModifier, double detectionRange, double threshold) {
         this.mob = mob;
         this.speedModifier = speedModifier;
         this.voiceDetectionRange = detectionRange;
         this.threshold = threshold;
         this.ambientSoundCount = 0;
-        this.setControls(EnumSet.of(Control.MOVE, Control.TARGET));
+        this.setFlags(EnumSet.of(Flag.MOVE, Flag.TARGET));
     }
 
     @Override
-    public boolean canStart() {
-        targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+    public boolean canUse() {
+        targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.blockPosition(), voiceDetectionRange, threshold);
         boolean canStart = targetSoundPosition != null;
 
         return targetSoundPosition != null;
     }
     
     @Override
-    public boolean shouldContinue() {
-        return targetSoundPosition != null && !mob.getNavigation().isIdle();
+    public boolean canContinueToUse() {
+        return targetSoundPosition != null && !mob.getNavigation().isDone();
     }
 
     @Override
     public void start() {
         if (targetSoundPosition != null) {
-            Vec3d groundedDanger = grounded(Vec3d.ofCenter(targetSoundPosition));
+            Vec3 groundedDanger = grounded(Vec3.atCenterOf(targetSoundPosition));
             fleeFrom(groundedDanger);
         }
     }
@@ -68,13 +68,13 @@ public class RunawayVoiceGoal extends Goal {
     private void handleSoundThreat() {
         distanceCovered++;
 
-        BlockPos groundedPos = mob.getEntityWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, targetSoundPosition);
+        BlockPos groundedPos = mob.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, targetSoundPosition);
         double gx = groundedPos.getX() + 0.5;
         double gz = groundedPos.getZ() + 0.5;
 
         if (distanceCovered > 10 && distanceCovered % 20 == 0) {
             mob.getNavigation().stop();
-            mob.getLookControl().lookAt(
+            mob.getLookControl().setLookAt(
                     gx,
                     groundedPos.getY(),
                     gz,
@@ -88,27 +88,27 @@ public class RunawayVoiceGoal extends Goal {
         double distanceSq2D = dx * dx + dz * dz;
 
         if (targetSoundPosition == null || distanceSq2D > threshold * threshold) {
-            targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.blockPosition(), voiceDetectionRange, threshold);
         } else {
-            fleeFrom(new Vec3d(gx, groundedPos.getY(), gz));
+            fleeFrom(new Vec3(gx, groundedPos.getY(), gz));
         }
     }
 
-    private void fleeFrom(Vec3d dangerPosition) {
-        Vec3d fleeDirection = mob.getEntityPos().subtract(dangerPosition).normalize().multiply(20.0);
+    private void fleeFrom(Vec3 dangerPosition) {
+        Vec3 fleeDirection = mob.position().subtract(dangerPosition).normalize().scale(20.0);
         double randomOffsetX = (mob.getRandom().nextDouble() - 0.5) * 5.0;
         double randomOffsetZ = (mob.getRandom().nextDouble() - 0.5) * 5.0;
 
-        Vec3d fleeTarget = mob.getEntityPos().add(fleeDirection).add(randomOffsetX, 0, randomOffsetZ);
-        Vec3d groundedTarget = grounded(fleeTarget);
+        Vec3 fleeTarget = mob.position().add(fleeDirection).add(randomOffsetX, 0, randomOffsetZ);
+        Vec3 groundedTarget = grounded(fleeTarget);
 
-        if (isDangerousBlock(BlockPos.ofFloored(groundedTarget))) {
+        if (isDangerousBlock(BlockPos.containing(groundedTarget))) {
             fleeDirection = fleeDirection.add(mob.getRandom().nextDouble() * 5.0, 0, mob.getRandom().nextDouble() * 5.0);
-            fleeTarget = mob.getEntityPos().add(fleeDirection);
+            fleeTarget = mob.position().add(fleeDirection);
             groundedTarget = grounded(fleeTarget);
         }
 
-        mob.getNavigation().startMovingTo(groundedTarget.x, groundedTarget.y, groundedTarget.z, speedModifier);
+        mob.getNavigation().moveTo(groundedTarget.x, groundedTarget.y, groundedTarget.z, speedModifier);
 
         if (ambientSoundCount < 2 && mob.getRandom().nextDouble() < 0.5) {
             mob.playAmbientSound();
@@ -116,16 +116,16 @@ public class RunawayVoiceGoal extends Goal {
         }
     }
 
-    private Vec3d grounded(Vec3d desiredXZ) {
-        BlockPos base = BlockPos.ofFloored(desiredXZ.x, 0, desiredXZ.z);
-        BlockPos top = mob.getEntityWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, base);
-        return new Vec3d(top.getX() + 0.5, top.getY(), top.getZ() + 0.5);
+    private Vec3 grounded(Vec3 desiredXZ) {
+        BlockPos base = BlockPos.containing(desiredXZ.x, 0, desiredXZ.z);
+        BlockPos top = mob.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, base);
+        return new Vec3(top.getX() + 0.5, top.getY(), top.getZ() + 0.5);
     }
 
     private boolean isDangerousBlock(BlockPos pos) {
-        ServerWorld getWorld = (ServerWorld) mob.getEntityWorld();
+        ServerLevel getWorld = (ServerLevel) mob.level();
         BlockState blockState = getWorld.getBlockState(pos);
 
-        return !blockState.getFluidState().isEmpty() || !blockState.isSolidBlock(getWorld, pos);
+        return !blockState.getFluidState().isEmpty() || !blockState.isSolidRender();
     }
 }

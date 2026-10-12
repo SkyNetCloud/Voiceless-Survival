@@ -1,14 +1,8 @@
-### Changelog
+### Version 2.2.0-a
 
-<span style="color:red; font-size:20px;">IMPORTANT</span>  
-<span style="color:orange; font-size:16px;">Before updating to this version, make a backup of your previous configuration.</span>
+#### ✅ Fixed
+- Gun configs stuff was not fully added in version 2.2.0 this version 2.2.0-a should have them fixed
+- Config command was not laid out correctly; fixed in this version
 
-#### Version **2.1.0-beta-v1** 
-
-✅ **Updated:**
- - Updated to 1.21.11 fabric.
-
-✅ **Fixed:**
- - Some features in the config editor should be fixed now.
 
 ### Any issues with this mod should be reported on the [eZApocalypse Mods Discord](https://discord.gg/jqBFMhnJPe)

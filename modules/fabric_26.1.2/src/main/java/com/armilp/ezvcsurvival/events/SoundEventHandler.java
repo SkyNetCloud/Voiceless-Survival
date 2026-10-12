@@ -3,9 +3,10 @@ package com.armilp.ezvcsurvival.events;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.network.packets.GeneralSoundPacket;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.SoundInstance;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SoundInstance;
+import net.minecraft.resources.Identifier;
+
 
 import java.util.Iterator;
 import java.util.Map;
@@ -24,9 +25,9 @@ public class SoundEventHandler {
 
     public static void onPlaySound(SoundInstance sound) {
         // Guard: need an active connection and player
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null
-                || mc.getNetworkHandler().getConnection() == null
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() == null
+                || mc.getConnection().getConnection() == null
                 || mc.player == null) {
             return;
         }
@@ -34,7 +35,7 @@ public class SoundEventHandler {
         var soundMap = GeneralSoundsConfig.getSounds();
         if (soundMap == null) return;
 
-        Identifier soundLoc = sound.getId();
+        Identifier soundLoc = sound.getIdentifier();
         String soundId = soundLoc.toString();
 
         // Only handle sounds registered in our config
@@ -57,7 +58,7 @@ public class SoundEventHandler {
         }
 
         EZVCNetwork.ezvcNetworkService.sendToServer(new GeneralSoundPacket(
-                sound.getId(),
+                sound.getIdentifier(),
                 sound.getX(),
                 sound.getY(),
                 sound.getZ(),

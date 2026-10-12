@@ -7,10 +7,10 @@ import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.MalformedJsonException;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnGroup;
-import net.minecraft.registry.Registries;
-
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -88,9 +88,9 @@ public final class EntityVoiceConfig {
         MONSTER_CONFIGS.remove(entityId);
         ANIMAL_CONFIGS.remove(entityId);
 
-        EntityType<?> type = Registries.ENTITY_TYPE.get(net.minecraft.util.Identifier.of(entityId));
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.tryParse(entityId));
 
-        if (type.getSpawnGroup() == SpawnGroup.MONSTER) {
+        if (type.getCategory() == MobCategory.MONSTER) {
             MONSTER_CONFIGS.put(entityId, value);
         } else {
             ANIMAL_CONFIGS.put(entityId, value);
@@ -156,10 +156,10 @@ public final class EntityVoiceConfig {
 
     private static boolean ensureAllEntitiesPresent() {
         boolean added = false;
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnGroup  category = type.getSpawnGroup();
-            if (category == SpawnGroup.MISC) continue;
-            String id = Registries.ENTITY_TYPE.getId(type).toString();
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            MobCategory  category = type.getCategory();
+            if (category == MobCategory.MISC) continue;
+            String id = BuiltInRegistries.ENTITY_TYPE.getKey(type).toString();
             if (isMonsterCategory(category)) {
                 if (!MONSTER_CONFIGS.containsKey(id)) {
                     MONSTER_CONFIGS.put(id, EntityConfig.defaultFor(type));
@@ -178,17 +178,17 @@ public final class EntityVoiceConfig {
     private static void generateDefaults() {
         MONSTER_CONFIGS.clear();
         ANIMAL_CONFIGS.clear();
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnGroup category = type.getSpawnGroup();
-            if (category == SpawnGroup.MISC) continue;
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            MobCategory category = type.getCategory();
+            if (category == MobCategory.MISC) continue;
             if (isMonsterCategory(category)) {
                 MONSTER_CONFIGS.put(
-                        Registries.ENTITY_TYPE.getId(type).toString(),
+                        BuiltInRegistries.ENTITY_TYPE.getKey(type).toString(),
                         EntityConfig.defaultFor(type)
                 );
             } else if (isAnimalLikeCategory(category)) {
                 ANIMAL_CONFIGS.put(
-                        Registries.ENTITY_TYPE.getId(type).toString(),
+                        BuiltInRegistries.ENTITY_TYPE.getKey(type).toString(),
                         EntityConfig.defaultFor(type)
                 );
             }
@@ -201,15 +201,15 @@ public final class EntityVoiceConfig {
         putIfPresent(ANIMAL_CONFIGS, "minecraft:pig", new EntityConfig(true, 1.0, 15.0, -18.0));
     }
 
-    private static boolean isMonsterCategory(SpawnGroup category) {
-        return category == SpawnGroup.MONSTER;
+    private static boolean isMonsterCategory(MobCategory category) {
+        return category == MobCategory.MONSTER;
     }
 
-    private static boolean isAnimalLikeCategory(SpawnGroup category) {
-        return category == SpawnGroup.CREATURE
-                || category == SpawnGroup.AMBIENT
-                || category == SpawnGroup.WATER_CREATURE
-                || category == SpawnGroup.UNDERGROUND_WATER_CREATURE
+    private static boolean isAnimalLikeCategory(MobCategory category) {
+        return category == MobCategory.CREATURE
+                || category == MobCategory.AMBIENT
+                || category == MobCategory.WATER_CREATURE
+                || category == MobCategory.UNDERGROUND_WATER_CREATURE
                 || category.name().equalsIgnoreCase("AXOLOTLS");
     }
 
@@ -284,7 +284,7 @@ public final class EntityVoiceConfig {
             double baseRange = 50.0;
             double baseThreshold = -20.0;
 
-            if (type != null && type.getSpawnGroup() == SpawnGroup.MONSTER) {
+            if (type != null && type.getCategory() == MobCategory.MONSTER) {
                 baseRange = 60.0;
             }
             return new EntityConfig(false, baseSpeed, baseRange, baseThreshold);

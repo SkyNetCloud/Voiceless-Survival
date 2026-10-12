@@ -1,21 +1,20 @@
 package com.armilp.ezvcsurvival.network;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public interface EZVCNetworkService {
-    <M, B extends PacketByteBuf> void registerPacket(Class<M> var1, Direction var2, BiConsumer<M, RegistryByteBuf> var3, Function<RegistryByteBuf, M> var4, BiConsumer<M, MessageContext> var5);
+    <M, B extends RegistryFriendlyByteBuf> void registerPacket(Class<M> var1, Direction var2, BiConsumer<M, RegistryFriendlyByteBuf> var3, Function<RegistryFriendlyByteBuf, M> var4, BiConsumer<M, MessageContext> var5);
 
-    void sendToClient(Object var1, PlayerEntity var2);
+    void sendToClient(Object var1, Player var2);
 
     void sendToServer(Object var1);
 
-    CustomPayload createCustomPayload(Object var1);
+    CustomPacketPayload createCustomPayload(Object var1);
 
     default void onRegisteringPacketsCompleted() {
     }
@@ -37,7 +36,7 @@ public interface EZVCNetworkService {
 
         void setPacketHandled(boolean var1);
 
-        PlayerEntity getSender();
+        Player getSender();
 
         boolean isClientSide();
     }

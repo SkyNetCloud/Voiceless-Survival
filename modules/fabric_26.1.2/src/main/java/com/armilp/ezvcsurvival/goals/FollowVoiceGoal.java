@@ -1,16 +1,16 @@
 package com.armilp.ezvcsurvival.goals;
 
 import com.armilp.ezvcsurvival.voicechat.VoiceProcessor;
-import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Heightmap;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.EnumSet;
 
 public class FollowVoiceGoal extends Goal {
 
-    private final MobEntity mob;
+    private final Mob mob;
     private final double speedModifier;
     private final int voiceDetectionRange;
     private final double threshold;
@@ -20,25 +20,25 @@ public class FollowVoiceGoal extends Goal {
     private int updateCooldown;
     private static final int UPDATE_INTERVAL = 20; // Update every 20 ticks (1 second)
 
-    public FollowVoiceGoal(MobEntity mob, double speedModifier, int detectionRange, double threshold, long maxFollowTime) {
+    public FollowVoiceGoal(Mob mob, double speedModifier, int detectionRange, double threshold, long maxFollowTime) {
         this.mob = mob;
         this.speedModifier = speedModifier;
         this.voiceDetectionRange = detectionRange;
         this.threshold = threshold;
         this.maxFollowTime = maxFollowTime;
-        this.setControls(EnumSet.of(Control.MOVE));
+        this.setFlags(EnumSet.of(Flag.MOVE));
         this.updateCooldown = 0;
     }
 
     @Override
-    public boolean canStart() {
+    public boolean canUse() {
         if (mob.getTarget() != null) {
             return false;
         }
 
         // Only check for sound location periodically to reduce lag
         if (updateCooldown <= 0) {
-            targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.blockPosition(), voiceDetectionRange, threshold);
             updateCooldown = UPDATE_INTERVAL;
         } else {
             updateCooldown--;
@@ -57,14 +57,14 @@ public class FollowVoiceGoal extends Goal {
     }
 
     @Override
-    public boolean shouldContinue() {
+    public boolean canContinueToUse() {
         if (mob.getTarget() != null) {
             return false;
         }
 
         // Update sound position periodically while continuing
         if (updateCooldown <= 0) {
-            targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.blockPosition(), voiceDetectionRange, threshold);
             updateCooldown = UPDATE_INTERVAL;
         } else {
             updateCooldown--;
@@ -87,7 +87,7 @@ public class FollowVoiceGoal extends Goal {
 
         if (distanceSq <= ARRIVAL_DISTANCE_SQ) {
             // Arrived at sound location, check for new sound
-            targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.getBlockPos(), voiceDetectionRange, threshold);
+            targetSoundPosition = VoiceProcessor.getLastSoundLocation(mob.blockPosition(), voiceDetectionRange, threshold);
             if (targetSoundPosition != null) {
                 moveToSoundPosition();
             } else {
@@ -97,7 +97,7 @@ public class FollowVoiceGoal extends Goal {
         }
 
         // Check if mob is stuck or needs path recalculation
-        if (!mob.getNavigation().isFollowingPath() || mob.getNavigation().isIdle()) {
+        if (!mob.getNavigation().isInProgress() || mob.getNavigation().isDone()) {
             moveToSoundPosition();
         }
     }
@@ -114,10 +114,10 @@ public class FollowVoiceGoal extends Goal {
         }
 
         // Get ground position at sound location
-        BlockPos groundPos = mob.getEntityWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, targetSoundPosition);
+        BlockPos groundPos = mob.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, targetSoundPosition);
 
         // Move to the ground position
-        boolean pathStarted = mob.getNavigation().startMovingTo(
+        boolean pathStarted = mob.getNavigation().moveTo(
                 groundPos.getX() + 0.5,
                 groundPos.getY(),
                 groundPos.getZ() + 0.5,
@@ -126,7 +126,7 @@ public class FollowVoiceGoal extends Goal {
 
         if (!pathStarted) {
             // Try moving directly to the sound position if pathfinding fails
-            mob.getNavigation().startMovingTo(
+            mob.getNavigation().moveTo(
                     targetSoundPosition.getX() + 0.5,
                     targetSoundPosition.getY(),
                     targetSoundPosition.getZ() + 0.5,

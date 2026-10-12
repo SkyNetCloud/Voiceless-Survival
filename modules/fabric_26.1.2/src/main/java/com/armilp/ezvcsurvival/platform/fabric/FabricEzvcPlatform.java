@@ -1,4 +1,4 @@
-package com.armilp.ezvcsurvival.fabric;
+package com.armilp.ezvcsurvival.platform.fabric;
 
 import com.armilp.ezvcsurvival.EzvcPlatform;
 import com.armilp.ezvcsurvival.network.EZVCNetworkService;

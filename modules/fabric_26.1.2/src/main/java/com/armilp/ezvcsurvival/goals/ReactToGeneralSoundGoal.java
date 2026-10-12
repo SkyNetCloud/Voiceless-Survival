@@ -4,17 +4,16 @@ package com.armilp.ezvcsurvival.goals;
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
-import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.Monster;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.Heightmap;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
-import java.util.Objects;
 
 public class ReactToGeneralSoundGoal extends Goal {
     private static final long PRIORITY_SOUND_DURATION_MS = 3500;
@@ -22,32 +21,32 @@ public class ReactToGeneralSoundGoal extends Goal {
     private static final int LOOK_UPDATE_INTERVAL = 30;
     private static final long SOUND_REACTION_TIMEOUT = 4000;
 
-    public static Vec3d lastPrioritySoundPos = null;
+    public static Vec3 lastPrioritySoundPos = null;
     public static long lastPrioritySoundTimestamp = 0;
 
-    private final MobEntity mob;
+    private final Mob mob;
     private final double speed;
     private final double range;
     private final List<SoundGroupData> soundGroups;
     private final String entityId;
     private final boolean isMonster;
 
-    private Vec3d targetSoundPos = null;
+    private Vec3 targetSoundPos = null;
     private double targetSpeedMultiplier = 1.0;
     private double targetRangeMultiplier = 1.0;
     private long targetSetTime = 0;
     private int tickCounter = 0;
 
-    public ReactToGeneralSoundGoal(MobEntity mob, double speed, double range, List<SoundGroupData> soundGroups) {
+    public ReactToGeneralSoundGoal(Mob mob, double speed, double range, List<SoundGroupData> soundGroups) {
         this.mob = mob;
         this.speed = speed;
         this.range = range;
         this.soundGroups = soundGroups;
-        this.entityId = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(mob.getType())).toString();
+        this.entityId = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString();
         this.isMonster = mob instanceof Monster;
     }
 
-    public void onSoundPlayed(Identifier soundLoc, Vec3d soundPos, double speedMult, double rangeMult) {
+    public void onSoundPlayed(Identifier soundLoc, Vec3 soundPos, double speedMult, double rangeMult) {
         if (mob.getTarget() != null) return;
 
         String soundId = soundLoc.toString();
@@ -78,13 +77,14 @@ public class ReactToGeneralSoundGoal extends Goal {
             if (!found) return;
         }
 
-        Vec3d mobPos = mob.getEntityPos();
+        Vec3 mobPos = mob.position();
         double effectiveRange = range * rangeMult;
-        if (mob.getEntityWorld().isRaining() || mob.getEntityWorld().isThundering()) {
+
+        if (mob.level().isRaining() || mob.level().isThundering()) {
             effectiveRange *= SoundConfig.THUNDER_RANGE_MULTIPLIER.get();
         }
 
-        double distSq = mobPos.squaredDistanceTo(soundPos);
+        double distSq = mobPos.distanceToSqr(soundPos);
         if (distSq > effectiveRange * effectiveRange) return;
 
         this.targetSoundPos = soundPos;
@@ -98,7 +98,7 @@ public class ReactToGeneralSoundGoal extends Goal {
     }
 
     @Override
-    public boolean canStart() {
+    public boolean canUse() {
         if (mob.getTarget() != null) return false;
 
         long now = System.currentTimeMillis();
@@ -108,12 +108,12 @@ public class ReactToGeneralSoundGoal extends Goal {
         }
 
         if (lastPrioritySoundPos != null) {
-            Vec3d mobPos = mob.getEntityPos();
+            Vec3 mobPos = mob.position();
             double effectiveRange = range * 1.5;
-            if (mob.getEntityWorld().isRaining() || mob.getEntityWorld().isThundering()) {
+            if (mob.level().isRaining() || mob.level().isThundering()) {
                 effectiveRange *= SoundConfig.THUNDER_RANGE_MULTIPLIER.get();
             }
-            if (mobPos.squaredDistanceTo(lastPrioritySoundPos) <= effectiveRange * effectiveRange) {
+            if (mobPos.distanceToSqr(lastPrioritySoundPos) <= effectiveRange * effectiveRange) {
                 targetSoundPos = lastPrioritySoundPos;
                 targetSpeedMultiplier = 1.5;
                 targetRangeMultiplier = 1.5;
@@ -127,7 +127,7 @@ public class ReactToGeneralSoundGoal extends Goal {
 
 
     @Override
-    public boolean shouldContinue() {
+    public boolean canContinueToUse() {
         if (mob.getTarget() != null) return false;
 
         long now = System.currentTimeMillis();
@@ -139,13 +139,13 @@ public class ReactToGeneralSoundGoal extends Goal {
 
         if ((now - targetSetTime) > SOUND_REACTION_TIMEOUT) return false;
 
-        Vec3d mobPos = mob.getEntityPos();
+        Vec3 mobPos = mob.position();
         double effectiveRange = range * targetRangeMultiplier;
-        if (mob.getEntityWorld().isRaining() || mob.getEntityWorld().isThundering()) {
+        if (mob.level().isRaining() || mob.level().isThundering()) {
             effectiveRange *= SoundConfig.THUNDER_RANGE_MULTIPLIER.get();
         }
 
-        return mobPos.squaredDistanceTo(targetSoundPos) <= effectiveRange * effectiveRange;
+        return mobPos.distanceToSqr(targetSoundPos) <= effectiveRange * effectiveRange;
     }
 
     @Override
@@ -169,7 +169,7 @@ public class ReactToGeneralSoundGoal extends Goal {
         updateNavigation();
 
         if (isMonster && targetSoundPos != null && tickCounter % LOOK_UPDATE_INTERVAL == 0) {
-            mob.getLookControl().lookAt(targetSoundPos.x, targetSoundPos.y, targetSoundPos.z, 30.0F, 30.0F);
+            mob.getLookControl().setLookAt(targetSoundPos.x, targetSoundPos.y, targetSoundPos.z, 30.0F, 30.0F);
         }
     }
 
@@ -187,7 +187,7 @@ public class ReactToGeneralSoundGoal extends Goal {
             lastPrioritySoundPos = null;
         }
 
-        Vec3d currentPos = mob.getEntityPos();
+        Vec3 currentPos = mob.position();
         boolean isPriority = targetSoundPos.equals(lastPrioritySoundPos);
 
         double effectiveRange = range * targetRangeMultiplier;
@@ -198,7 +198,7 @@ public class ReactToGeneralSoundGoal extends Goal {
             effectiveSpeed *= 1.3;
         }
 
-        if (mob.getEntityWorld().isRaining() || mob.getEntityWorld().isThundering()) {
+        if (mob.level().isRaining() || mob.level().isThundering()) {
             effectiveRange *= SoundConfig.THUNDER_RANGE_MULTIPLIER.get();
         }
 
@@ -214,20 +214,20 @@ public class ReactToGeneralSoundGoal extends Goal {
 
         if (distance > 50.0) effectiveSpeed *= 0.8;
 
-        Vec3d target = isMonster ?
+        Vec3 target = isMonster ?
                 grounded(targetSoundPos) :
-                grounded(currentPos.add(currentPos.subtract(targetSoundPos).normalize().multiply(effectiveRange)));
+                grounded(currentPos.add(currentPos.subtract(targetSoundPos).normalize().scale(effectiveRange)));
 
-        mob.getNavigation().startMovingTo(target.x, target.y, target.z, effectiveSpeed);
+        mob.getNavigation().moveTo(target.x, target.y, target.z, effectiveSpeed);
     }
 
-    private Vec3d grounded(Vec3d desiredXZ) {
-        BlockPos base = BlockPos.ofFloored(desiredXZ.x, 0, desiredXZ.z);
-        BlockPos top = mob.getEntityWorld().getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, base);
-        return new Vec3d(top.getX() + 0.5, top.getY(), top.getZ() + 0.5);
+    private Vec3 grounded(Vec3 desiredXZ) {
+        BlockPos base = BlockPos.containing(desiredXZ.x, 0, desiredXZ.z);
+        BlockPos top = mob.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, base);
+        return new Vec3(top.getX() + 0.5, top.getY(), top.getZ() + 0.5);
     }
 
-    public static void setPrioritySound(Vec3d position) {
+    public static void setPrioritySound(Vec3 position) {
         lastPrioritySoundPos = position;
         lastPrioritySoundTimestamp = System.currentTimeMillis();
     }

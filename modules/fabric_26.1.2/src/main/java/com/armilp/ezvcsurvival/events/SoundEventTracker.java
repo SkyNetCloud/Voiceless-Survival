@@ -2,11 +2,12 @@ package com.armilp.ezvcsurvival.events;
 
 import com.armilp.ezvcsurvival.data.TimedSoundData;
 import com.armilp.ezvcsurvival.goals.ReactToGeneralSoundGoal;
-import net.minecraft.entity.ai.goal.PrioritizedGoal;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
+import net.minecraft.world.phys.Vec3;
+
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,17 +20,17 @@ public class SoundEventTracker {
     private static final Map<Identifier, TimedSoundData> lastPlayedPositions = new ConcurrentHashMap<>();
 
     public static void setLastPlayedPosition(Identifier sound, double x, double y, double z, double speedMultiplier, double rangeMultiplier) {
-        lastPlayedPositions.put(sound, new TimedSoundData(new Vec3d(x, y, z), System.currentTimeMillis(), speedMultiplier, rangeMultiplier));
+        lastPlayedPositions.put(sound, new TimedSoundData(new Vec3(x, y, z), System.currentTimeMillis(), speedMultiplier, rangeMultiplier));
     }
 
-    public static void notifyNearbyMobs(ServerWorld level, Identifier sound, double x, double y, double z, double speedMultiplier, double rangeMultiplier) {
-        Vec3d soundPos = new Vec3d(x, y, z);
+    public static void notifyNearbyMobs(ServerLevel level, Identifier sound, double x, double y, double z, double speedMultiplier, double rangeMultiplier) {
+        Vec3 soundPos = new Vec3(x, y, z);
 
-        for (var entity : level.iterateEntities()) {
-            if (!(entity instanceof MobEntity mob)) continue;
+        for (var entity : level.getAllEntities()) {
+            if (!(entity instanceof Mob mob)) continue;
             if (mob.getTarget() != null) continue;
 
-            for (PrioritizedGoal wrappedGoal : acc(mob).vs$getGoalSelector().getGoals()) {
+            for (WrappedGoal wrappedGoal : acc(mob).vs$getGoalSelector().getAvailableGoals()) {
                 if (wrappedGoal.getGoal() instanceof ReactToGeneralSoundGoal) {
                     ((ReactToGeneralSoundGoal) wrappedGoal.getGoal()).onSoundPlayed(sound, soundPos, speedMultiplier, rangeMultiplier);
                 }
@@ -37,7 +38,7 @@ public class SoundEventTracker {
         }
     }
 
-    public static Vec3d getLastPlayedPositionForSound(Identifier soundLocation) {
+    public static Vec3 getLastPlayedPositionForSound(Identifier soundLocation) {
         TimedSoundData data = lastPlayedPositions.get(soundLocation);
         if (data != null && (System.currentTimeMillis() - data.timestamp() <= SOUND_EXPIRATION_MS)) {
             return data.position();

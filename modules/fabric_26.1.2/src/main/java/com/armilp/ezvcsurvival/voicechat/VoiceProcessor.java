@@ -10,10 +10,10 @@ import com.armilp.ezvcsurvival.network.EZVCNetwork;
 import com.armilp.ezvcsurvival.network.packets.VoiceLevelPacket;
 import com.armilp.ezvcsurvival.sculk.SculkVibrationHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+
 
 import java.util.*;
 import java.util.concurrent.*;

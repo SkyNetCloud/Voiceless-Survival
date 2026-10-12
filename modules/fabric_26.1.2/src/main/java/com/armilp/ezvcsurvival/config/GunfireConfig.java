@@ -6,9 +6,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.MalformedJsonException;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnGroup;
-import net.minecraft.registry.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -134,10 +135,10 @@ public final class GunfireConfig {
             changed = true;
         }
 
-        for (EntityType<?> type : Registries.ENTITY_TYPE) {
-            SpawnGroup cat = type.getSpawnGroup();
-            if (cat == SpawnGroup.MISC) continue;
-            String id = Objects.requireNonNull(Registries.ENTITY_TYPE.getKey(type)).toString();
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            MobCategory cat = type.getCategory();
+            if (cat == MobCategory.MISC) continue;
+            String id = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(type)).toString();
 
             if (!ROOT.mobs.containsKey(id)) {
                 boolean shouldEnable = isNewFile && (
@@ -149,7 +150,7 @@ public final class GunfireConfig {
                                 id.startsWith("apocalypsenow:")
                 );
 
-                double defaultRange = cat == SpawnGroup.MONSTER ? 50.0 : 40.0;
+                double defaultRange = cat == MobCategory.MONSTER ? 50.0 : 40.0;
                 ROOT.mobs.put(id, new Reaction(shouldEnable, 1.0, defaultRange));
                 changed = true;
             }

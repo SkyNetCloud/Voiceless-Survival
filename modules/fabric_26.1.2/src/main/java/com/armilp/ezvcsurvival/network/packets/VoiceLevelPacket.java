@@ -3,7 +3,7 @@ package com.armilp.ezvcsurvival.network.packets;
 import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.network.EZVCNetworkService;
 import com.armilp.ezvcsurvival.voicechat.client.ClientVoiceLevel;
-import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 public class VoiceLevelPacket {
     private final double db;
@@ -12,11 +12,11 @@ public class VoiceLevelPacket {
         this.db = db;
     }
 
-    public static void encode(VoiceLevelPacket packet, RegistryByteBuf buf) {
+    public static void encode(VoiceLevelPacket packet, RegistryFriendlyByteBuf buf) {
         buf.writeDouble(packet.db);
     }
 
-    public static VoiceLevelPacket decode(RegistryByteBuf buf) {
+    public static VoiceLevelPacket decode(RegistryFriendlyByteBuf buf) {
         return new VoiceLevelPacket(buf.readDouble());
     }
 

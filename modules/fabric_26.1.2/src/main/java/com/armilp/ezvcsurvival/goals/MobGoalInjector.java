@@ -6,16 +6,25 @@ import com.armilp.ezvcsurvival.config.SoundConfig;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import com.armilp.ezvcsurvival.data.SoundGroupData;
 import com.armilp.ezvcsurvival.mixins.MobEntityAccessor;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
+import net.minecraft.world.entity.animal.Animal;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.ai.goal.PrioritizedGoal;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
+//import net.minecraft.entity.Entity;
+//import net.minecraft.entity.ai.goal.Goal;
+//import net.minecraft.entity.ai.goal.PrioritizedGoal;
+//import net.minecraft.entity.mob.Mob;
+//import net.minecraft.entity.passive.Animal;
+//import net.minecraft.nbt.NbtCompound;
+//import net.minecraft.registry.Registries;
+//import net.minecraft.server.world.ServerWorld;
+//import net.minecraft.util.Identifier;
 
 import java.util.*;
 
@@ -23,14 +32,14 @@ public class MobGoalInjector {
 
     private static final String TAG = "ezvcsurvival:goals_added";
 
-    private static final Set<MobEntity> TRACKED_MOBS =
+    private static final Set<Mob> TRACKED_MOBS =
             Collections.newSetFromMap(new WeakHashMap<>());
 
     private static final Map<UUID, InjectedGoals> INJECTED_GOALS =
             new WeakHashMap<>();
 
-    public static void onEntityJoin(Entity entity, ServerWorld world) {
-        if (!(entity instanceof MobEntity mob)) return;
+    public static void onEntityJoin(Entity entity, ServerLevel world) {
+        if (!(entity instanceof Mob mob)) return;
         if (mob.isRemoved()) return;
 
         try {
@@ -40,22 +49,22 @@ public class MobGoalInjector {
                 TRACKED_MOBS.add(mob);
 
                 if (VoiceConfig.DEBUG.get()) {
-                    Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
+                    Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
                     System.out.println(
                             "[EZVCSurvival] Injected goals into: " +
                                     (id != null ? id : "unknown") +
-                                    " (UUID=" + mob.getUuid() + ")"
+                                    " (UUID=" + mob.getUUID() + ")"
                     );
                 }
             } else {
                 TRACKED_MOBS.add(mob);
 
                 if (VoiceConfig.DEBUG.get()) {
-                    Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
+                    Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
                     System.out.println(
                             "[EZVCSurvival] Goals already present for: " +
                                     (id != null ? id : "unknown") +
-                                    " (UUID=" + mob.getUuid() + ")"
+                                    " (UUID=" + mob.getUUID() + ")"
                     );
                 }
             }
@@ -67,16 +76,16 @@ public class MobGoalInjector {
         }
     }
 
-    private static boolean hasActiveGoals(MobEntity mob) {
-        InjectedGoals injected = INJECTED_GOALS.get(mob.getUuid());
+    private static boolean hasActiveGoals(Mob mob) {
+        InjectedGoals injected = INJECTED_GOALS.get(mob.getUUID());
         if (injected != null && injected.hasAnyGoal()) {
             return verifyGoalsInSelector(mob, injected);
         }
         return false;
     }
 
-    private static boolean verifyGoalsInSelector(MobEntity mob, InjectedGoals injected) {
-        Set<PrioritizedGoal> availableGoals = acc(mob).vs$getGoalSelector().getGoals();
+    private static boolean verifyGoalsInSelector(Mob mob, InjectedGoals injected) {
+        Set<WrappedGoal> availableGoals = acc(mob).vs$getGoalSelector().getAvailableGoals();
 
         boolean hasFollowGoal = injected.followGoal == null ||
                 availableGoals.stream().anyMatch(wg -> wg.getGoal() == injected.followGoal);
@@ -91,9 +100,9 @@ public class MobGoalInjector {
     }
 
     public static void refreshAll() {
-        Iterator<MobEntity> it = TRACKED_MOBS.iterator();
+        Iterator<Mob> it = TRACKED_MOBS.iterator();
         while (it.hasNext()) {
-            MobEntity mob = it.next();
+            Mob mob = it.next();
 
             if (mob == null || mob.isRemoved()) {
                 it.remove();
@@ -105,18 +114,18 @@ public class MobGoalInjector {
     }
 
     public static void refreshEntityId(String entityId) {
-        for (MobEntity mob : new ArrayList<>(TRACKED_MOBS)) {
+        for (Mob mob : new ArrayList<>(TRACKED_MOBS)) {
             if (mob == null || mob.isRemoved()) continue;
 
-            Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
+            Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
             if (id != null && id.toString().equals(entityId)) {
                 refreshMob(mob);
             }
         }
     }
 
-    private static void refreshMob(MobEntity mob) {
-        NbtCompound data = new NbtCompound();
+    private static void refreshMob(Mob mob) {
+        CompoundTag data = new CompoundTag();
         data.remove(TAG);
 
         removeOldGoals(mob);
@@ -131,33 +140,33 @@ public class MobGoalInjector {
         }
     }
 
-    private static void injectGoals(MobEntity mob) {
-        Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
+    private static void injectGoals(Mob mob) {
+        Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
         if (id == null) return;
 
         String mobId = id.toString();
         InjectedGoals injected = new InjectedGoals();
 
-        if (EntityVoiceConfig.isEnabled() && !(mob instanceof AnimalEntity)) {
+        if (EntityVoiceConfig.isEnabled() && !(mob instanceof Animal)) {
             EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.getMonster(mobId);
 
             if (cfg != null && cfg.enabled && cfg.speed > 0 && cfg.range > 0) {
                 FollowVoiceGoal goal =
                         new FollowVoiceGoal(mob, cfg.speed, (int) cfg.range, cfg.threshold, 10000);
 
-                acc(mob).vs$getGoalSelector().add(0, goal);
+                acc(mob).vs$getGoalSelector().addGoal(0, goal);
                 injected.followGoal = goal;
             }
         }
 
-        if (EntityVoiceConfig.isEnabled() && mob instanceof AnimalEntity animal) {
+        if (EntityVoiceConfig.isEnabled() && mob instanceof Animal animal) {
             EntityVoiceConfig.EntityConfig cfg = EntityVoiceConfig.getAnimal(mobId);
 
             if (cfg != null && cfg.enabled && cfg.speed > 0 && cfg.range > 0) {
                 RunawayVoiceGoal goal =
                         new RunawayVoiceGoal(animal, cfg.speed, cfg.range, cfg.threshold);
 
-                acc(animal).vs$getGoalSelector().add(4, goal);
+                acc(animal).vs$getGoalSelector().addGoal(4, goal);
                 injected.runawayGoal = goal;
             }
         }
@@ -173,7 +182,7 @@ public class MobGoalInjector {
                     ReactToGeneralSoundGoal goal =
                             new ReactToGeneralSoundGoal(mob, r.speed, r.range, groups);
 
-                    acc(mob).vs$getGoalSelector().add(2, goal);
+                    acc(mob).vs$getGoalSelector().addGoal(2, goal);
 
 
                     injected.generalSoundGoal = goal;
@@ -181,11 +190,11 @@ public class MobGoalInjector {
             }
         }
 
-        INJECTED_GOALS.put(mob.getUuid(), injected);
+        INJECTED_GOALS.put(mob.getUUID(), injected);
     }
 
-    private static void removeOldGoals(MobEntity mob) {
-        acc(mob).vs$getGoalSelector().getGoals().removeIf(w ->
+    private static void removeOldGoals(Mob mob) {
+        acc(mob).vs$getGoalSelector().getAvailableGoals().removeIf(w ->
                 w.getGoal().getClass().getName().startsWith("com.armilp.ezvcsurvival.goals"));
     }
 
@@ -199,7 +208,7 @@ public class MobGoalInjector {
         }
     }
 
-    public static MobEntityAccessor acc(MobEntity mob) {
+    public static MobEntityAccessor acc(Mob mob) {
         return (MobEntityAccessor) mob;
     }
 }

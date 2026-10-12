@@ -3,30 +3,30 @@ package com.armilp.ezvcsurvival.sculk;
 import com.armilp.ezvcsurvival.EZVCSurvival;
 import com.armilp.ezvcsurvival.config.VoiceConfig;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.Identifier;
-import net.minecraft.world.event.GameEvent;
-import net.minecraft.world.event.Vibrations;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.gameevent.vibrations.VibrationSystem;
 
 import java.util.function.ToIntFunction;
 
 public class ModGameEvent {
 
     public static final GameEvent VOICE_TALK = Registry.register(
-            Registries.GAME_EVENT,
-            Identifier.of(EZVCSurvival.MOD_ID, "voice_talk"),
+            BuiltInRegistries.GAME_EVENT,
+            Identifier.fromNamespaceAndPath(EZVCSurvival.MOD_ID, "voice_talk"),
             new GameEvent(16)
     );
 
     public static void setupFrequency() {
         try {
-            ToIntFunction<RegistryKey<GameEvent>> frequencyMap = Vibrations.FREQUENCIES;
+            ToIntFunction<ResourceKey<GameEvent>> frequencyMap = VibrationSystem.VIBRATION_FREQUENCY_FOR_EVENT;
 
-            if (frequencyMap instanceof Object2IntOpenHashMap<RegistryKey<GameEvent>> map) {
-                RegistryKey<GameEvent> voiceTalkKey = Registries.GAME_EVENT
-                        .getKey(VOICE_TALK)
+            if (frequencyMap instanceof Object2IntOpenHashMap<ResourceKey<GameEvent>> map) {
+                ResourceKey<GameEvent> voiceTalkKey = BuiltInRegistries.GAME_EVENT
+                        .getResourceKey(VOICE_TALK)
                         .orElse(null);
 
                 if (voiceTalkKey != null) {

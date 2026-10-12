@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 
+;
 
 public class DbMeterOverlay implements HudElement {
 
@@ -20,7 +21,6 @@ public class DbMeterOverlay implements HudElement {
     private static final int X = 30;
     private static final int Y_OFFSET_FROM_BOTTOM = 24;
     private static final float TEXT_SCALE = 0.7f;
-
 
 
     @Override
@@ -43,8 +43,9 @@ public class DbMeterOverlay implements HudElement {
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().translate(X + BAR_WIDTH + 5, y - 1);
         guiGraphics.pose().scale(TEXT_SCALE, TEXT_SCALE);
-        guiGraphics.text(font, text, 0, 0, 0xFFFFFFFF, true);
+        guiGraphics.text(font, text, 0, 0, 0xFFFFFFFF, true); // ARGB: alpha must be FF
         guiGraphics.pose().popMatrix();
     }
+
 
 }
