@@ -1,109 +1,140 @@
 plugins {
-    id 'net.fabricmc.fabric-loom' version '1.17.20' apply false
     id 'maven-publish'
-    id "com.modrinth.minotaur" version "2.+" apply false
+    id 'com.modrinth.minotaur' version '2.+' apply false
     id 'net.darkhax.curseforgegradle' version '1.1.+' apply false
 }
 
 subprojects {
-    
-    if (project.name == "modules") {
+    if (name == 'modules') {
         tasks.configureEach {
             enabled = false
         }
         return
     }
 
-
-    // Apply the Java plugin to each sub-project
     apply plugin: 'java'
 
-    // Java toolchain configuration
-    java {
-        toolchain {
-            // Set Java 17 for versions <= 1.20.1 for both main and test tasks
-            if (name == 'fabric_1.18.2' || name == 'fabric_1.19.2' || name == 'fabric_1.20.1') {
-                languageVersion = JavaLanguageVersion.of(17)
+    def java17Projects = [
+            'fabric_1.18.2',
+            'fabric_1.19.2',
+            'fabric_1.20.1'
+    ]
+
+    def java21Projects = [
+            'fabric_1.21.1',
+            'fabric_1.21.4',
+            'fabric_1.21.11'
+    ]
+
+    // Java version: 26.x and up -> 25, otherwise use the explicit lists above.
+    // Assumes module names look like fabric_<mcversion>.
+    def javaVersion = null
+    def versionMatch = name =~ /^fabric_(\d+)\./
+    if (versionMatch.find() && versionMatch.group(1).toInteger() >= 26) {
+        javaVersion = 25
+    } else if (java17Projects.contains(name)) {
+        javaVersion = 17
+    } else if (java21Projects.contains(name)) {
+        javaVersion = 21
+    }
+
+    if (javaVersion != null) {
+        java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(javaVersion)
             }
-            // Set Java 21 for versions >= 1.21+
-            else if (name.startsWith('fabric_1.') && name >= 'fabric_1.21') {
-                languageVersion = JavaLanguageVersion.of(21)
-            }
+        }
+
+        tasks.withType(JavaCompile).configureEach {
+            options.release = javaVersion
         }
     }
 
-
-
-    // Ensuring the correct Java version for the compileJava and compileTestJava tasks
-    tasks.withType(JavaCompile).configureEach {
-        if (project.name == 'fabric_1.18.2' || project.name == 'fabric_1.19.2' || project.name == 'fabric_1.20.1') {
-            it.options.release = 17
-        } else if (project.name.startsWith('fabric_1.') && project.name >= 'fabric_1.21') {
-            it.options.release = 21
-        }
-    }
-
-
-    // Configure repositories
     repositories {
-        maven { url = "https://maven.maxhenkel.de/repository/public" }
-        maven { url = "https://api.modrinth.com/maven" }
-        maven {
-            name = 'plasmoverse-releases'
-            url = 'https://repo.plasmoverse.com/releases'
-        }
         mavenCentral()
+
         maven {
-            // Add curse maven to repositories
-            name = "Curse Maven"
-            url = "https://www.cursemaven.com"
-            content {
-                includeGroup "curse.maven"
-            }
-        }
-        maven {
-            name = "Maxhenkel Repo"
+            name = 'MaxHenkel'
             url = 'https://maven.maxhenkel.de/repository/public'
         }
+
         maven {
-            name = "ImpactDev Repo"
-            url = 'https://maven.impactdev.net/repository/development/'
-        }
-        maven {
-            name = "Fuzs Mod Repo"
-            url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/"
-        }
-        maven {
-            name = "Modrinth"
-            url = "https://api.modrinth.com/maven"
+            name = 'Modrinth'
+            url = 'https://api.modrinth.com/maven'
             content {
-                includeGroup "maven.modrinth"
+                includeGroup 'maven.modrinth'
             }
         }
-        maven { url = "https://mvn.devos.one/releases/" }
+
+        maven {
+            name = 'PlasmoVerse'
+            url = 'https://repo.plasmoverse.com/releases'
+        }
+
+        maven {
+            name = 'JitPack'
+            url = 'https://jitpack.io'
+            content {
+                includeGroup 'com.github.FiguraMC.luaj'
+            }
+        }
+
+        maven {
+            name = 'CurseMaven'
+            url = 'https://www.cursemaven.com'
+            content {
+                includeGroup 'curse.maven'
+            }
+        }
+
+        maven {
+            name = 'ImpactDev'
+            url = 'https://maven.impactdev.net/repository/development/'
+        }
+
+        maven {
+            name = 'Fuzs'
+            url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
+        }
+
+        maven {
+            name = 'DevOS'
+            url = 'https://mvn.devos.one/releases/'
+        }
+
         maven {
             name = 'Sponge / Mixin'
             url = 'https://repo.spongepowered.org/repository/maven-public/'
         }
 
         maven {
-            name = "Terraformers"
-            url = "https://maven.terraformersmc.com/"
+            name = 'Terraformers'
+            url = 'https://maven.terraformersmc.com/'
+        }
+
+        maven {
+            url "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
         }
     }
 }
 
-// Define the task to run the publicModdedSite task for specific subprojects
+
 tasks.register('publicMod') {
-    group = "publishing"
-    description = "Runs the publicModdedSite task for specific subprojects"
+    group = 'publishing'
+    description = 'Publishes supported Fabric versions'
 
-    def targetSubprojects = ["fabric_1.18.2", "fabric_1.19.2", "fabric_1.20.1", "fabric_1.21.1", "fabric_1.21.4"]
+    def targetSubprojects = [
+            'fabric_1.18.2',
+            'fabric_1.19.2',
+            'fabric_1.20.1',
+            'fabric_1.21.1',
+            'fabric_1.21.4',
+            'fabric_1.21.11',
+            'fabric_26.1.2',
+            'fabric_26.3'
+    ]
 
-    // Add dependencies for the specific subprojects
-    dependsOn subprojects.findAll { subproject ->
-        targetSubprojects.contains(subproject.name)
-    }.collect { subproject ->
-        ":${subproject.path}:publicModdedSite"
-    }
+    dependsOn subprojects
+            .findAll { it.name in targetSubprojects }
+            .collect { "${it.path}:publicModdedSite" }
 }

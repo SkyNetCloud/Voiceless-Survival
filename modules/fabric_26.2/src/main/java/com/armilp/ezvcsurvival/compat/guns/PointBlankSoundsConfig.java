@@ -1,4 +1,4 @@
-package com.armilp.ezvcsurvival.compat.vics;
+package com.armilp.ezvcsurvival.compat.guns;
 
 import com.armilp.ezvcsurvival.config.GeneralSoundsConfig;
 
@@ -49,6 +49,5 @@ public final class PointBlankSoundsConfig {
             sounds.put(id, new GeneralSoundsConfig.SoundEntry(true, speed, range));
         }
     }
-
 
 }

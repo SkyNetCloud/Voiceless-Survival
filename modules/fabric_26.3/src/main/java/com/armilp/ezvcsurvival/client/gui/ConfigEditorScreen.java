@@ -1,0 +1,106 @@
+package com.armilp.ezvcsurvival.client.gui;
+
+import com.armilp.ezvcsurvival.client.gui.list.ConfigListScreen;
+import com.armilp.ezvcsurvival.utils.ModInfo;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.text.Text;
+
+public class ConfigEditorScreen extends Screen {
+
+    private static final int BUTTON_WIDTH = 120;
+    private static final int BUTTON_HEIGHT = 20;
+    private static final int BUTTON_SPACING = 25;
+
+    private int centerX;
+    private int centerY;
+    private int startY;
+
+    public ConfigEditorScreen() {
+        super(Text.translatable("screen.ezvcsurvival.config_editor"));
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+
+        centerX = this.width / 2;
+        centerY = this.height / 2;
+
+        startY = Math.max(centerY - 30, 70);
+
+        this.addDrawableChild(ButtonWidget.builder(
+                Text.translatable("button.ezvcsurvival.entity_config"),
+                btn -> client.setScreen(new ConfigListScreen(ConfigListScreen.ListType.ENTITY_CONFIG, this))
+        ).dimensions(centerX - BUTTON_WIDTH / 2, startY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+
+        this.addDrawableChild(ButtonWidget.builder(
+                Text.translatable("button.ezvcsurvival.general_sounds"),
+                btn -> client.setScreen(new ConfigListScreen(ConfigListScreen.ListType.GENERAL_SOUNDS_CONFIG, this))
+        ).dimensions(centerX - BUTTON_WIDTH / 2, startY + BUTTON_SPACING, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+
+        this.addDrawableChild(ButtonWidget.builder(
+                Text.translatable("button.ezvcsurvival.gunfire_config"),
+                btn -> client.setScreen(new ConfigListScreen(ConfigListScreen.ListType.GUNFIRE_CONFIG, this))
+        ).dimensions(centerX - BUTTON_WIDTH / 2, startY + BUTTON_SPACING * 2, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+
+
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+        // Render widgets (buttons) first
+        super.render(context, mouseX, mouseY, deltaTicks);
+
+        // Render texts directly without manipulating pose
+        int titleY = Math.max(30, this.height / 10);
+
+        // Title - FIRST the text, THEN the background so that the background does not cover the text
+        context.drawCenteredTextWithShadow(getTextRenderer(), this.title, centerX, titleY, 0xFFFFFFFF);
+
+        // Caption
+        Text subtitle = Text.translatable("screen.ezvcsurvival.config_editor.subtitle");
+        int subtitleY = titleY + 15;
+        context.drawCenteredTextWithShadow(getTextRenderer(), subtitle, centerX, subtitleY, 0xFFCCCCCC);
+
+        // decorative line
+        int subtitleWidth = getTextRenderer().getWidth(subtitle);
+        int lineY = subtitleY + 10;
+        int lineWidth = Math.min(subtitleWidth + 40, this.width - 80);
+        context.fill(centerX - lineWidth / 2, lineY,
+                centerX + lineWidth / 2, lineY + 1, 0x88FFFFFF);
+
+        // Additional information
+        Text info = Text.translatable("screen.ezvcsurvival.config_editor.info");
+        int infoY = lineY + 12;
+        context.drawCenteredTextWithShadow(getTextRenderer(), info, centerX, infoY, 0xFFAAAAAA);
+
+        // Corner version
+        Text version = ModInfo.getVersion();
+        int versionWidth = getTextRenderer().getWidth(version);
+        context.drawText(getTextRenderer(), version, this.width - versionWidth - 5, 5, 0xFFAAAAAA, true);
+    }
+
+
+    @Override
+    public boolean keyPressed(KeyInput input) {
+        if (input.key() == 256) {
+            MinecraftClient.getInstance().setScreen(null);
+            return true;
+        }
+        return super.keyPressed(input);
+    }
+
+
+    @Override
+    public void resize(int width, int height) {
+        super.resize(width, height);
+    }
+    @Override
+    public boolean shouldPause() {
+        return false;
+    }
+}
